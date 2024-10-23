@@ -28,6 +28,8 @@ Only users with the debtor contact name tag "Customer Web Portal - Admin" are ab
 
 ![image](https://github.com/user-attachments/assets/dfb3cde6-8fc4-43f7-9095-fcc862bdac11)
 
+![image](https://github.com/user-attachments/assets/4589dcf1-df28-402f-929c-0369a1d12c43)
+
 ![image](https://github.com/user-attachments/assets/5656bc11-6689-44fe-9303-c1c9d3c5bc43)
 
 ![image](https://github.com/user-attachments/assets/f1260545-b43f-4869-a68a-8c07eaae7340)
