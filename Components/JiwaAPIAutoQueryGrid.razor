@@ -1,0 +1,330 @@
+﻿@attribute [type: RenderModeInteractiveServer]
+@typeparam Model
+@typeparam QueryType where QueryType : ServiceStack.QueryDb<Model>
+
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web;
+@using Microsoft.JSInterop;
+
+@inject ProtectedLocalStorage ProtectedLocalStore
+@inject NavigationManager NavigationManager
+
+@if (APIRequestInPogress)
+{
+    <div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (ShowFilterDialogColumn != null)
+{
+    <div class="relative">
+        <AutoQueryGridFilterColumn Model="Model" Column="ShowFilterDialogColumn" OnClose="@FilterClosed" />
+    </div>
+}
+
+@if (ShowPageNavigationHeader)
+{
+    <p class="small">Page @CurrentPageDisplayNumber() Showing Results @FirstRecordNumber() to @LastRecordNumber() of @RecordCount()</p>
+}
+<div class="table-responsive">
+    <table class="table table-bordered table-striped small">
+        <thead>
+            <tr>
+                @foreach (JiwaAutoQueryColumn<Model> column in Columns.Where(x => !x.IsHidden).OrderBy(x => x.DisplayOrder))
+                {                                
+                    @HeaderCellRenderFragment(column)                
+                }
+                @if (AddSelectButtonColumn)
+                {                
+                    <th>Select</th>                
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @if (Response != null)
+            {
+                @foreach (Model item in Response.Results)
+                {
+                    <tr class="@RowClass(item)">
+                        @foreach (JiwaAutoQueryColumn<Model> column in Columns.Where(x => !x.IsHidden).OrderBy(x => x.DisplayOrder))
+                        {
+                            @DataCellRenderFragment(item, column.Id)                        
+                        }
+                        @if (AddSelectButtonColumn)
+                        {
+                            <td><button @onclick="(() => OnSelectItem(item))" type="button" IsToggle="true" class="btn btn-secondary">Select</button></td>
+                        }
+                    </tr>
+                }
+            }
+        </tbody>    
+    </table>
+</div>
+
+@if (ShowPageNavigation)
+{
+    int currentPageIndex = CurrentPageNumber();
+    int currentPageDisplayNumber = currentPageIndex + 1;
+    int pageCount = PageCount();
+
+    @if (pageCount > 0)
+    {
+        <button @onclick="OnTakePreviousClick" disabled="@TakePreviousDisbled()" class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1">&lt;</button>
+    }
+
+    if (pageCount > 7)
+    {
+        if (currentPageIndex > 4)
+        {
+            if (currentPageIndex > pageCount - 5)
+            {
+                // We're at the end - we display the first page number, elipses and the last 5 page numbers
+                <button @onclick="(() => OnPageBlockClick(0))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(1) me-1"> 1</button>
+                <button disabled class="btn btn-secondary me-1"> ... </button>
+
+                // We need a declare a SEPARATE variable for each button index because the value passed to the lambdas PageBlockClick and PageButtonStyle will not be
+                // what you expect if you just use the same variable, incrementing along.
+                // Yay for the web!
+
+                int pageIndexMinusFour = pageCount - 4;
+                currentPageDisplayNumber = pageCount - 3;
+                <button @onclick="(() => OnPageBlockClick(pageIndexMinusFour))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexMinusFour) me-1"> @currentPageDisplayNumber</button>
+                
+                int pageIndexMinusThree = pageCount - 3;
+                currentPageDisplayNumber++;
+                <button @onclick="(() => OnPageBlockClick(pageIndexMinusThree))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexMinusThree) me-1"> @currentPageDisplayNumber</button>
+
+                int pageIndexMinusTwo = pageCount - 2;
+                currentPageDisplayNumber++;
+                <button @onclick="(() => OnPageBlockClick(pageIndexMinusTwo))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexMinusTwo) me-1"> @currentPageDisplayNumber</button>
+
+                int pageIndexMinusOne = pageCount - 1;
+                currentPageDisplayNumber++;
+                <button @onclick="(() => OnPageBlockClick(pageIndexMinusOne))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexMinusOne) me-1"> @currentPageDisplayNumber</button>
+                
+                int pageIndex = pageCount;
+                currentPageDisplayNumber++;
+                <button @onclick="(() => OnPageBlockClick(pageIndex))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndex) me-1"> @currentPageDisplayNumber</button>
+            }
+            else
+            {
+                // display first page number, elipses, the 3 middle pages (prior to current, current, next) and then elipses and last page number
+                <button @onclick="(() => OnPageBlockClick(0))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(1) me-1"> 1</button>
+                <button disabled class="btn btn-secondary me-1"> ... </button>
+                
+                int pageIndexMinusOne = currentPageIndex - 1;                
+                currentPageDisplayNumber--;
+                <button @onclick="(() => OnPageBlockClick(pageIndexMinusOne))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexMinusOne) me-1"> @currentPageDisplayNumber</button>
+                                
+                currentPageDisplayNumber++;
+                <button @onclick="(() => OnPageBlockClick(currentPageIndex))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(currentPageIndex) me-1"> @currentPageDisplayNumber</button>
+
+                int pageIndexPlusOne = currentPageIndex + 1;
+                currentPageDisplayNumber++;
+                <button @onclick="(() => OnPageBlockClick(pageIndexPlusOne))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexPlusOne) me-1"> @currentPageDisplayNumber</button>
+
+                <button disabled class="btn btn-secondary me-1"> ... </button>
+
+                <button @onclick="(() => OnPageBlockClick(pageCount))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(@pageCount) me-1"> @PageDisplayCount()</button>
+            }
+        }
+        else
+        {
+            // current page is within the first 5, display them and then elipses and last page number
+            @if (pageCount > 5)
+            {
+                <button @onclick="(() => OnPageBlockClick(0))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(0) me-1"> 1</button>
+                <button @onclick="(() => OnPageBlockClick(1))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(1) me-1"> 2</button>
+                <button @onclick="(() => OnPageBlockClick(2))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(2) me-1"> 3</button>
+                <button @onclick="(() => OnPageBlockClick(3))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(3) me-1"> 4</button>
+                <button @onclick="(() => OnPageBlockClick(4))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(4) me-1"> 5</button>
+                <button disabled class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1"> ... </button>
+                <button @onclick="(() => OnPageBlockClick(pageCount))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(@pageCount) me-1"> @PageDisplayCount()</button>
+            }
+            else
+            {
+                // Less than or equal to 5 pages, just display all pages
+                for(int i = 0; i <pageCount; i++)
+                {
+                    int pageNum = i;
+                    int pageDisplayNum = pageNum + 1;
+                    <button @onclick="(() => OnPageBlockClick(pageNum))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageNum) me-1"> @pageDisplayNum</button>
+                }
+            }
+        }
+    }
+    else
+    {
+        // just display all the page numbers 
+        for(int i = 1; i <= pageCount + 1; i++)
+        {
+            int pageNumber = i;
+            <button @onclick="(() => OnPageBlockClick(pageNumber - 1))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageNumber - 1) me-1"> @pageNumber</button>
+        }
+    }
+
+    @if (pageCount > 0)
+    {
+        <button @onclick="OnTakeNextClick" disabled="@TakeNextDisbled()" class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1">&gt;</button>
+    }
+}
+
+@code 
+{
+    // HeaderCellRenderFragment and DataCellRenderFragment stays here in the .razor and not in the .razor.cs because if it was moved to the .razor.cs it cannot parse the mixed razor and c# markup and that would then
+    // mean the method needs to change to a static delegate instead and use the rendertree builder
+    // eg:
+
+    // public static RenderFragment DataCellRenderFragment(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesOrder_List item, string columnId) => (builder) =>
+    // {
+    //     builder.OpenElement(0, "td");
+    //     builder.AddAttribute(1, "align", "right");
+    //     builder.AddContent(2, item.InvoiceTotal.Value.ToString("C", System.Globalization.CultureInfo.CurrentCulture));
+    //     builder.CloseElement();
+    // };
+
+    public RenderFragment HeaderCellIconsRenderFragment(JiwaAutoQueryColumn<Model> headerColumn)
+    {
+        RenderFragment? headerCellIconsRenderFragment = null;
+        if (headerColumn != null)
+        {
+            headerCellIconsRenderFragment =@<AutoQueryGridColumnHeaderIcons Model="Model" Column=headerColumn/>;
+        }
+
+        return headerCellIconsRenderFragment;
+    }
+
+    public RenderFragment HeaderCellRenderFragment(JiwaAutoQueryColumn<Model> column)
+    {
+
+        RenderFragment? headerCellRenderFragment = null;
+
+        if (column != null)
+        {
+            if (HeaderCellRenderFragmentCallbackMethod != null)
+            {
+                headerCellRenderFragment = HeaderCellRenderFragmentCallbackMethod.Invoke(column);
+            }
+
+            if (headerCellRenderFragment == null)
+            {
+                Type dataType = column.ColumnDataType;
+                if (dataType.IsGenericType && dataType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                {
+                    dataType = Nullable.GetUnderlyingType(dataType);
+                }
+
+                switch (dataType)
+                {
+                    case Type _ when dataType == typeof(Decimal):
+                        headerCellRenderFragment = @<th class="text-end" @onclick="(() => OnColumnHeaderClick(column))">@column.Caption @HeaderCellIconsRenderFragment(column)</th>;
+                        break;
+                    case Type _ when dataType == typeof(int):
+                        headerCellRenderFragment = @<th class="text-end" @onclick="(() => OnColumnHeaderClick(column))">@column.Caption @HeaderCellIconsRenderFragment(column)</th>;
+                        break;
+                    case Type _ when dataType == typeof(DateTime):
+                        headerCellRenderFragment = @<th class="text-end" @onclick="(() => OnColumnHeaderClick(column))">@column.Caption @HeaderCellIconsRenderFragment(column)</th>;
+                        break;
+                    case Type _ when dataType == typeof(string):
+                        headerCellRenderFragment = @<th class="text-start" @onclick="(() => OnColumnHeaderClick(column))">@column.Caption @HeaderCellIconsRenderFragment(column)</th>;
+                        break;
+                    case Type _ when dataType == typeof(bool):
+                        headerCellRenderFragment = @<th class="text-center" @onclick="(() => OnColumnHeaderClick(column))">@column.Caption @HeaderCellIconsRenderFragment(column)</th>;
+                        break;
+
+                    default:
+                        headerCellRenderFragment = @<th @onclick="(() => OnColumnHeaderClick(column))"> @column.Caption @HeaderCellIconsRenderFragment(column)</th>;
+                        break;
+                }
+            }
+        }
+
+        if (headerCellRenderFragment == null)
+        {
+            headerCellRenderFragment = @<th></th>;
+        }
+
+        return headerCellRenderFragment;
+    }
+
+    public RenderFragment DataCellRenderFragment(Model item, string columnId)
+    {
+        RenderFragment? dataCellRenderFragment = null;
+
+        if (DataCellRenderFragmentCallbackMethod != null)
+        {
+            dataCellRenderFragment = DataCellRenderFragmentCallbackMethod.Invoke(item, columnId);
+        }
+        else
+        {
+            return @<td>@PropertyValue(item, columnId) </td>;
+        }
+
+        if (dataCellRenderFragment == null)
+        {
+            JiwaAutoQueryColumn<Model> column = Columns.FirstOrDefault(x => x.Id == columnId);
+            if (column != null)
+            {
+                Type dataType = column.ColumnDataType;
+                if (dataType.IsGenericType && dataType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                {
+                    dataType = Nullable.GetUnderlyingType(dataType);
+                }
+
+                switch (dataType)
+                {
+                    case Type _ when dataType == typeof(Decimal):
+                        dataCellRenderFragment =@<td class="text-end">@PropertyValue(item, columnId) </td>;
+                        break;
+                    case Type _ when dataType == typeof(int):
+                        dataCellRenderFragment =@<td class="text-end">@PropertyValue(item, columnId) </td>;
+                        break;
+                    case Type _ when dataType == typeof(DateTime):
+                        DateTime dateValue = PropertyValue<DateTime>(item, columnId);
+                        dataCellRenderFragment =@<td class="text-end">@dateValue.ToShortDateString() </td>;
+                        break;
+                    case Type _ when dataType == typeof(string):
+                        dataCellRenderFragment =@<td class="text-start">@PropertyValue(item, columnId) </td>;
+                        break;
+                    case Type _ when dataType == typeof(bool):
+                        if (PropertyValue<bool>(item, columnId))
+                        {
+                            dataCellRenderFragment =@<td class="text-center">
+                                        <svg fill = "#000000" width = "20px" height = "20px" viewBox = "0 -1.5 27 27" xmlns = "http://www.w3.org/2000/svg"><path d = "m24 24h-24v-24h18.4v2.4h-16v19.2h20v-8.8h2.4v11.2zm-19.52-12.42 1.807-1.807 5.422 5.422 13.68-13.68 1.811 1.803-15.491 15.491z" /></svg>
+                                    </td>;
+                        }
+                        else
+                        {
+                            dataCellRenderFragment =@<td class="text-center">
+                                        <svg fill = "#000000" width = "20px" height = "20px" viewBox = "0 -0.5 25 25" xmlns = "http://www.w3.org/2000/svg"><path d = "m24 24h-24v-24h24.8v24zm-1.6-2.4v-19.2h-20v19.2z" /></svg>
+                                    </td>;
+                        }
+                        break;
+
+                    default:
+                        dataCellRenderFragment =@<td class="text-start">@PropertyValue(item, columnId) </td>;
+                        break;
+                }
+            }
+        }
+
+        if (dataCellRenderFragment == null)
+        {
+            dataCellRenderFragment = @<td>@PropertyValue(item, columnId) </td>;
+        }
+
+        return dataCellRenderFragment;
+    }
+}
+
+
+
+    

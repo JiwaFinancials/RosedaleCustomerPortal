@@ -1,0 +1,17 @@
+﻿@if (!string.IsNullOrEmpty(Message))
+{
+    var statusMessageClass = Message.StartsWith("Error") ? "danger" : "success";
+    <div class="alert alert-@statusMessageClass" role="alert">
+        @Message
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public string? Message { get; set; }
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;    
+
+}

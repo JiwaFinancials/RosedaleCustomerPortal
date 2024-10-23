@@ -1,0 +1,68 @@
+@page "/User/SignOut"
+@attribute [type: RenderModeInteractiveServer]
+@using System.ComponentModel.DataAnnotations
+
+@inject ILogger<SignOut> Logger
+@inject NavigationManager NavigationManager
+
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedLocalStorage ProtectedLocalStore
+@inject WebPortalUserSessionStateContainer WebPortalUserSessionStateContainer
+
+<PageTitle>Log out</PageTitle>
+
+@if (string.IsNullOrWhiteSpace(errorMessage))
+{
+    <h1>You have signed out</h1>
+}
+else
+{
+    <h2>A problem occurred signing out</h2>
+}
+
+<StatusMessage Message="@errorMessage" />
+
+@code {
+    private string? errorMessage;
+    public JiwaFinancials.Jiwa.JiwaServiceModel.WebPortalUserSession WebPortalUserSession { get; set; }
+
+    protected async override Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        try
+        {
+            ProtectedBrowserStorageResult<JiwaFinancials.Jiwa.JiwaServiceModel.WebPortalUserSession> result = await ProtectedLocalStore.GetAsync<JiwaFinancials.Jiwa.JiwaServiceModel.WebPortalUserSession>("JiwaCustomerWebPortalAuthUserSession");
+
+            if (result.Value != null)
+            {
+                WebPortalUserSession = result.Value;
+                JiwaFinancials.Jiwa.JiwaServiceModel.LogoutGetResponse response = await JiwaAPI.GetAsync(new JiwaFinancials.Jiwa.JiwaServiceModel.LogoutGetRequest(), jiwaAPISessionId: result.Value.Id);                
+            }
+            else
+            {
+                errorMessage = $"You are not signed in, and so cannot sign out.";
+            }
+        }
+        catch (ServiceStack.WebServiceException webServiceException)
+        {
+            if (webServiceException.StatusCode == 401)
+            {
+                errorMessage = $"You are not signed in, and so cannot sign out. {webServiceException.ErrorMessage}";                
+            }
+            else if(webServiceException.StatusCode == 403)
+            {
+                errorMessage = $"API permission to sign out has not been granted. {webServiceException.ErrorMessage}";
+            }
+        }
+        catch (Exception ex)
+        {
+            // TODO: Sort this out - might not be an auth issue, might need to display more info
+            errorMessage = ex.Message;
+        }
+
+        await ProtectedLocalStore.DeleteAsync("JiwaCustomerWebPortalAuthUserSession");
+        WebPortalUserSession = null;
+        WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+    }
+}

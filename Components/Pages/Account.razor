@@ -1,0 +1,1047 @@
+﻿@page "/Account"
+@attribute [type: RenderModeInteractiveServer]
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using ServiceStack;
+@inject ProtectedLocalStorage ProtectedLocalStore
+@inject NavigationManager NavigationManager
+@inject WebPortalUserSessionStateContainer WebPortalUserSessionStateContainer
+
+<PageTitle>Account</PageTitle>
+
+@if (APIRequestInPogress)
+{
+    <div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<StatusMessage Message="@statusMessage"/>
+
+@if (ContactNameToCreate != null)
+{
+    <div class="relative">
+        <CreateEditContactDialog Title="Create Contact" ContactName="@ContactNameToCreate" OnClose="@CreateContactDialogClosed" />
+    </div>
+}
+
+@if (ContactNameToEdit != null)
+{
+    <div class="relative">
+        <CreateEditContactDialog Title="Edit Contact" ContactName = "@ContactNameToEdit" OnClose="@EditContactDialogClosed" />
+    </div>
+}
+
+@if (ContactNameToDelete != null)
+{
+    <div class="relative">
+        <ModalDialogOKCancel Title="Delete Contact?" Text="@($"Delete contact {ContactNameToDelete.DisplayName()}, {ContactNameToDelete.EmailAddress} ?")" OnClose="@DeleteContactConfirmationDialogClosed" />
+    </div>
+}
+
+@if (Debtor != null)
+{
+    <div class="row">
+        <div class="col-3">
+            <label for="AccountNo" class="form-label">AccountNo</label>
+            <input type="text" class="form-control" id="AccountNo" readonly placeholder="@Debtor.AccountNo">
+        </div>
+        <div class="col-9">
+            <label for="Name" class="form-label">Name</label>
+            <input type="text" class="form-control" id="Name" readonly placeholder="@Debtor.Name">
+        </div>
+    </div>
+
+    <br />
+
+    <ul class="nav nav-tabs" id="detailsTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a @onclick='(() => OnSelectTab("Contacts-tab"))' class=@String.Format("nav-link{0}", SelectedTabId=="Contacts-tab" ? " active": null) id="Contacts-tab" data-bs-toggle="tab" data-bs-target="#Contacts" type="button" role="tab" aria-controls="Contacts" aria-selected=@String.Format("nav-link{0}", SelectedTabId=="Contacts-tab" ? "true": "false")>Contacts</a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a @onclick='(() => OnSelectTab("Address-tab"))' class=@String.Format("nav-link{0}", SelectedTabId=="Address-tab" ? " active": null) id="Address-tab" data-bs-toggle="tab" data-bs-target="#Addresses" type="button" role="tab" aria-controls="Addresses" aria-selected=@String.Format("nav-link{0}", SelectedTabId=="Addresses-tab" ? "true": "false")>Addresses</a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a @onclick='(() => OnSelectTab("Financials-tab"))' class=@String.Format("nav-link{0}", SelectedTabId=="Financials-tab" ? " active": null) id="Financials-tab" data-bs-toggle="tab" data-bs-target="#Financials" type="button" role="tab" aria-controls="profile" aria-selected=@String.Format("nav-link{0}", SelectedTabId=="Financials-tab" ? "true": "false")>Financials</a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a @onclick='(() => OnSelectTab("SalesOrders-tab"))' class=@String.Format("nav-link{0}", SelectedTabId=="SalesOrders-tab" ? " active": null) id="SalesOrders-tab" data-bs-toggle="tab" data-bs-target="#SalesOrders" type="button" role="tab" aria-controls="profile" aria-selected=@String.Format("nav-link{0}", SelectedTabId=="SalesOrders-tab" ? "true": "false")>Sales Orders</a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a @onclick='(() => OnSelectTab("SalesQuotes-tab"))' class=@String.Format("nav-link{0}", SelectedTabId=="SalesQuotes-tab" ? " active": null) id="SalesQuotes-tab" data-bs-toggle="tab" data-bs-target="#SalesQuotes" type="button" role="tab" aria-controls="profile" aria-selected=@String.Format("nav-link{0}", SelectedTabId=="SalesQuotes-tab" ? "true": "false")>Sales Quotes</a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a @onclick='(() => OnSelectTab("Backorders-tab"))' class=@String.Format("nav-link{0}", SelectedTabId=="Backorders-tab" ? " active": null) id="Backorders-tab" data-bs-toggle="tab" data-bs-target="#Backorders" type="button" role="tab" aria-controls="profile" aria-selected=@String.Format("nav-link{0}", SelectedTabId=="Backorders-tab" ? "true": "false")>Backorders</a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <div class=@String.Format("tab-pane{0}", SelectedTabId=="Contacts-tab" ? " active": null) id="Contacts" role="tabpanel" aria-labelledby="Contacts-tab">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped small">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>                                        
+                            <th>Mobile</th>
+                            <th>Tags</th>
+                            @if (WebPortalUserSessionStateContainer?.WebPortalUserSession?.IsAdminRole == true)
+                            {
+                                <th class="text-center">Edit</th>
+                                <th class="text-center">Delete</th>
+                            }
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach(JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName contactName in Debtor.ContactNames)
+                        {
+                            <tr>
+                                <td>@contactName.DisplayName()</td>
+                                <td>@contactName.EmailAddress</td>
+                                <td>@contactName.Mobile</td>
+
+                                <td>
+                                @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.Tags.Tag tag in contactName.TagMemberships)
+                                {
+                                    <span class="badge rounded-pill bg-primary">@tag.Text</span>
+                                }
+                                </td>
+                                @if (WebPortalUserSessionStateContainer?.WebPortalUserSession?.IsAdminRole == true)
+                                {
+                                    <!--<td><button @onclick="(() => EditContactName(contactName))" type="button" class="btn btn-secondary">Edit</button></td>-->
+                                    <td class="text-center">
+                                        <button @onclick="_ => EditContactName(contactName)" class="btn" style="background-color:transparent">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 20 20">
+                                                <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
+                                                <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z" />
+                                            </svg>
+                                        </button>
+                                    </td>
+                            
+                                    <!-- <td><button @onclick="(() => DeleteContactName(contactName))" type="button" class="btn btn-danger">Delete</button></td>-->
+                                    <td class="text-center">
+                                        <button @onclick="_ => DeleteContactName(contactName)" class="btn" style="background-color:transparent">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="red" class="bi bi-x-circle" viewBox="0 0 20 20">
+                                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+                                                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
+                                            </svg>
+                                        </button>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (WebPortalUserSessionStateContainer?.WebPortalUserSession?.IsAdminRole == true)
+            {
+                <button @onclick="(() => CreateContactName())" type="button" class="btn btn-success">Add New Contact
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-plus" viewBox="0 0 16 16">
+                        <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H1s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C9.516 10.68 8.289 10 6 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z" />
+                        <path fill-rule="evenodd" d="M13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5" />
+                    </svg>
+                </button>
+            }
+        </div>
+        <div class=@String.Format("tab-pane{0}", SelectedTabId=="Address-tab" ? " active": null) id="Addresses" role="tabpanel" aria-labelledby="Address-tab">
+            <div class="d-grid gap-3">
+                <div></div>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Mailing Address</h5>
+
+                        <div class="row">
+                            <div class="col-3">
+                                <label for="Address1" class="form-label">Address 1</label>
+                                <input type="text" class="form-control" id="Address1" readonly placeholder="@Debtor.Address1">
+                            </div>
+                            <div class="col-3">
+                                <label for="Address2" class="form-label">Address 2</label>
+                                <input type="text" class="form-control" id="Address2" readonly placeholder="@Debtor.Address2">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-3">
+                                <label for="Address3" class="form-label">Suburb</label>
+                                <input type="text" class="form-control" id="Address3" readonly placeholder="@Debtor.Address3">
+                            </div>
+                            <div class="col-3">
+                                <label for="Address4" class="form-label">State</label>
+                                <input type="text" class="form-control" id="Address4" readonly placeholder="@Debtor.Address4">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-3">
+                                <label for="Postcode" class="form-label">Postcode</label>
+                                <input type="text" class="form-control" id="Postcode" readonly placeholder="@Debtor.Postcode">
+                            </div>
+                            <div class="col-3">
+                                <label for="Country" class="form-label">Country</label>
+                                <input type="text" class="form-control" id="Country" readonly placeholder="@Debtor.Country">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Delivery Addresses</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped small">
+                                <thead>
+                                    <tr>
+                                        <th>Address 1</th>
+                                        <th>Address 2</th>
+                                        <th>Suburb</th>
+                                        <th>State</th>
+                                        <th>Postcode</th>
+                                        <th>Country</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @foreach(JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorDeliveryAddress deliveryAddress in Debtor.DeliveryAddresses)
+                                    {
+                                        <tr>
+                                            <td>@deliveryAddress.Address1</td>
+                                            <td>@deliveryAddress.Address2</td>
+                                            <td>@deliveryAddress.Address3</td>
+                                            <td>@deliveryAddress.Address4</td>
+                                            <td>@deliveryAddress.Postcode</td>
+                                            <td>@deliveryAddress.Country</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class=@String.Format("tab-pane{0}", SelectedTabId=="Financials-tab" ? " active": null) id="Financials" role="tabpanel" aria-labelledby="Financials-tab">
+            <div class="d-grid gap-3">
+                <div></div>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Balances</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped small">
+                                <thead>
+                                    <tr>
+                                        <th>Currency</th>
+                                        <th class="text-end">Period 1</th>
+                                        <th class="text-end">Period 2</th>
+                                        <th class="text-end">Period 3</th>
+                                        <th class="text-end">Period 4</th>
+                                        <th class="text-end">Total</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorBalance balance in Debtor.Balances)
+                                    {
+                                        <tr>
+                                            <td><img src="data:image/png;base64,@Convert.ToBase64String(Config.Currencies[@balance.CurrencyID].Picture)" width="30" height="20"> @balance.CurrencyShortName</td>
+                                            <td class="text-end">@balance.FXPeriod1?.ToString($"C{Config.Currencies[balance.CurrencyID].DecimalPlaces}")</td>
+                                            <td class="text-end">@balance.FXPeriod2?.ToString($"C{Config.Currencies[balance.CurrencyID].DecimalPlaces}")</td>
+                                            <td class="text-end">@balance.FXPeriod3?.ToString($"C{Config.Currencies[balance.CurrencyID].DecimalPlaces}")</td>
+                                            <td class="text-end">@balance.FXPeriod4?.ToString($"C{Config.Currencies[balance.CurrencyID].DecimalPlaces}")</td>
+                                            <td class="text-end">@balance.FXTotal?.ToString($"C{Config.Currencies[balance.CurrencyID].DecimalPlaces}")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Statements</h5>
+
+                        <div class="table-responsive">
+                            <table class="table small">
+                                <tbody>
+                                    <tr>
+                                        <td><a href="StatementPDF/@DateTime.Now.ToString("yyyy-MM-dd")" target="_blank" rel="noopener noreferrer">Today (@DateTime.Now.ToString("dd MMM yy"))</a></td>
+                                        @for (int i = 1; i < 12; i++)
+                                        {
+                                            DateTime statementDate = DateTime.Now.Date.AddMonths(-i).LastDayOfMonth();
+                                            <td><a href="StatementPDF/@statementDate.LastDayOfMonth().ToString("yyyy-MM-dd")" target="_blank" rel="noopener noreferrer">@statementDate.ToString("MMM yy")</a></td>                            
+                                        }
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Transactions</h5>
+                        @if (LazyLoadTabIds.Contains("Financials-tab"))
+                        {
+                            <JiwaAPIAutoQueryGrid Model="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_Debtor_Transactions_List"
+                            QueryType="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_Debtor_Transactions_ListQuery"
+                            CaptionMaps=@(new Dictionary<string, string>
+                                  {
+                                  ["InvRemitNo"] = "Invoice / Remit No.",
+                                  ["TranDate"] = "Date",
+                                  ["DueDate"] = "Due Date",
+                                  ["DebitAmountIncTax"] = "Debit",
+                                  ["CreditAmountIncTax"] = "Credit",
+                                  ["GSTAmount"] = "Tax",
+                                  ["Ref"] = "Reference",
+                                  ["CurrencyShortName"] = "Currency",
+                                  ["AllocatedAmount"] = "Paid",
+                                  ["OutstandingAmount"] = "Owing"
+                                  } )
+                            HiddenColumns=@(new List<string>() { "SourceID", "DecimalPlaces", "CurrencyID", "DebitCredit" })
+                            AutoQuery="@DebtorsTransactionsAutoQuery"
+                            NoAuthenticationTokenCallbackMethod="@NoAuthenticationToken"
+                            APIExceptionCallbackMethod="@APIException"
+                            DataCellRenderFragmentCallbackMethod="@TransactionsGridDataCellRenderFragment"></JiwaAPIAutoQueryGrid>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class=@String.Format("tab-pane{0}", SelectedTabId=="SalesOrders-tab" ? " active": null) id="SalesOrders" role="tabpanel" aria-labelledby="SalesOrders-tab">
+            @if (LazyLoadTabIds.Contains("SalesOrders-tab"))
+            {
+                <JiwaAPIAutoQueryGrid Model="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesOrder_List"
+                QueryType="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesOrder_ListQuery"
+                CaptionMaps=@(new Dictionary<string, string>
+                                  {
+                                      ["InvoiceNoDashHistoryNo"] = "Sales Order No.",
+                                      ["InvoiceInitDate"] = "Date",                              
+                                      ["OrderNo"] = "Order No.",
+                                      ["SOReference"] = "Reference",
+                                      ["InvoiceTotal"] = "Order Total",
+                                      ["TotalAllocated"] = "Amount Paid",
+                                      ["CreditNote"] = "Credit",
+                                      ["CurrencyShortName"] = "Currency",
+                                      ["DueDate"] = "Pay By"
+                                  } )
+                HiddenColumns=@(new List<string>() { "InvoiceID", "CurrencyID" })
+                AutoQuery="@SalesOrdersAutoQuery"
+                NoAuthenticationTokenCallbackMethod="@NoAuthenticationToken"
+                APIExceptionCallbackMethod="@APIException"
+                DataCellRenderFragmentCallbackMethod="@SalesOrdersGridDataCellRenderFragment"></JiwaAPIAutoQueryGrid>
+            }
+        </div>
+        <div class=@String.Format("tab-pane{0}", SelectedTabId=="SalesQuotes-tab" ? " active": null) id="SalesQuotes" role="tabpanel" aria-labelledby="SalesQuotes-tab">
+            @if (LazyLoadTabIds.Contains("SalesQuotes-tab"))
+            {
+                <JiwaAPIAutoQueryGrid Model="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesQuote_List"
+                QueryType="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesQuote_ListQuery"
+                CaptionMaps=@(new Dictionary<string, string>
+                              {
+                              ["InvoiceNo"] = "Quote No.",
+                              ["InvoiceInitDate"] = "Date",
+                              ["OrderNo"] = "Order No.",
+                              ["QOReference"] = "Reference",
+                              ["InvoiceTotal"] = "Quote Total",                              
+                              ["CurrencyShortName"] = "Currency"
+                              } )
+                HiddenColumns=@(new List<string>() { "InvoiceID", "CurrencyID" })
+                AutoQuery="@SalesQuotesAutoQuery"
+                NoAuthenticationTokenCallbackMethod="@NoAuthenticationToken"
+                APIExceptionCallbackMethod="@APIException"
+                DataCellRenderFragmentCallbackMethod="@SalesQuotesGridDataCellRenderFragment"
+                HeaderCellRenderFragmentCallbackMethod="@SalesQuotesGridHeaderCellRenderFragment"></JiwaAPIAutoQueryGrid>
+            }
+        </div>
+        <div class=@String.Format("tab-pane{0}", SelectedTabId=="Backorders-tab" ? " active": null) id="Backorders" role="tabpanel" aria-labelledby="Backorders-tab">
+            @if (BackOrders == null || BackOrders.Count == 0)
+            {
+                <p>You have no outstanding backorders.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped small">
+                        <thead>
+                            <tr>
+                                <th>Part No.</th>
+                                <th>Description</th>                    
+                                <th>Invoice No.</th>
+                                <th>Order No.</th>
+                                <th class="text-end">Date</th>
+                                <th class="text-end">Quantity</th>
+                                <th class="text-end">ETA</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorBackOrder backorder in BackOrders)
+                            {
+                                <tr>
+                                    <td>@backorder.PartNo</td>
+                                    <td>@backorder.Description</td>
+                                    <td><a href="SalesOrderPDF/@backorder.InvoiceID" target="_blank" rel="noopener noreferrer">@backorder.InvoiceNo</a></td>
+                                    <td>@backorder.CustomerOrderNo</td>
+                                    <td class="text-end">@backorder.Date.ToShortDateString()</td>
+                                    <td class="text-end">@backorder.Quantity.ToString($"#,0.{new String('0', backorder.QuantityDecimalPlaces)}")</td>
+                                    <td class="text-end">@backorder.ExpectedDeliveryDate.ToShortDateString()</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+}
+@code {
+    private bool APIRequestInPogress;
+    private string? statusMessage;
+    private JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor Debtor { get; set; }
+    private string SelectedTabId { get; set; } = "Contacts-tab";
+
+    // For tabs which we lazy load, we keep track of if they've been clicked on with this list. The tab ID is added to the list when they click on it,
+    // and we only bother rendering the AutoQuery or calling the API route backing that data when it is clicked the first time.
+    private List<String> LazyLoadTabIds = new List<string>();
+
+    private JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_Debtor_Transactions_ListQuery DebtorsTransactionsAutoQuery { get; set; }
+    private JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesOrder_ListQuery SalesOrdersAutoQuery { get; set;  }
+    private JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesQuote_ListQuery SalesQuotesAutoQuery { get; set; }
+    private List<JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorBackOrder> BackOrders { get; set; } = new List<JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorBackOrder>();
+
+    private JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactNameToCreate { get; set; }
+    private JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactNameToEdit { get; set; }    
+    private JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactNameToDelete { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if (WebPortalUserSessionStateContainer.ProtectedLocalStore == null)
+        {
+            try
+            {
+                await WebPortalUserSessionStateContainer.SetProtectedLocalStore(ProtectedLocalStore);
+            }
+            catch (Exception ex)
+            {
+                statusMessage = ex.Message;
+                return;
+            }
+        }
+
+        if (WebPortalUserSessionStateContainer.WebPortalUserSession == null)
+        {
+            // not authenticated
+            NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            return;
+        }
+
+        JiwaFinancials.Jiwa.JiwaServiceModel.CustomerDebtorGETRequest customerDebtorGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.CustomerDebtorGETRequest();
+        try
+        {
+            Debtor = await JiwaAPI.GetAsync(customerDebtorGETRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+        }
+        catch (ServiceStack.WebServiceException webServiceException)
+        {            
+            if (webServiceException.StatusCode == 401)
+            {
+                // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            }
+            else
+            {
+                statusMessage = webServiceException.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+
+        // AutoQueries need to be a property instantiated in the parent and not new'd in the razor defining component because we want to persist the AutoQuery properties between renders.
+        // If we don't do this, what happens is the component does not render propertly - so, for example
+        // Where the debtor transactions autoquery component returns multiple pages, selecting page 3 and then clicking on a 
+        // different tab and then back to the debtor transactions tab it will still show the transactions last displayed, but the page number will be back to page 1
+        // So we instantiate the auto queries here, and in the component razor instantiation we set the AutoQuery parameter of the component to be our local declared instance here.
+        DebtorsTransactionsAutoQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_Debtor_Transactions_ListQuery()
+            {
+                OrderByDesc = "TranDate",
+                    Fields = "InvRemitNo,TranDate,Description,DueDate,CurrencyShortName,Ref,Remark,Note,SourceID,DecimalPlaces,CurrencyID,DebitCredit,DebitAmountIncTax,CreditAmountIncTax,GSTAmount,AllocatedAmount,OutstandingAmount",
+                Take = 10
+            };        
+
+        SalesOrdersAutoQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesOrder_ListQuery()
+                    {
+                        OrderByDesc = "InvoiceNoDashHistoryNo",
+                        InvoiceTotalNotEqualTo = 0,
+                        Fields = "InvoiceID,InvoiceNoDashHistoryNo,InvoiceInitDate,OrderNo,SOReference,CurrencyShortName,InvoiceTotal,TotalAllocated,DueDate,CreditNote,CurrencyID",
+                        Take = 10
+                    };
+
+        SalesQuotesAutoQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesQuote_ListQuery()
+            {
+                OrderByDesc = "InvoiceNo",
+                InvoiceTotalNotEqualTo = 0,
+                Fields = "InvoiceID,InvoiceNo,InvoiceInitDate,Status,OrderNo,QOReference,CurrencyShortName,InvoiceTotal,CurrencyID",
+                Take = 10
+            };
+    }   
+
+    private async Task ReadBackOrders()
+    {        
+        if (Debtor != null)
+        {
+            bool oldAPIRequestInPogress = APIRequestInPogress;
+            APIRequestInPogress = true;
+
+            JiwaFinancials.Jiwa.JiwaServiceModel.Tables.DebtorBackordersGETRequest DebtorBackordersGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.DebtorBackordersGETRequest();
+            DebtorBackordersGETRequest.DebtorID = Debtor.DebtorID;
+            try
+            {
+                BackOrders = await JiwaAPI.GetAsync(DebtorBackordersGETRequest, WebPortalUserSessionStateContainer?.WebPortalUserSession?.Id, null);
+            }
+            catch (ServiceStack.WebServiceException webServiceException)
+            {
+                if (webServiceException.StatusCode == 401)
+                {
+                    // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                    WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                    NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+                }
+                else
+                {
+                    statusMessage = webServiceException.ErrorMessage;
+                }
+            }
+            catch (Exception ex)
+            {
+                statusMessage = ex.Message;
+            }
+            finally
+            {
+                APIRequestInPogress = oldAPIRequestInPogress;
+            }
+        }
+    }
+
+    private async Task OnSelectTab(string tabId)
+    {
+        SelectedTabId = tabId;
+
+        if (!LazyLoadTabIds.Contains(tabId))
+        {
+            if (tabId == "Backorders-tab")
+            {
+                await ReadBackOrders();
+            }
+
+            LazyLoadTabIds.Add(tabId);
+        }
+    }
+
+    public void NoAuthenticationToken()
+    {
+        // user had no auth token to provide - redirect to logon
+        NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+    }
+
+    public async void APIException(Exception ex)
+    {
+        // first we need to work out what type of exception this was.  If it as a 401 (Not Authenticated), then we just redirect to to the login page
+        // Anything else, we set the errorMessage property so the component displays the error to the user.
+        if (ex is ServiceStack.WebServiceException)
+        {
+            ServiceStack.WebServiceException webServiceException = (ServiceStack.WebServiceException)ex;
+            if (webServiceException.StatusCode == 401)
+            {
+                // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            }
+            else
+            {
+                statusMessage = webServiceException.ErrorMessage;
+            }
+        }
+        else
+        {
+            statusMessage = ex.Message;
+        }
+    }
+
+    public RenderFragment TransactionsGridDataCellRenderFragment(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_Debtor_Transactions_List item, string columnId)
+    {
+        // Returns a render cell fragment for the cell contents of data cells of the debtor transactions grid where we don't want the default styling to be used.
+
+        RenderFragment content = null;
+        switch (columnId)
+        {            
+            case "InvRemitNo":
+                if (item.Description == "Sales Orders")
+                {
+                    content = @<td><a href="SalesOrderPDF/@item.SourceID" target="_blank" rel="noopener noreferrer">@item.InvRemitNo</a></td>;
+                }
+                else
+                {
+                    content = @<td>@item.InvRemitNo</td>;
+                }
+                break;
+
+            case "Description":
+                if (item.Description == "Bank Receipts")
+                {
+                    content =@<td class="text-center"><span class="badge rounded-pill bg-success">Payment</span></td>;
+                }
+                else if (item.Description == "Debtor Adjustments")
+                {
+                    content =@<td class="text-center"><span class="badge rounded-pill bg-warning">Adjustment</span></td>;
+                }
+                else if (item.Description == "Sales Orders")
+                {
+                    content =@<td class="text-center"><span class="badge rounded-pill bg-secondary">Invoice</span></td>;
+                }
+                else
+                {
+                    content =@<td class="text-center">@item.Description</td>;
+                }
+
+                break;
+
+                case "DueDate":
+                if (item.DebitCredit)
+                {
+                    content =@<td class="text-end">@item.DueDate.Value.ToShortDateString()</td>;
+                }
+                else
+                {
+                    // don't display due date for credits
+                    content =@<td class="text-end"></td>;
+                }
+                break;
+
+            case "CurrencyShortName":                                
+                content = @<td><img src="data:image/png;base64,@Convert.ToBase64String(Config.Currencies[@item.CurrencyID].Picture)" width="30" height="20"> @item.CurrencyShortName</td>;
+                break;
+
+            case "DebitAmountIncTax":
+                decimal debitAmount = item.DebitAmountIncTax ?? 0;
+
+                if (debitAmount != 0)
+                {
+                    content = @<td class="text-end">@debitAmount.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>;
+                }
+                else
+                {
+                    content =@<td class="text-end"></td>;
+                }
+
+                break;
+
+            case "CreditAmountIncTax":
+                decimal creditAmount = item.CreditAmountIncTax ?? 0;
+
+                if (creditAmount != 0)
+                {
+                    content = @<td class="text-end">@creditAmount.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>;
+                }
+                else
+                {
+                    content =@<td class="text-end"></td>;
+                }
+                break;
+
+            case "GSTAmount":                
+                if (item.GSTAmount != 0)
+                {
+                    content = @<td class="text-end">@item.GSTAmount.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>;
+                }
+                else
+                {
+                    content = @<td class="text-end"></td>;
+                }
+
+                break;
+
+            case "AllocatedAmount":                
+                // We only show paid amounts for invoices (DebitCredit == true)
+                content = @<td></td>;
+
+                if (item.DebitCredit && item.AllocatedAmount != null && item.AllocatedAmount.Value != 0)
+                {
+                    content =@<td class="text-end">@item.AllocatedAmount.Value.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>            ;
+                }
+
+                break;
+
+            case "OutstandingAmount":
+                // We only show outstanding amounts for invoices (DebitCredit == true)
+
+                if (item.DebitCredit && item.OutstandingAmount != null && item.OutstandingAmount.Value != 0)
+                {
+                    if (item.DueDate < DateTime.Now)
+                    {
+                        content = @<td class="text-end"><span class="badge rounded-pill bg-danger">Overdue</span><br />@item.OutstandingAmount.Value.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>;
+                    }
+                    else
+                    {
+                        content = @<td class="text-end">@item.OutstandingAmount.Value.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>;
+                    }
+                }
+                else
+                {
+                    if (item.DebitCredit)
+                    {
+                        // fully paid                        
+                        content = @<td class="text-end"><div class="badge rounded-pill bg-success">Fully Paid</div></td>;
+                    }
+                    else
+                    {
+                        content =@<td class="text-end"></td>;
+                    }
+                }
+                break;
+        }
+
+        return content;
+    }
+
+    public RenderFragment SalesOrdersGridDataCellRenderFragment(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesOrder_List item, string columnId)
+    {
+        // Returns a render cell fragment for the cell contents of cells of the sales orders grid, where we don't want the default styling to be performed.
+
+        RenderFragment content = null;
+        switch (columnId)
+        {
+            case "InvoiceNoDashHistoryNo":
+                content = @<td><a href="SalesOrderPDF/@item.InvoiceID" target="_blank" rel="noopener noreferrer">@item.InvoiceNoDashHistoryNo</a></td>;
+                break;
+            case "InvoiceTotal":
+                if (item.CreditNote && item.InvoiceTotal != null)
+                {
+                    decimal? orderTotal = item.InvoiceTotal.Value * -1;
+                    content = @<td class="text-end">@orderTotal?.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>;
+                }
+                else
+                {
+                    if (item.InvoiceTotal > item.TotalAllocated && item.DueDate < DateTime.Now)
+                    {
+                        // overdue 
+                        content = @<td class="text-end"><div class="text-danger">@item.InvoiceTotal?.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</div></td>;
+                    }
+                    else
+                    {
+                        if (item.TotalAllocated >= item.InvoiceTotal)
+                        {
+                            // fully paid
+                            content = @<td class="text-end"><div class="text-success">@item.InvoiceTotal?.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</div></td>;
+                        }
+                        else
+                        {
+                            // Not fully paid, and not overdue
+                            content = @<td class="text-end">@item.InvoiceTotal?.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>;
+                        }                        
+                    }                    
+                }
+                break;
+            case "TotalAllocated":
+                if (item.CreditNote && item.TotalAllocated != null)
+                {
+                    decimal? allocatedTotal = item.TotalAllocated.Value * -1;
+                    content = @<td class="text-end">@allocatedTotal?.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>;
+                }
+                else
+                {
+                    if (item.InvoiceTotal > item.TotalAllocated && item.DueDate < DateTime.Now)
+                    {
+                        // overdue
+                        content = @<td class="text-end"><div class="text-danger">@item.TotalAllocated?.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</div></td>;
+                    }
+                    else
+                    {
+                        content = @<td class="text-end"><div class="text-success">@item.TotalAllocated?.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</div></td>;
+                    }                    
+                }
+                break;
+            case "DueDate":
+                if (!item.CreditNote && item.DueDate != null)
+                {
+                    if (item.InvoiceTotal > item.TotalAllocated && item.DueDate < DateTime.Now)
+                    {
+                        // overdue
+                        content = @<td class="text-end"><span class="badge rounded-pill bg-danger">@item.DueDate.Value.ToShortDateString()</span></td>;
+                    }
+                    else
+                    {
+                        if (item.TotalAllocated >= item.InvoiceTotal)
+                        {
+                            // fully paid
+                            content = @<td class="text-end"><div class="badge rounded-pill bg-success">Fully Paid</div></td>;
+                        }
+                        else
+                        {
+                            // Not fully paid, and not overdue
+                            content =@<td class="text-end">@item.DueDate.Value.ToShortDateString()</td>;
+                        }                        
+                    }
+                }
+                else
+                {
+                    content = @<td class="text-end"></td>;
+                }
+                break;
+            case "CurrencyShortName":
+                content = @<td><img src="data:image/png;base64,@Convert.ToBase64String(Config.Currencies[@item.CurrencyID].Picture)" width="30" height="20"> @item.CurrencyShortName</td>;
+                break;
+        }
+
+        return content;
+    }
+
+    public RenderFragment SalesQuotesGridHeaderCellRenderFragment(JiwaAutoQueryColumn<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesQuote_List> Column)
+    {
+        RenderFragment content = null;
+        switch (Column.Id)
+        {
+            case "Status":
+                // Status is an int column, but we display as text as a rounded badge pill centered - the AutoQueryGrid by default will left align an int column so
+                // we override the render fragment for the header cell to make it centered.
+                content = @<td class="text-center">@Column.Caption</td>;
+                break;
+        }
+        return content;
+    }
+
+    public RenderFragment SalesQuotesGridDataCellRenderFragment(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesQuote_List item, string columnId)
+    {
+        // Returns a render cell fragment for the cell contents of cells of the sales quotes grid, where we don't want the default styling to be performed.
+
+        RenderFragment content = null;
+        switch (columnId)
+        {
+            case "InvoiceNo":
+                content = @<td><a href="SalesQuotePDF/@item.InvoiceID" target="_blank" rel="noopener noreferrer">@item.InvoiceNo</a></td>;
+                break;
+            case "InvoiceTotal":
+                content = @<td class="text-end">@item.InvoiceTotal?.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>;
+                break;
+            case "CurrencyShortName":
+                content = @<td><img src="data:image/png;base64,@Convert.ToBase64String(Config.Currencies[@item.CurrencyID].Picture)" width="30" height="20"> @item.CurrencyShortName</td>;
+                break;
+            case "Status":
+                if (item.Status == 0)
+                {
+                    content = @<td class="text-center"><span class="badge rounded-pill bg-success">Open</span></td>;
+                }
+                else
+                {
+                    content = @<td class="text-center"><span class="badge rounded-pill bg-danger">Closed</span></td>;
+                }
+                
+                break;
+        }
+
+        return content;
+    }
+
+    public void CreateContactName()
+    {
+        ContactNameToCreate = new JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName();
+        ContactNameToCreate.TagMemberships = new List<JiwaFinancials.Jiwa.JiwaServiceModel.Tags.Tag>();
+    }
+
+    public void EditContactName(JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactName)
+    {
+        // setting ContactNameToEdit will trigger the edit contact dialog
+        // we set ContactNameToEdit to a copy of the actual contact name, because whatever changes the edit dialog makes we might want to abandon if the user cancels the dialog        
+        ContactNameToEdit = new JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName();
+        ContactNameToEdit.ContactNameID = ContactName.ContactNameID;
+        ContactNameToEdit.Title = ContactName.Title;
+        ContactNameToEdit.FirstName = ContactName.FirstName;
+        ContactNameToEdit.Surname = ContactName.Surname;
+        ContactNameToEdit.Mobile = ContactName.Mobile;
+        ContactNameToEdit.EmailAddress = ContactName.EmailAddress;
+        ContactNameToEdit.TagMemberships = ContactName.TagMemberships.ToList();
+    }
+
+    public void DeleteContactName(JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactName)
+    {
+        // This will trigger the are you sure? dialog
+        ContactNameToDelete = ContactName;
+    }      
+
+    public async void CreateContactDialogClosed(JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactName)
+    {
+        if (ContactName != null)
+        {
+            // edit the contact
+            JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNamePOSTRequest debtorContactNamePOSTRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNamePOSTRequest();
+            debtorContactNamePOSTRequest.DebtorID = Debtor.DebtorID;
+            debtorContactNamePOSTRequest.Title = ContactName.Title;
+            debtorContactNamePOSTRequest.FirstName = ContactName.FirstName;
+            debtorContactNamePOSTRequest.Surname = ContactName.Surname;
+            debtorContactNamePOSTRequest.Mobile = ContactName.Mobile;
+            debtorContactNamePOSTRequest.EmailAddress = ContactName.EmailAddress;
+            debtorContactNamePOSTRequest.TagMemberships = ContactName.TagMemberships;
+
+            try
+            {
+                JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName createdContact = await JiwaAPI.PostAsync(debtorContactNamePOSTRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+
+                // Re-read contact names after post.
+                JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNamesGETManyRequest debtorContactNamesGETManyRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNamesGETManyRequest();
+                debtorContactNamesGETManyRequest.DebtorID = Debtor.DebtorID;
+                Debtor.ContactNames = await JiwaAPI.GetAsync(debtorContactNamesGETManyRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+
+                statusMessage = $"Contact {ContactName.DisplayName()}, {ContactName.EmailAddress} has been created.";
+            }
+            catch (ServiceStack.WebServiceException webServiceException)
+            {
+                if (webServiceException.StatusCode == 401)
+                {
+                    // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                    WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                    NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+                }
+                else
+                {
+                    statusMessage = webServiceException.ErrorMessage;
+                }
+            }
+            catch (Exception ex)
+            {
+                statusMessage = ex.Message;
+            }
+        }
+        else
+        {
+            // clear any previously set status message when the user cancels the create
+            statusMessage = null;
+        }
+
+        ContactNameToCreate = null;
+        StateHasChanged();
+    }
+
+    public async void EditContactDialogClosed(JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactName)
+    {
+        if (ContactName != null)
+        {
+            // edit the contact
+            JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNamePATCHRequest debtorContactNamePATCHRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNamePATCHRequest();
+            debtorContactNamePATCHRequest.DebtorID = Debtor.DebtorID;
+            debtorContactNamePATCHRequest.ContactNameID = ContactName.ContactNameID;
+            debtorContactNamePATCHRequest.Title = ContactName.Title;
+            debtorContactNamePATCHRequest.FirstName = ContactName.FirstName;
+            debtorContactNamePATCHRequest.Surname = ContactName.Surname;
+            debtorContactNamePATCHRequest.Mobile = ContactName.Mobile;
+            debtorContactNamePATCHRequest.EmailAddress = ContactName.EmailAddress;
+            debtorContactNamePATCHRequest.TagMemberships = null; // Tag memberships we ignore in the contact name patch, as we do a subsequent PUT to replace all the tags instead.
+
+            try
+            {
+                var patchResponse = await JiwaAPI.PatchAsync(debtorContactNamePATCHRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+
+                JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNameTagMembershipPUTRequest debtorContactNameTagMembershipPUTRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNameTagMembershipPUTRequest();
+                debtorContactNameTagMembershipPUTRequest.DebtorID = Debtor.DebtorID;
+                debtorContactNameTagMembershipPUTRequest.ContactNameID = ContactName.ContactNameID;
+                debtorContactNameTagMembershipPUTRequest.Tags = ContactName.TagMemberships;
+
+                var putResponse = await JiwaAPI.PutAsync(debtorContactNameTagMembershipPUTRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+
+                // Re-read contact names after updating.
+                JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNamesGETManyRequest debtorContactNamesGETManyRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNamesGETManyRequest();
+                debtorContactNamesGETManyRequest.DebtorID = Debtor.DebtorID;
+                Debtor.ContactNames = await JiwaAPI.GetAsync(debtorContactNamesGETManyRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+
+                statusMessage = $"Contact {ContactName.DisplayName()}, {ContactName.EmailAddress} has been updated.";
+            }
+            catch (ServiceStack.WebServiceException webServiceException)
+            {
+                if (webServiceException.StatusCode == 401)
+                {
+                    // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                    WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                    NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+                }
+                else
+                {
+                    statusMessage = webServiceException.ErrorMessage;
+                }
+            }
+            catch (Exception ex)
+            {
+                statusMessage = ex.Message;
+            }
+        }
+        else
+        {
+            // clear any previously set status message when the user cancels the edit
+            statusMessage = null;
+        }
+
+        ContactNameToEdit = null;
+        StateHasChanged();
+    }
+
+    public async void DeleteContactConfirmationDialogClosed(bool resultOK)
+    {
+        if (resultOK)
+        {
+            if (ContactNameToDelete.ContactNameID == WebPortalUserSessionStateContainer.WebPortalUserSession.DebtorContactNameID)
+            {
+                statusMessage = "We'd rather you didn't delete yourself.";
+                ContactNameToDelete = null;
+                return;
+            }
+
+            JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNameDELETERequest debtorContactNameDELETERequest = new JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNameDELETERequest();
+            debtorContactNameDELETERequest.DebtorID = Debtor.DebtorID;
+            debtorContactNameDELETERequest.ContactNameID = ContactNameToDelete.ContactNameID;
+
+            try
+            {
+                ServiceStack.IReturnVoid response = await JiwaAPI.DeleteAsync<ServiceStack.IReturnVoid>(debtorContactNameDELETERequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+
+                // Re-read contact names after delete.
+                JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNamesGETManyRequest debtorContactNamesGETManyRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNamesGETManyRequest();
+                debtorContactNamesGETManyRequest.DebtorID = Debtor.DebtorID;
+                Debtor.ContactNames = await JiwaAPI.GetAsync(debtorContactNamesGETManyRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+
+                statusMessage = $"Contact {ContactNameToDelete.DisplayName()}, {ContactNameToDelete.EmailAddress} has been deleted.";
+            }
+            catch (ServiceStack.WebServiceException webServiceException)
+            {
+                if (webServiceException.StatusCode == 401)
+                {
+                    // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                    WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                    NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+                }
+                else
+                {
+                    statusMessage = webServiceException.ErrorMessage;
+                }
+            }
+            catch (Exception ex)
+            {
+                statusMessage = ex.Message;
+            }
+        }
+        else
+        {
+            // clear any previously set status message when the user cancels the delete
+            statusMessage = null;
+        }
+
+        ContactNameToDelete = null;
+        StateHasChanged();
+    }
+}

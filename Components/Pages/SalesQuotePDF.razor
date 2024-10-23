@@ -1,0 +1,97 @@
+﻿@attribute [type: RenderModeInteractiveServer]
+@page "/SalesQuotePDF/{QuoteId}"
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedLocalStorage ProtectedLocalStore
+@inject WebPortalUserSessionStateContainer WebPortalUserSessionStateContainer
+@inject NavigationManager NavigationManager
+
+<PageTitle>Sales Quote</PageTitle>
+<StatusMessage Message="@statusMessage" />
+@if (PDFresponse == null)
+{
+    <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+else
+{
+    <iframe src="@PDFURL" style="
+            position: fixed;
+            top: 0px;
+            bottom: 0px;
+            right: 0px;
+            width: 100%;
+            border: none;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            z-index: 999999;
+            height: 100%;">
+        </iframe>
+}
+
+@code {
+    [Parameter]
+    public string QuoteId { get; set; }
+
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
+    private string? statusMessage;
+    private byte[] PDFresponse;
+    private string Base64EncodedPDF;
+    private string PDFURL;
+
+    protected override async Task OnInitializedAsync()
+    {        
+        await base.OnInitializedAsync();
+
+        if (WebPortalUserSessionStateContainer.ProtectedLocalStore == null)
+        {
+            try
+            {
+                await WebPortalUserSessionStateContainer.SetProtectedLocalStore(ProtectedLocalStore);
+            }
+            catch (Exception ex)
+            {
+                statusMessage = ex.Message;
+                return;
+            }
+        }
+
+        if (WebPortalUserSessionStateContainer.WebPortalUserSession == null)
+        {
+            // not authenticated
+            NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            return;
+        }
+
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteReportGETRequest quoteReportRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteReportGETRequest() { QuoteID = QuoteId, ReportID = Config.SalesQuoteReport, AsAttachment = true };
+        try
+        {
+            PDFresponse = await JiwaAPI.GetAsync<byte[]>(quoteReportRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+            Base64EncodedPDF = Convert.ToBase64String(PDFresponse);
+            PDFURL = $"data:application/pdf;base64,{Base64EncodedPDF}";
+        }
+        catch (ServiceStack.WebServiceException webServiceException)
+        {
+            if (webServiceException.StatusCode == 401)
+            {
+                // We are either not authenticated, or our token we have expired, go log on - but first clear any token in browser storage as it's no good no more.
+                await ProtectedLocalStore.DeleteAsync("JiwaCustomerWebPortalAuthUserSession");
+                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+                return;
+            }
+            else
+            {
+                statusMessage = webServiceException.Message;
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+            return;
+        }        
+    }
+}
