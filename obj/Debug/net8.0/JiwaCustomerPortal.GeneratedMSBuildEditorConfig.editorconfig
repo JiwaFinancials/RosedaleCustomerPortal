@@ -1,0 +1,123 @@
+is_global = true
+build_property.TargetFramework = net8.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = 
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.RootNamespace = JiwaCustomerPortal
+build_property.RootNamespace = JiwaCustomerPortal
+build_property.ProjectDir = E:\Git\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.RazorLangVersion = 8.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = E:\Git
+build_property._RazorSourceGeneratorDebug = 
+
+[E:/Git/Components/App.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBcHAucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/AutoQueryGridColumnHeaderIcons.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBdXRvUXVlcnlHcmlkQ29sdW1uSGVhZGVySWNvbnMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/AutoQueryGridFilterColumn.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBdXRvUXVlcnlHcmlkRmlsdGVyQ29sdW1uLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/JiwaAPIAutoQueryGrid.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xKaXdhQVBJQXV0b1F1ZXJ5R3JpZC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/ModalDialogOKCancel.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xNb2RhbERpYWxvZ09LQ2FuY2VsLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/Pages/Account.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xBY2NvdW50LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/Pages/CreateEditContactDialog.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDcmVhdGVFZGl0Q29udGFjdERpYWxvZy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/Pages/Error.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xFcnJvci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/Pages/Home.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xIb21lLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/Pages/SalesOrderPDF.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xTYWxlc09yZGVyUERGLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/Pages/SalesQuotePDF.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xTYWxlc1F1b3RlUERGLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/Pages/StatementPDF.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xTdGF0ZW1lbnRQREYucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/Routes.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xSb3V0ZXMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/SignedInUserInfo.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xTaWduZWRJblVzZXJJbmZvLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/StatusMessage.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xTdGF0dXNNZXNzYWdlLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/User/ChangePassword.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xVc2VyXENoYW5nZVBhc3N3b3JkLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/User/ChangePasswordConfirmation.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xVc2VyXENoYW5nZVBhc3N3b3JkQ29uZmlybWF0aW9uLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/User/ForgotPassword.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xVc2VyXEZvcmdvdFBhc3N3b3JkLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/User/ForgotPasswordConfirmation.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xVc2VyXEZvcmdvdFBhc3N3b3JkQ29uZmlybWF0aW9uLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/User/PasswordReset.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xVc2VyXFBhc3N3b3JkUmVzZXQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/User/Profile.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xVc2VyXFByb2ZpbGUucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/User/SignIn.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xVc2VyXFNpZ25Jbi5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/User/SignOut.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xVc2VyXFNpZ25PdXQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xfSW1wb3J0cy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[E:/Git/Components/Layout/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcTWFpbkxheW91dC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-6j01zm2cgm
+
+[E:/Git/Components/Layout/NavMenu.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcTmF2TWVudS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-1vpjmh62yf
