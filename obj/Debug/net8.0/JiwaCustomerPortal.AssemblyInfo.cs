@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("JiwaCustomerPortal")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4b5c0912b50786d687ea0c478006552e71a382e5")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c5452c4fe811e9e0931fa86268d961ca9a8a2d67")]
 [assembly: System.Reflection.AssemblyProductAttribute("JiwaCustomerPortal")]
 [assembly: System.Reflection.AssemblyTitleAttribute("JiwaCustomerPortal")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

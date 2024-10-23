@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "E:\\Git\\JiwaCustomerPortal.csproj": {}
+    "E:\\Git\\JiwaCustomerPortal\\JiwaCustomerPortal.csproj": {}
   },
   "projects": {
-    "E:\\Git\\JiwaCustomerPortal.csproj": {
+    "E:\\Git\\JiwaCustomerPortal\\JiwaCustomerPortal.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "E:\\Git\\JiwaCustomerPortal.csproj",
+        "projectUniqueName": "E:\\Git\\JiwaCustomerPortal\\JiwaCustomerPortal.csproj",
         "projectName": "JiwaCustomerPortal",
-        "projectPath": "E:\\Git\\JiwaCustomerPortal.csproj",
+        "projectPath": "E:\\Git\\JiwaCustomerPortal\\JiwaCustomerPortal.csproj",
         "packagesPath": "C:\\Users\\Mike\\.nuget\\packages\\",
-        "outputPath": "E:\\Git\\obj\\",
+        "outputPath": "E:\\Git\\JiwaCustomerPortal\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Mike\\AppData\\Roaming\\NuGet\\NuGet.Config",

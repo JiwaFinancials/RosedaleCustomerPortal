@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "mXR0TctMarA=",
+  "dgSpecHash": "WoXXdoCZNmg=",
   "success": true,
-  "projectFilePath": "E:\\Git\\JiwaCustomerPortal.csproj",
+  "projectFilePath": "E:\\Git\\JiwaCustomerPortal\\JiwaCustomerPortal.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Mike\\.nuget\\packages\\microsoft.csharp\\4.7.0\\microsoft.csharp.4.7.0.nupkg.sha512",
     "C:\\Users\\Mike\\.nuget\\packages\\microsoft.extensions.configuration\\8.0.0\\microsoft.extensions.configuration.8.0.0.nupkg.sha512",
