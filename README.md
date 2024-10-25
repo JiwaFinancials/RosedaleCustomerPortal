@@ -38,3 +38,8 @@ Only users with the debtor contact name tag "Customer Web Portal - Admin" are ab
 
 ![image](https://github.com/user-attachments/assets/aa1d6822-bea7-49cc-944e-a3081d158102)
 
+Deployment
+Linux
+dotnet publish -c release -r linux-x64 --self-contained
+Windows
+
