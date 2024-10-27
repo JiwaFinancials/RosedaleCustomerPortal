@@ -1,4 +1,5 @@
 ﻿using JiwaFinancials.Jiwa.JiwaServiceModel;
+using ServiceStack.Html;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -61,6 +62,41 @@ namespace JiwaCustomerPortal
             SalesOrderReport = response.SalesOrderReport;
             SalesQuoteReport = response.SalesQuoteReport;
             DebtorStatementReport = response.DebtorStatementReport;
+        }
+
+        public static string FormattedCurrency(decimal value, string CurrencyID)
+        {
+            JiwaFinancials.Jiwa.JiwaServiceModel.Tables.FX_Currency currency = _Currencies[CurrencyID];
+
+            if (currency != null)
+            {
+                string decimalsFormat = new string('0', (int)currency.DecimalPlaces);
+                string currencyFormat = $"###,###,###,###,###.{decimalsFormat}";
+                if (value < 0)
+                {
+                    return $"-{currency.Symbol}{Math.Abs(value).ToString(currencyFormat)}";
+                }
+                else
+                {
+                    return $"{currency.Symbol}{value.ToString(currencyFormat)}";
+                }
+            }
+            else
+            {
+                return value.ToString();
+            }
+        }
+
+        public static string FormattedCurrency(decimal? value, string CurrencyID)
+        {
+            if (value != null)
+            {
+                return FormattedCurrency(value.Value, CurrencyID);
+            }            
+            else
+            {
+                return "";
+            }
         }
     }
 }

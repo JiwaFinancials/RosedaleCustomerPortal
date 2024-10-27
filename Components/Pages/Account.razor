@@ -10,15 +10,15 @@
 
 @if (APIRequestInPogress)
 {
-    <div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="spinner-border" role="status">
+    <!--<div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">-->
+    <!--<div class="modal-dialog">-->
+    <!--<div class="modal-content">-->
+                <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
-            </div>
-        </div>
-    </div>
+    <!--</div>-->
+    <!--</div>-->
+    <!--</div>-->
 }
 
 <StatusMessage Message="@statusMessage"/>
@@ -251,11 +251,11 @@
                                     {
                                         <tr>
                                             <td><img src="data:image/png;base64,@Convert.ToBase64String(Config.Currencies[@balance.CurrencyID].Picture)" width="30" height="20"> @balance.CurrencyShortName</td>
-                                            <td class="text-end">@balance.FXPeriod1?.ToString($"C{Config.Currencies[balance.CurrencyID].DecimalPlaces}")</td>
-                                            <td class="text-end">@balance.FXPeriod2?.ToString($"C{Config.Currencies[balance.CurrencyID].DecimalPlaces}")</td>
-                                            <td class="text-end">@balance.FXPeriod3?.ToString($"C{Config.Currencies[balance.CurrencyID].DecimalPlaces}")</td>
-                                            <td class="text-end">@balance.FXPeriod4?.ToString($"C{Config.Currencies[balance.CurrencyID].DecimalPlaces}")</td>
-                                            <td class="text-end">@balance.FXTotal?.ToString($"C{Config.Currencies[balance.CurrencyID].DecimalPlaces}")</td>
+                                            <td class="text-end">@Config.FormattedCurrency(@balance.FXPeriod1, balance.CurrencyID)</td>
+                                            <td class="text-end">@Config.FormattedCurrency(@balance.FXPeriod2, balance.CurrencyID)</td>
+                                            <td class="text-end">@Config.FormattedCurrency(@balance.FXPeriod3, balance.CurrencyID)</td>
+                                            <td class="text-end">@Config.FormattedCurrency(@balance.FXPeriod4, balance.CurrencyID)</td>
+                                            <td class="text-end">@Config.FormattedCurrency(@balance.FXTotal, balance.CurrencyID)</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -360,42 +360,45 @@
             }
         </div>
         <div class=@String.Format("tab-pane{0}", SelectedTabId=="Backorders-tab" ? " active": null) id="Backorders" role="tabpanel" aria-labelledby="Backorders-tab">
-            @if (BackOrders == null || BackOrders.Count == 0)
+            @if (BackOrders != null)
             {
-                <p>You have no outstanding backorders.</p>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-bordered table-striped small">
-                        <thead>
-                            <tr>
-                                <th>Part No.</th>
-                                <th>Description</th>                    
-                                <th>Invoice No.</th>
-                                <th>Order No.</th>
-                                <th class="text-end">Date</th>
-                                <th class="text-end">Quantity</th>
-                                <th class="text-end">ETA</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorBackOrder backorder in BackOrders)
-                            {
+                @if (BackOrders.Count == 0)
+                {
+                    <p>You have no outstanding backorders.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped small">
+                            <thead>
                                 <tr>
-                                    <td>@backorder.PartNo</td>
-                                    <td>@backorder.Description</td>
-                                    <td><a href="SalesOrderPDF/@backorder.InvoiceID" target="_blank" rel="noopener noreferrer">@backorder.InvoiceNo</a></td>
-                                    <td>@backorder.CustomerOrderNo</td>
-                                    <td class="text-end">@backorder.Date.ToShortDateString()</td>
-                                    <td class="text-end">@backorder.Quantity.ToString($"#,0.{new String('0', backorder.QuantityDecimalPlaces)}")</td>
-                                    <td class="text-end">@backorder.ExpectedDeliveryDate.ToShortDateString()</td>
+                                    <th>Part No.</th>
+                                    <th>Description</th>                    
+                                    <th>Invoice No.</th>
+                                    <th>Order No.</th>
+                                    <th class="text-end">Date</th>
+                                    <th class="text-end">Quantity</th>
+                                    <th class="text-end">ETA</th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+
+                            <tbody>
+                                @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorBackOrder backorder in BackOrders)
+                                {
+                                    <tr>
+                                        <td>@backorder.PartNo</td>
+                                        <td>@backorder.Description</td>
+                                        <td><a href="SalesOrderPDF/@backorder.InvoiceID" target="_blank" rel="noopener noreferrer">@backorder.InvoiceNo</a></td>
+                                        <td>@backorder.CustomerOrderNo</td>
+                                        <td class="text-end">@backorder.Date.ToShortDateString()</td>
+                                        <td class="text-end">@backorder.Quantity.ToString($"#,0.{new String('0', backorder.QuantityDecimalPlaces)}")</td>
+                                        <td class="text-end">@backorder.ExpectedDeliveryDate.ToShortDateString()</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
             }
         </div>
     </div>
@@ -413,7 +416,7 @@
     private JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_Debtor_Transactions_ListQuery DebtorsTransactionsAutoQuery { get; set; }
     private JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesOrder_ListQuery SalesOrdersAutoQuery { get; set;  }
     private JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesQuote_ListQuery SalesQuotesAutoQuery { get; set; }
-    private List<JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorBackOrder> BackOrders { get; set; } = new List<JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorBackOrder>();
+    private List<JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorBackOrder> BackOrders { get; set; }
 
     private JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactNameToCreate { get; set; }
     private JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactNameToEdit { get; set; }    
@@ -443,13 +446,16 @@
             return;
         }
 
+        bool oldAPIRequestInPogress = APIRequestInPogress;        
+        APIRequestInPogress = true;
+
         JiwaFinancials.Jiwa.JiwaServiceModel.CustomerDebtorGETRequest customerDebtorGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.CustomerDebtorGETRequest();
         try
         {
             Debtor = await JiwaAPI.GetAsync(customerDebtorGETRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
         }
         catch (ServiceStack.WebServiceException webServiceException)
-        {            
+        {
             if (webServiceException.StatusCode == 401)
             {
                 // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
@@ -465,6 +471,10 @@
         {
             statusMessage = ex.Message;
         }
+        finally
+        {
+            APIRequestInPogress = oldAPIRequestInPogress;
+        }        
 
         // AutoQueries need to be a property instantiated in the parent and not new'd in the razor defining component because we want to persist the AutoQuery properties between renders.
         // If we don't do this, what happens is the component does not render propertly - so, for example
@@ -636,7 +646,7 @@
 
                 if (debitAmount != 0)
                 {
-                    content = @<td class="text-end">@debitAmount.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>;
+                    content = @<td class="text-end">@Config.FormattedCurrency(@debitAmount, item.CurrencyID)</td>;
                 }
                 else
                 {
@@ -650,7 +660,7 @@
 
                 if (creditAmount != 0)
                 {
-                    content = @<td class="text-end">@creditAmount.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>;
+                    content = @<td class="text-end">@Config.FormattedCurrency(creditAmount, item.CurrencyID)</td>;
                 }
                 else
                 {
@@ -661,7 +671,7 @@
             case "GSTAmount":                
                 if (item.GSTAmount != 0)
                 {
-                    content = @<td class="text-end">@item.GSTAmount.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>;
+                    content = @<td class="text-end">@Config.FormattedCurrency(@item.GSTAmount, item.CurrencyID)</td>;
                 }
                 else
                 {
@@ -676,7 +686,7 @@
 
                 if (item.DebitCredit && item.AllocatedAmount != null && item.AllocatedAmount.Value != 0)
                 {
-                    content =@<td class="text-end">@item.AllocatedAmount.Value.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>            ;
+                    content =@<td class="text-end">@Config.FormattedCurrency(@item.AllocatedAmount.Value, item.CurrencyID)</td>;
                 }
 
                 break;
@@ -688,11 +698,11 @@
                 {
                     if (item.DueDate < DateTime.Now)
                     {
-                        content = @<td class="text-end"><span class="badge rounded-pill bg-danger">Overdue</span><br />@item.OutstandingAmount.Value.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>;
+                        content = @<td class="text-end"><span class="badge rounded-pill bg-danger">Overdue</span><br />@Config.FormattedCurrency(@item.OutstandingAmount.Value, item.CurrencyID)</td>;
                     }
                     else
                     {
-                        content = @<td class="text-end">@item.OutstandingAmount.Value.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>;
+                        content = @<td class="text-end">@Config.FormattedCurrency(@item.OutstandingAmount.Value, item.CurrencyID)</td>;
                     }
                 }
                 else
@@ -726,27 +736,27 @@
             case "InvoiceTotal":
                 if (item.CreditNote && item.InvoiceTotal != null)
                 {
-                    decimal? orderTotal = item.InvoiceTotal.Value * -1;
-                    content = @<td class="text-end">@orderTotal?.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>;
+                    decimal orderTotal = item.InvoiceTotal.Value * -1;
+                    content = @<td class="text-end">@Config.FormattedCurrency(@orderTotal, item.CurrencyID)</td>;
                 }
                 else
                 {
                     if (item.InvoiceTotal > item.TotalAllocated && item.DueDate < DateTime.Now)
                     {
                         // overdue 
-                        content = @<td class="text-end"><div class="text-danger">@item.InvoiceTotal?.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</div></td>;
+                        content = @<td class="text-end"><div class="text-danger">@Config.FormattedCurrency(@item.InvoiceTotal, item.CurrencyID)</div></td>;
                     }
                     else
                     {
                         if (item.TotalAllocated >= item.InvoiceTotal)
                         {
                             // fully paid
-                            content = @<td class="text-end"><div class="text-success">@item.InvoiceTotal?.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</div></td>;
+                            content = @<td class="text-end"><div class="text-success">@Config.FormattedCurrency(@item.InvoiceTotal, item.CurrencyID)</div></td>;
                         }
                         else
                         {
                             // Not fully paid, and not overdue
-                            content = @<td class="text-end">@item.InvoiceTotal?.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>;
+                            content = @<td class="text-end">@Config.FormattedCurrency(@item.InvoiceTotal, item.CurrencyID)</td>;
                         }                        
                     }                    
                 }
@@ -755,18 +765,18 @@
                 if (item.CreditNote && item.TotalAllocated != null)
                 {
                     decimal? allocatedTotal = item.TotalAllocated.Value * -1;
-                    content = @<td class="text-end">@allocatedTotal?.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>;
+                    content = @<td class="text-end">@Config.FormattedCurrency(@allocatedTotal, item.CurrencyID)</td>;
                 }
                 else
                 {
                     if (item.InvoiceTotal > item.TotalAllocated && item.DueDate < DateTime.Now)
                     {
                         // overdue
-                        content = @<td class="text-end"><div class="text-danger">@item.TotalAllocated?.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</div></td>;
+                        content = @<td class="text-end"><div class="text-danger">@Config.FormattedCurrency(@item.TotalAllocated, item.CurrencyID)</div></td>;
                     }
                     else
                     {
-                        content = @<td class="text-end"><div class="text-success">@item.TotalAllocated?.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</div></td>;
+                        content = @<td class="text-end"><div class="text-success">@Config.FormattedCurrency(@item.TotalAllocated, item.CurrencyID)</div></td>;
                     }                    
                 }
                 break;
@@ -830,7 +840,7 @@
                 content = @<td><a href="SalesQuotePDF/@item.InvoiceID" target="_blank" rel="noopener noreferrer">@item.InvoiceNo</a></td>;
                 break;
             case "InvoiceTotal":
-                content = @<td class="text-end">@item.InvoiceTotal?.ToString($"C{Config.Currencies[item.CurrencyID].DecimalPlaces}")</td>;
+                content = @<td class="text-end">@Config.FormattedCurrency(@item.InvoiceTotal, item.CurrencyID)</td>;
                 break;
             case "CurrencyShortName":
                 content = @<td><img src="data:image/png;base64,@Convert.ToBase64String(Config.Currencies[@item.CurrencyID].Picture)" width="30" height="20"> @item.CurrencyShortName</td>;
