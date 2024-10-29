@@ -36,6 +36,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Update="Components\Pages\About.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
     <Content Update="Components\Pages\StatementPDF.razor">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>

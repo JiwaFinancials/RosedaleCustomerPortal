@@ -1,0 +1,82 @@
+﻿@page "/About"
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedLocalStorage ProtectedLocalStore
+
+<PageTitle>About</PageTitle>
+<div class="d-grid gap-3">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Backend</h5>
+            <table class="table table-bordered table-striped small">
+                <thead>
+                    <tr>
+                        <th>Tech</th>
+                        <th>Version</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Jiwa</td>
+                        <td>@Config.JiwaAPISystemInformation.JiwaVersion</td>
+                    </tr>
+                    <tr>
+                        <td>Jiwa REST API Plugin</td>
+                        <td>@Config.JiwaAPISystemInformation.JiwaRESTAPIPluginVersion</td>
+                    </tr>
+                    <tr>
+                        <td>Jiwa REST API Caching Provider</td>
+                        <td>@Config.JiwaAPISystemInformation.CacheProvider</td>
+                    </tr>
+                    <tr>
+                        <td>Jiwa Customer Portal Plugin</td>
+                        <td>@Config.CustomerWebPortalPluginVersion</td>
+                    </tr>
+                    <tr>
+                        <td>Operating System</td>
+                        <td>@Config.JiwaAPISystemInformation.OSVersion</td>
+                    </tr>
+                    <tr>
+                        <td>.NET</td>
+                        <td>@Config.JiwaAPISystemInformation.DotNETVersion</td>
+                    </tr>
+                    <tr>
+                        <td>ServiceStack</td>
+                        <td>@Config.JiwaAPISystemInformation.ServiceStackVersion</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Frontend</h5>
+            <table class="table table-bordered table-striped small">
+                <thead>
+                    <tr>
+                        <th>Tech</th>
+                        <th>Version</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Operating System</td>
+                        <td>@System.Runtime.InteropServices.RuntimeInformation.OSDescription @System.Runtime.InteropServices.RuntimeInformation.OSArchitecture</td>
+                    </tr>
+                    <tr>
+                        <td>.NET</td>
+                        <td>@Config.GetTargetFrameworkName()</td>
+                    </tr>
+                    <tr>
+                        <td>ServiceStack.Client</td>
+                        <td>@Config.ServiceStackJsonAPIClientVersion</td>
+                    </tr>
+                    <tr>
+                        <td>Bootstrap</td>
+                        <td>5.3.3</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

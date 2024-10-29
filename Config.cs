@@ -2,6 +2,7 @@
 using ServiceStack.Html;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 namespace JiwaCustomerPortal
 {
@@ -13,9 +14,28 @@ namespace JiwaCustomerPortal
         // The key should be attached to a user with minimal permisssions, and does not need an interactive Jiwa licence.
         public static string JiwaAPIKey { get; set; }
 
+        public static SystemInformationGETResponse JiwaAPISystemInformation { get; set; }
+
         public static string SalesOrderReport { get; set; }
         public static string SalesQuoteReport { get; set; }
         public static string DebtorStatementReport { get; set; }
+        public static string CustomerWebPortalPluginVersion { get; set; }
+
+        public static string _ServiceStackJsonAPIClientVersion;
+        public static string ServiceStackJsonAPIClientVersion
+        {
+            get
+            {
+                if (_ServiceStackJsonAPIClientVersion == null)
+                {
+                    System.Reflection.Assembly assembly = typeof(ServiceStack.JsonApiClient).Assembly;
+                    System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
+                    _ServiceStackJsonAPIClientVersion = fvi.FileVersion;
+                }
+
+                return _ServiceStackJsonAPIClientVersion;
+            }
+        }
 
         // Currencies are a dictionary we populate the first time requested.
         // We do this so everyone doesn't need to pull back currency images for each row of data - they can get it from here if they know the CurrencyID
@@ -30,8 +50,8 @@ namespace JiwaCustomerPortal
                     JiwaFinancials.Jiwa.JiwaServiceModel.Tables.FX_CurrencyQuery currencyAutoQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.FX_CurrencyQuery();
                     currencyAutoQuery.IsEnabled = true;
 
-                    //try
-                    //{
+                    try
+                    {
                     Task readCurrenciesTask = Task.Run( async () =>
                     {
                         ServiceStack.QueryResponse<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.FX_Currency> currencyAutoQueryResponse = await JiwaAPI.GetAsync(currencyAutoQuery, jiwaAPIKey: JiwaAPIKey);
@@ -44,12 +64,12 @@ namespace JiwaCustomerPortal
                     });
 
                     readCurrenciesTask.Wait();
-                    //}
-                    //catch (Exception ex)
-                    //{
-                    //    // TODO: we might want to wrap this or somehow indicate to the user why this failed.
-                    //    throw;
-                    //}
+                    }
+                    catch (Exception ex)
+                    {
+                        // TODO: we might want to wrap this or somehow indicate to the user why this failed.
+                        throw;
+                    }
                 }
 
                 return _Currencies;
@@ -62,6 +82,9 @@ namespace JiwaCustomerPortal
             SalesOrderReport = response.SalesOrderReport;
             SalesQuoteReport = response.SalesQuoteReport;
             DebtorStatementReport = response.DebtorStatementReport;
+            CustomerWebPortalPluginVersion = response.PluginVersion;
+
+            JiwaAPISystemInformation = await JiwaAPI.GetAsync(new SystemInformationGETRequest(), jiwaAPIKey: JiwaAPIKey);
         }
 
         public static string FormattedCurrency(decimal value, string CurrencyID)
@@ -97,6 +120,14 @@ namespace JiwaCustomerPortal
             {
                 return "";
             }
+        }
+
+        public static string GetTargetFrameworkName()
+        {
+            return Assembly
+                .GetEntryAssembly()?
+                .GetCustomAttribute<TargetFrameworkAttribute>()?
+                .FrameworkName;
         }
     }
 }

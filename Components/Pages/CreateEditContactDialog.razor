@@ -59,8 +59,7 @@
                     <div class="col-3">
                         @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.Tags.Tag tag in ContactName.TagMemberships)
                         {
-                            <span class="badge rounded-pill bg-primary">
-                                
+                            <span class="badge rounded-pill bg-primary">                                
                                 <button @onclick="_ => RemoveTag(tag)" class="btn" style="background-color:transparent">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-x-circle" viewBox="0 0 20 20">
                                         <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />

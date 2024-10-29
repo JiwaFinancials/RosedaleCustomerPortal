@@ -64,6 +64,7 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel
         public virtual string SalesOrderReport { get; set; }
         public virtual string SalesQuoteReport { get; set; }
         public virtual string DebtorStatementReport { get; set; }
+        public virtual string PluginVersion { get; set; }
     }
 
     [Route("/Debtors/ContactNames/{ContactNameID}/PasswordReset", "POST")]
@@ -93,7 +94,34 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel
 #region "Standard Jiwa API DTOs"
 #region "Request DTOs"
 namespace JiwaFinancials.Jiwa.JiwaServiceModel
-{    
+{
+    [Route("/SystemInfo/", "GET")]
+    [ApiResponse(Description = "Read OK", StatusCode = 200)]
+    [ApiResponse(Description = "Not authenticated", StatusCode = 401)]
+    [ApiResponse(Description = "Not authorised", StatusCode = 403)]
+    public partial class SystemInformationGETRequest
+        : IReturn<SystemInformationGETResponse>
+    {
+    }
+
+    public partial class SystemInformationGETResponse
+    {
+        public virtual string JiwaVersion { get; set; }
+        public virtual string JiwaRESTAPIPluginVersion { get; set; }
+        public virtual string ServiceStackVersion { get; set; }
+        public virtual string DotNETVersion { get; set; }
+        public virtual string OSVersion { get; set; }
+        public virtual DateTime SQLServerDateTime { get; set; }
+        public virtual string CacheProvider { get; set; }
+        public virtual string DatabaseName { get; set; }
+        public virtual string DatabaseServer { get; set; }
+        public virtual string SQLVersion { get; set; }
+        public virtual string LicensedCompany { get; set; }
+        public virtual string CurrencyName { get; set; }
+        public virtual string CurrencyShortName { get; set; }
+        public virtual int MoneyDecimalPlaces { get; set; }
+    }
+
     [Route("/Sessions/Current", "GET")]
     [ApiResponse(Description = "Read OK", StatusCode = 200)]
     [ApiResponse(Description = "Not authenticated", StatusCode = 401)]
