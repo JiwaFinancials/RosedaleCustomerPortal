@@ -11,6 +11,19 @@
 
 <PageTitle>Log out</PageTitle>
 
+@if (APIRequestInPogress)
+{
+    <div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0">
+                <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @if (string.IsNullOrWhiteSpace(errorMessage))
 {
     <h1>You have signed out</h1>
@@ -25,11 +38,14 @@ else
 @code {
     private string? errorMessage;
     public JiwaFinancials.Jiwa.JiwaServiceModel.WebPortalUserSession WebPortalUserSession { get; set; }
+    private bool APIRequestInPogress;
 
     protected async override Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
 
+        bool oldAPIRequestInPogress = APIRequestInPogress;
+        APIRequestInPogress = true;
         try
         {
             ProtectedBrowserStorageResult<JiwaFinancials.Jiwa.JiwaServiceModel.WebPortalUserSession> result = await ProtectedLocalStore.GetAsync<JiwaFinancials.Jiwa.JiwaServiceModel.WebPortalUserSession>("JiwaCustomerWebPortalAuthUserSession");
@@ -59,6 +75,10 @@ else
         {
             // TODO: Sort this out - might not be an auth issue, might need to display more info
             errorMessage = ex.Message;
+        }
+        finally
+        {
+            APIRequestInPogress = oldAPIRequestInPogress;
         }
 
         await ProtectedLocalStore.DeleteAsync("JiwaCustomerWebPortalAuthUserSession");

@@ -10,15 +10,15 @@
 
 @if (APIRequestInPogress)
 {
-    <!--<div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">-->
-    <!--<div class="modal-dialog">-->
-    <!--<div class="modal-content">-->
+    <div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0">
                 <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
-    <!--</div>-->
-    <!--</div>-->
-    <!--</div>-->
+            </div>
+        </div>
+    </div>
 }
 
 <StatusMessage Message="@statusMessage"/>
@@ -901,6 +901,9 @@
             debtorContactNamePOSTRequest.EmailAddress = ContactName.EmailAddress;
             debtorContactNamePOSTRequest.TagMemberships = ContactName.TagMemberships;
 
+            bool oldAPIRequestInPogress = APIRequestInPogress;
+            APIRequestInPogress = true;
+
             try
             {
                 JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName createdContact = await JiwaAPI.PostAsync(debtorContactNamePOSTRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
@@ -929,6 +932,10 @@
             {
                 statusMessage = ex.Message;
             }
+            finally
+            {
+                APIRequestInPogress = oldAPIRequestInPogress;
+            }
         }
         else
         {
@@ -954,6 +961,9 @@
             debtorContactNamePATCHRequest.Mobile = ContactName.Mobile;
             debtorContactNamePATCHRequest.EmailAddress = ContactName.EmailAddress;
             debtorContactNamePATCHRequest.TagMemberships = null; // Tag memberships we ignore in the contact name patch, as we do a subsequent PUT to replace all the tags instead.
+
+            bool oldAPIRequestInPogress = APIRequestInPogress;
+            APIRequestInPogress = true;
 
             try
             {
@@ -990,6 +1000,10 @@
             {
                 statusMessage = ex.Message;
             }
+            finally
+            {
+                APIRequestInPogress = oldAPIRequestInPogress;
+            }
         }
         else
         {
@@ -1015,6 +1029,9 @@
             JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNameDELETERequest debtorContactNameDELETERequest = new JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNameDELETERequest();
             debtorContactNameDELETERequest.DebtorID = Debtor.DebtorID;
             debtorContactNameDELETERequest.ContactNameID = ContactNameToDelete.ContactNameID;
+
+            bool oldAPIRequestInPogress = APIRequestInPogress;
+            APIRequestInPogress = true;
 
             try
             {
@@ -1043,6 +1060,10 @@
             catch (Exception ex)
             {
                 statusMessage = ex.Message;
+            }
+            finally
+            {
+                APIRequestInPogress = oldAPIRequestInPogress;
             }
         }
         else
