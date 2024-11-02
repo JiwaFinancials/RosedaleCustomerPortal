@@ -129,5 +129,7 @@ namespace JiwaCustomerPortal
                 .GetCustomAttribute<TargetFrameworkAttribute>()?
                 .FrameworkName;
         }
+
+        public static string BootStrapVersion { get; set; }
     }
 }

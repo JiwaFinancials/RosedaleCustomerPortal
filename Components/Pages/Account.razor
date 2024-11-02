@@ -5,6 +5,7 @@
 @inject ProtectedLocalStorage ProtectedLocalStore
 @inject NavigationManager NavigationManager
 @inject WebPortalUserSessionStateContainer WebPortalUserSessionStateContainer
+@inject BrowserService BrowserService
 
 <PageTitle>Account</PageTitle>
 
@@ -390,9 +391,9 @@
                                         <td>@backorder.Description</td>
                                         <td><a href="SalesOrderPDF/@backorder.InvoiceID" target="_blank" rel="noopener noreferrer">@backorder.InvoiceNo</a></td>
                                         <td>@backorder.CustomerOrderNo</td>
-                                        <td class="text-end">@backorder.Date.ToShortDateString()</td>
+                                        <td class="text-end">@backorder.Date.ToString(@BrowserService.DateFormat)</td>
                                         <td class="text-end">@backorder.Quantity.ToString($"#,0.{new String('0', backorder.QuantityDecimalPlaces)}")</td>
-                                        <td class="text-end">@backorder.ExpectedDeliveryDate.ToShortDateString()</td>
+                                        <td class="text-end">@backorder.ExpectedDeliveryDate.ToString(@BrowserService.DateFormat)</td>
                                     </tr>
                                 }
                             </tbody>
@@ -625,10 +626,10 @@
 
                 break;
 
-                case "DueDate":
+            case "DueDate":
                 if (item.DebitCredit)
-                {
-                    content =@<td class="text-end">@item.DueDate.Value.ToShortDateString()</td>;
+                {                    
+                    content =@<td class="text-end">@item.DueDate.Value.ToString(@BrowserService.DateFormat)</td>;
                 }
                 else
                 {
@@ -786,7 +787,7 @@
                     if (item.InvoiceTotal > item.TotalAllocated && item.DueDate < DateTime.Now)
                     {
                         // overdue
-                        content = @<td class="text-end"><span class="badge rounded-pill bg-danger">@item.DueDate.Value.ToShortDateString()</span></td>;
+                        content = @<td class="text-end"><span class="badge rounded-pill bg-danger">@item.DueDate.Value.ToString(@BrowserService.DateFormat)</span></td>;
                     }
                     else
                     {
@@ -798,7 +799,7 @@
                         else
                         {
                             // Not fully paid, and not overdue
-                            content =@<td class="text-end">@item.DueDate.Value.ToShortDateString()</td>;
+                            content =@<td class="text-end">@item.DueDate.Value.ToString(@BrowserService.DateFormat)</td>;
                         }                        
                     }
                 }

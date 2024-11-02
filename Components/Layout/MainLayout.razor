@@ -4,7 +4,7 @@
 @using ServiceStack;
 @inject ProtectedLocalStorage ProtectedLocalStore
 @inject IColourModeServices ColourModeService
-@inject BrowserDarkModeService BrowserDarkModeService
+@inject BrowserService BrowserService
 @inject NavigationManager NavigationManager
 @inject WebPortalUserSessionStateContainer WebPortalUserSessionStateContainer
 
@@ -19,7 +19,18 @@
     }
 
     function BootstrapVersion() {
-        return bootstrap.Tooltip.VERSION;
+        // TODO: There does not seem to be any reliable way to get the Bootstrap version other than
+        // acutally reading the .css or .js files and parsing that to extract it from a comment.
+        return "5.3.3"
+    }
+
+    function DateToLocaleString(year, month, day) { 
+        d = new Date();
+        d.setUTCFullYear(year);
+        d.setUTCMonth(month);
+        d.setUTCDate(day);
+
+        return d.toLocaleDateString();
     }
 </script>
 <div class="page">
@@ -120,9 +131,11 @@
         else
         {
             // get the colour mode from the browser preference
-            bool isdarkTheme = await BrowserDarkModeService.IsDarkMode();
+            bool isdarkTheme = await BrowserService.IsDarkMode();
             newColourMode = isdarkTheme ? "dark" : "light";
         }
+
+        Config.BootStrapVersion = await BrowserService.BootstrapVersion();
 
         if (colourModeResult.Value != currentColourMode)
         {
@@ -130,6 +143,10 @@
             ColourModeService.ColourMode = newColourMode;
             NavigationManager.Refresh();
         }
+
+        // Work out the date format from the browser and store it - we use this to display dates everywhere
+        await BrowserService.GetUserLocalDateFormat();        
+
 
         // Setting the protected local store of the WebPortalUserSessionStateContainer will cause a re-authenticate if there is a stored ss-id
         await WebPortalUserSessionStateContainer.SetProtectedLocalStore(ProtectedLocalStore);        

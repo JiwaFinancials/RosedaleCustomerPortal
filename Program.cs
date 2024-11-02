@@ -36,9 +36,10 @@ namespace JiwaCustomerPortal
 
             // ColourModeServices is used to store the colour mode and it's a singleton so it can be referenced everywhere
             builder.Services.AddSingleton<IColourModeServices, ColourModeServices>();
-            // BrowserDarkModeService is what we use to look at what the preferred browser dark mode is - we'll fall back to that
-            // if we didn't find the colourmode in the browser local storage
-            builder.Services.AddScoped<BrowserDarkModeService>();
+            // BrowserService is what we use to look at what the preferred browser dark mode is - we'll fall back to that
+            // if we didn't find the colourmode in the browser local storage.
+            // We also get from BrowserService the users date format and the Bootstrap version we're using (to display on the about page)
+            builder.Services.AddScoped<BrowserService>();
 
             builder.Services.AddScoped<WebPortalUserSessionStateContainer>();
 

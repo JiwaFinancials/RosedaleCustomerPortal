@@ -9,6 +9,7 @@
 
 @inject ProtectedLocalStorage ProtectedLocalStore
 @inject NavigationManager NavigationManager
+@inject BrowserService BrowserService
 
 @if (APIRequestInPogress)
 {
@@ -88,7 +89,7 @@
             {
                 // We're at the end - we display the first page number, elipses and the last 5 page numbers
                 <button @onclick="(() => OnPageBlockClick(0))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(1) me-1"> 1</button>
-                <button disabled class="btn btn-secondary me-1"> ... </button>
+                <button disabled class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1"> ... </button>
 
                 // We need a declare a SEPARATE variable for each button index because the value passed to the lambdas PageBlockClick and PageButtonStyle will not be
                 // what you expect if you just use the same variable, incrementing along.
@@ -118,7 +119,7 @@
             {
                 // display first page number, elipses, the 3 middle pages (prior to current, current, next) and then elipses and last page number
                 <button @onclick="(() => OnPageBlockClick(0))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(1) me-1"> 1</button>
-                <button disabled class="btn btn-secondary me-1"> ... </button>
+                <button disabled class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1"> ... </button>
                 
                 int pageIndexMinusOne = currentPageIndex - 1;                
                 currentPageDisplayNumber--;
@@ -131,7 +132,7 @@
                 currentPageDisplayNumber++;
                 <button @onclick="(() => OnPageBlockClick(pageIndexPlusOne))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexPlusOne) me-1"> @currentPageDisplayNumber</button>
 
-                <button disabled class="btn btn-secondary me-1"> ... </button>
+                <button disabled class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1"> ... </button>
 
                 <button @onclick="(() => OnPageBlockClick(pageCount))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(@pageCount) me-1"> @PageDisplayCount()</button>
             }
@@ -289,7 +290,7 @@
                         break;
                     case Type _ when dataType == typeof(DateTime):
                         DateTime dateValue = PropertyValue<DateTime>(item, columnId);
-                        dataCellRenderFragment =@<td class="text-end">@dateValue.ToShortDateString() </td>;
+                        dataCellRenderFragment =@<td class="text-end">@dateValue.Date.ToString(@BrowserService.DateFormat)</td>;
                         break;
                     case Type _ when dataType == typeof(string):
                         dataCellRenderFragment =@<td class="text-start">@PropertyValue(item, columnId) </td>;

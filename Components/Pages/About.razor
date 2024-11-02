@@ -10,8 +10,8 @@
             <table class="table table-bordered table-striped small">
                 <thead>
                     <tr>
-                        <th>Tech</th>
-                        <th>Version</th>
+                        <th>Component</th>
+                        <th>Details</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -40,8 +40,12 @@
                         <td>@Config.JiwaAPISystemInformation.DotNETVersion</td>
                     </tr>
                     <tr>
-                        <td>ServiceStack</td>
+                        <td>ServiceStack.Server</td>
                         <td>@Config.JiwaAPISystemInformation.ServiceStackVersion</td>
+                    </tr>
+                    <tr>
+                        <td>SQL Server</td>
+                        <td>@Config.JiwaAPISystemInformation.SQLVersion</td>
                     </tr>
                 </tbody>
             </table>
@@ -54,8 +58,8 @@
             <table class="table table-bordered table-striped small">
                 <thead>
                     <tr>
-                        <th>Tech</th>
-                        <th>Version</th>
+                        <th>Component</th>
+                        <th>Details</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -73,7 +77,7 @@
                     </tr>
                     <tr>
                         <td>Bootstrap</td>
-                        <td>5.3.3</td>
+                        <td>@Config.BootStrapVersion</td>
                     </tr>
                 </tbody>
             </table>
