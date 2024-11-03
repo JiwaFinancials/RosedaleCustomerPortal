@@ -1,0 +1,224 @@
+﻿@page "/Diagnostics"
+@attribute [type: RenderModeInteractiveServer]
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using ServiceStack;
+@inject ProtectedLocalStorage ProtectedLocalStore
+@inject NavigationManager NavigationManager
+@inject WebPortalUserSessionStateContainer WebPortalUserSessionStateContainer
+@inject BrowserService BrowserService
+
+<PageTitle>Diagnostics</PageTitle>
+@if (APIRequestInPogress)
+{
+    <div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0">
+                <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<StatusMessage Message="@statusMessage" />
+
+<div class="d-grid gap-3">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Backend</h5>
+            <table class="table table-bordered table-striped small">
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Jiwa</td>
+                        <td>@Config.JiwaAPISystemInformation.JiwaVersion</td>
+                    </tr>
+                    <tr>
+                        <td>Jiwa REST API Plugin</td>
+                        <td>@Config.JiwaAPISystemInformation.JiwaRESTAPIPluginVersion</td>
+                    </tr>
+                    <tr>
+                        <td>Jiwa REST API Caching Provider</td>
+                        <td>@Config.JiwaAPISystemInformation.CacheProvider</td>
+                    </tr>
+                    <tr>
+                        <td>Jiwa Customer Portal Plugin</td>
+                        <td>@Config.CustomerWebPortalPluginVersion</td>
+                    </tr>
+                    <tr>
+                        <td>Operating System</td>
+                        <td>@Config.JiwaAPISystemInformation.OSVersion</td>
+                    </tr>
+                    <tr>
+                        <td>.NET</td>
+                        <td>@Config.JiwaAPISystemInformation.DotNETVersion</td>
+                    </tr>
+                    <tr>
+                        <td>ServiceStack.Server</td>
+                        <td>@Config.JiwaAPISystemInformation.ServiceStackVersion</td>
+                    </tr>
+                    <tr>
+                        <td>SQL Server</td>
+                        <td>@Config.JiwaAPISystemInformation.SQLVersion</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Frontend</h5>
+            <table class="table table-bordered table-striped small">
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Operating System</td>
+                        <td>@System.Runtime.InteropServices.RuntimeInformation.OSDescription @System.Runtime.InteropServices.RuntimeInformation.OSArchitecture</td>
+                    </tr>
+                    <tr>
+                        <td>.NET</td>
+                        <td>@Config.GetTargetFrameworkName()</td>
+                    </tr>
+                    <tr>
+                        <td>ServiceStack.Client</td>
+                        <td>@Config.ServiceStackJsonAPIClientVersion</td>
+                    </tr>
+                    <tr>
+                        <td>Bootstrap</td>
+                        <td>@Config.BootStrapVersion</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Plugin Exceptions</h5>
+            <JiwaAPIAutoQueryGrid Model="JiwaFinancials.Jiwa.JiwaServiceModel.Startup.Diagnostics.PluginException"
+                                  QueryType="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.PluginExceptionQuery"
+                                  AutoQuery="@PluginExceptionQuery"
+                                  NoAuthenticationTokenCallbackMethod="@NoAuthenticationToken"
+                                  APIExceptionCallbackMethod="@APIException"></JiwaAPIAutoQueryGrid>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Startup Log</h5>
+            <JiwaAPIAutoQueryGrid Model="JiwaFinancials.Jiwa.JiwaServiceModel.Startup.Diagnostics.StartupLogEntry"
+                                  QueryType="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.StartupLogEntryQuery"                                  
+                                  AutoQuery="@StartupLogEntryQuery"
+                                  NoAuthenticationTokenCallbackMethod="@NoAuthenticationToken"
+                                  APIExceptionCallbackMethod="@APIException"
+                                  DataCellRenderFragmentCallbackMethod="@StartUpLogGridDataCellRenderFragment"></JiwaAPIAutoQueryGrid>
+        </div>
+    </div>
+</div>
+
+@code{
+    private bool APIRequestInPogress;
+    private string? statusMessage;
+    private JiwaFinancials.Jiwa.JiwaServiceModel.Tables.PluginExceptionQuery PluginExceptionQuery { get; set; } = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.PluginExceptionQuery();
+    private JiwaFinancials.Jiwa.JiwaServiceModel.Tables.StartupLogEntryQuery StartupLogEntryQuery { get; set; } = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.StartupLogEntryQuery();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if (WebPortalUserSessionStateContainer.ProtectedLocalStore == null)
+        {
+            try
+            {
+                await WebPortalUserSessionStateContainer.SetProtectedLocalStore(ProtectedLocalStore);
+            }
+            catch (Exception ex)
+            {
+                statusMessage = ex.Message;
+                return;
+            }
+        }
+
+        if (WebPortalUserSessionStateContainer.WebPortalUserSession == null)
+        {
+            // not authenticated
+            NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            return;
+        }
+
+        // PluginExceptionQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.PluginExceptionQuery();
+        // StartupLogEntryQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.StartupLogEntryQuery();
+    }
+
+    public void NoAuthenticationToken()
+    {
+        // user had no auth token to provide - redirect to logon
+        NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+    }
+
+    public async void APIException(Exception ex)
+    {
+        // first we need to work out what type of exception this was.  If it as a 401 (Not Authenticated), then we just redirect to to the login page
+        // Anything else, we set the errorMessage property so the component displays the error to the user.
+        if (ex is ServiceStack.WebServiceException)
+        {
+            ServiceStack.WebServiceException webServiceException = (ServiceStack.WebServiceException)ex;
+            if (webServiceException.StatusCode == 401)
+            {
+                // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            }
+            else
+            {
+                statusMessage = webServiceException.ErrorMessage;
+            }
+        }
+        else
+        {
+            statusMessage = ex.Message;
+        }
+    }
+
+    public RenderFragment StartUpLogGridDataCellRenderFragment(JiwaFinancials.Jiwa.JiwaServiceModel.Startup.Diagnostics.StartupLogEntry item, string columnId)
+    {
+        // Returns a render cell fragment for the cell contents of cells of the startup log grid, where we don't want the default styling to be performed.
+
+        RenderFragment content = null;
+
+        // We add spaces to the front to indent the depth to make it clearer the relationship between depth items        
+        MarkupString padding = new MarkupString(string.Concat(Enumerable.Repeat("&nbsp;", (item.Depth - 1) * 6)));
+        switch (columnId)
+        {
+            case "Description":                
+                content = @<td>@padding@item.Description</td>;
+                break;
+            case "ElapsedMilliseconds":
+                content = @<td class="text-start">@padding@item.ElapsedMilliseconds</td>;
+                break;
+            case "Depth":
+                content = @<td class="text-start">@padding@item.Depth</td>;
+                break;
+            case "StartDateTime":
+                content = @<td class="text-end">@item.StartDateTime.ToString("HH:mm:ss.ffffff")</td>;
+                break;
+            case "EndDateTime":
+                content = @<td class="text-end">@item.EndDateTime.ToString("HH:mm:ss.ffffff")</td>;
+                break;
+        }
+
+        return content;
+    }
+}

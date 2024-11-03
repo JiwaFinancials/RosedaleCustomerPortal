@@ -36,7 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Update="Components\Pages\About.razor">
+    <Content Update="Components\Pages\Diagnostics.razor">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
     <Content Update="Components\Pages\StatementPDF.razor">

@@ -10,6 +10,7 @@ using ServiceStack.Web;
 using System.Reflection.Metadata;
 using JiwaFinancials.Jiwa.JiwaServiceModel.Debtors;
 using JiwaFinancials.Jiwa.JiwaServiceModel.Tags;
+using JiwaFinancials.Jiwa.JiwaServiceModel.Startup.Diagnostics;
 
 #region "DTOs purpose made for this app"
 namespace JiwaFinancials.Jiwa.JiwaServiceModel
@@ -2086,7 +2087,50 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel.Tables
         public virtual Guid? Default_BA_BankAccount_RecID { get; set; }
         public virtual Guid?[] Default_BA_BankAccount_RecIDIn { get; set; }
     }
-    #endregion    
+    #endregion
+
+    #region "Diagnostics"
+    [Route("/Queries/StartupLog", "GET")]
+    public partial class StartupLogEntryQuery
+        : QueryData<StartupLogEntry>, IReturn<QueryResponse<StartupLogEntry>>
+    {
+    }
+
+    [Route("/Queries/PluginExceptions", "GET")]
+    public partial class PluginExceptionQuery
+       : QueryData<PluginException>, IReturn<QueryResponse<PluginException>>
+    {
+    }
+    #endregion
 }
 #endregion 
+
+namespace JiwaFinancials.Jiwa.JiwaServiceModel.Startup.Diagnostics
+{
+    public enum ExceptionPolicies
+    {
+        Report,
+        Abort,
+        Ignore,
+    }
+
+    public partial class PluginException
+    {
+        public virtual string RecID { get; set; }
+        public virtual string Name { get; set; }
+        public virtual Exception Exception { get; set; }
+        public virtual ExceptionPolicies ExceptionPolicy { get; set; }
+    }
+
+    public partial class StartupLogEntry
+    {
+        public virtual string Description { get; set; }
+        public virtual DateTime StartDateTime { get; set; }
+        public virtual DateTime EndDateTime { get; set; }
+        public virtual long ElapsedMilliseconds { get; set; }
+        public virtual int Depth { get; set; }
+    }
+
+}
+
 #endregion

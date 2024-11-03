@@ -1,6 +1,13 @@
 ﻿@attribute [type: RenderModeInteractiveServer]
 @typeparam Model
-@typeparam QueryType where QueryType : ServiceStack.QueryDb<Model>
+@typeparam QueryType where QueryType : ServiceStack.IQuery
+
+@*
+    Changed constraint of generic parameter QueryType from ServiceStack.QueryDb<Model> to ServiceStack.IQuery because that then allows
+    us to use AutoQueries which are data queries and not just Db queries.
+    For example, the StartupLog and PluginExceptions are data queries and are in-memory only and have no database table backing them, it
+    it is convenient to display those using this JiwaAPIAutoQueryGrid component.
+*@ 
 
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @using Microsoft.AspNetCore.Components

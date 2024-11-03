@@ -11,7 +11,7 @@ using System.Reflection;
 
 namespace JiwaCustomerPortal.Components
 {
-    public partial class JiwaAPIAutoQueryGrid<Model, QueryType> where QueryType : ServiceStack.QueryDb<Model>
+    public partial class JiwaAPIAutoQueryGrid<Model, QueryType> where QueryType : ServiceStack.IQuery
     {
         [Inject]
         WebPortalUserSessionStateContainer WebPortalUserSessionStateContainer { get; set; }
@@ -19,7 +19,7 @@ namespace JiwaCustomerPortal.Components
         [Parameter]
         public AuthTypes AuthType { get; set; } = AuthTypes.JiwaAPISessionId;
         [Parameter]
-        public QueryType AutoQuery { get; set; }
+        public IQuery AutoQuery { get; set; }
         [Parameter]
         public bool ShowPageNavigationHeader { get; set; } = true;
         [Parameter]
@@ -314,11 +314,11 @@ namespace JiwaCustomerPortal.Components
             {
                 if (AuthType == AuthTypes.JiwaAPIKey)
                 {
-                    Response = await JiwaAPI.GetAsync(AutoQuery, jiwaAPIKey: jiwaAPIKey);
+                    Response = await JiwaAPI.GetAsync<QueryResponse<Model>>(AutoQuery, jiwaAPIKey: jiwaAPIKey);
                 }
                 else
                 {
-                    Response = await JiwaAPI.GetAsync(AutoQuery, jiwaAPISessionId: WebPortalUserSessionStateContainer?.WebPortalUserSession?.Id);
+                    Response = await JiwaAPI.GetAsync<QueryResponse<Model>>(AutoQuery, jiwaAPISessionId: WebPortalUserSessionStateContainer?.WebPortalUserSession?.Id);
                 }                
             }            
             catch (Exception ex)
@@ -378,7 +378,7 @@ namespace JiwaCustomerPortal.Components
 
         public int FirstRecordNumber()
         {
-            if (AutoQuery.Skip != null)
+            if (AutoQuery?.Skip != null)
             {
                 return (int)AutoQuery.Skip + 1;
             }
@@ -414,7 +414,7 @@ namespace JiwaCustomerPortal.Components
 
         public int CurrentPageNumber()
         {
-            if (AutoQuery.Skip != null)
+            if (AutoQuery?.Skip != null)
             {
                 return (int)AutoQuery.Skip / (int)AutoQuery.Take;
             }
