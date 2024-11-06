@@ -13,6 +13,89 @@ using JiwaFinancials.Jiwa.JiwaServiceModel.Tags;
 using JiwaFinancials.Jiwa.JiwaServiceModel.Startup.Diagnostics;
 
 #region "DTOs purpose made for this app"
+
+#region "Rosedale Licence DTOs"
+public class CustomerName
+{
+    public string DebtorID { get; set; }
+    public string Name { get; set; }
+    public int CALs { get; set; }
+    public bool IsMaintained { get; set; }
+    public DateTime LicenceExpiration { get; set; }
+
+    // We add this to the DTO for convenience when displaying the licences page.  This gets lazy loaded.
+    public List<RegistrationLicences> RegistrationLicences { get; set; }
+    public bool LicencesHaveBeenRead { get; set; }
+    public bool isExpanded { get; set; }
+}
+
+public class RegistrationLicences
+{
+    public string RecID { get; set; }
+    public string RegistrationName { get; set; }
+    public string ResourceName { get; set; }
+    public DateTime IssueDate { get; set; }
+    public DateTime CommenceDate { get; set; }
+    public DateTime ExpiryDate { get; set; }
+    public int LicenceType { get; set; }
+    public int CALs { get; set; }
+    public string UserName { get; set; }
+    public string Version { get; set; }
+    public bool NonInteractive { get; set; }
+}
+
+[Route("/LicensedCustomerNames", "GET")]
+[ApiResponse(Description = "OK", StatusCode = 200)]
+[ApiResponse(Description = "Not authenticated", StatusCode = 401)]
+[ApiResponse(Description = "Not authorised", StatusCode = 403)]
+[ApiResponse(Description = "No results found", StatusCode = 404)]
+public class LicensedCustomerNamesGETRequest : IReturn<List<CustomerName>>
+{    
+}
+
+[Route("/CustomerLicences/{DebtorID}", "GET")]
+[ApiResponse(Description = "OK", StatusCode = 200)]
+[ApiResponse(Description = "Not authenticated", StatusCode = 401)]
+[ApiResponse(Description = "Not authorised", StatusCode = 403)]
+[ApiResponse(Description = "No results found", StatusCode = 404)]
+public class CustomerLicencesGETRequest : IReturn<List<RegistrationLicences>>
+{
+    public string DebtorID { get; set; }
+}
+
+[Route("/Licence/{LicenceID}", "GET")]
+[ApiResponse(Description = "OK", StatusCode = 200)]
+[ApiResponse(Description = "Not authenticated", StatusCode = 401)]
+[ApiResponse(Description = "Not authorised", StatusCode = 403)]
+[ApiResponse(Description = "No Licence with the provided LicenceID was found", StatusCode = 404)]
+public class LicenceGETRequest : IReturn<ServiceStack.Web.IHttpResult>
+{
+    public string LicenceID { get; set; }
+    public bool AsAttachment { get; set; }
+}
+
+public class WebDownloadLink
+{
+    public string GroupDescription { get; set; }
+    public int GroupDisplayOrder { get; set; }
+    public string DisplayText { get; set; }
+    public int DisplayOrder { get; set; }
+    public string Size { get; set; }
+    public string URL { get; set; }
+    public string Comment { get; set; }
+    public DateTime PublishDate { get; set; }
+}
+
+[Route("/Downloads", "GET")]
+[ApiResponse(Description = "OK", StatusCode = 200)]
+[ApiResponse(Description = "Not authenticated", StatusCode = 401)]
+[ApiResponse(Description = "Not authorised", StatusCode = 403)]
+[ApiResponse(Description = "No downloads found", StatusCode = 404)]
+public class WebDownloadLinksGETRequest : IReturn<List<WebDownloadLink>>
+{
+}
+#endregion
+
 namespace JiwaFinancials.Jiwa.JiwaServiceModel
 {    
     public class WebPortalUserSession
