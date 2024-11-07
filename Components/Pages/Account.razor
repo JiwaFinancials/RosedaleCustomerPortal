@@ -322,7 +322,8 @@
                 CaptionMaps=@(new Dictionary<string, string>
                                   {
                                       ["InvoiceNoDashHistoryNo"] = "Sales Order No.",
-                                      ["InvoiceInitDate"] = "Date",                              
+                                      ["InvoiceInitDate"] = "Date",
+                                      ["Status"] = "Status",
                                       ["OrderNo"] = "Order No.",
                                       ["SOReference"] = "Reference",
                                       ["InvoiceTotal"] = "Order Total",
@@ -493,7 +494,7 @@
                     {
                         OrderByDesc = "InvoiceNoDashHistoryNo",
                         InvoiceTotalNotEqualTo = 0,
-                        Fields = "InvoiceID,InvoiceNoDashHistoryNo,InvoiceInitDate,OrderNo,SOReference,CurrencyShortName,InvoiceTotal,TotalAllocated,DueDate,CreditNote,CurrencyID",
+                        Fields = "InvoiceID,InvoiceNoDashHistoryNo,InvoiceInitDate,Status,OrderNo,SOReference,CurrencyShortName,InvoiceTotal,TotalAllocated,DueDate,CreditNote,CurrencyID",
                         Take = 10
                     };
 
@@ -733,6 +734,26 @@
         {
             case "InvoiceNoDashHistoryNo":
                 content = @<td><a href="SalesOrderPDF/@item.InvoiceID" target="_blank" rel="noopener noreferrer">@item.InvoiceNoDashHistoryNo</a></td>;
+                break;
+            case "Status":
+                if (item.Status >= 1)
+                {
+                    // Processed or closed - if it's fully paid we display as closed, otherwise we display as entered
+                    if (item.TotalAllocated >= item.InvoiceTotal)
+                    {
+                        content =@<td><span class="badge rounded-pill bg-danger">Closed</span></td> ;
+                    }
+                    else
+                    {
+                        content =@<td><span class="badge rounded-pill bg-success">Processed</span></td>  ;
+                    }
+                }
+                else
+                {
+                    // Entered - it's not an invoice yet, so display as pending
+                    content = @<td><span class="badge rounded-pill bg-primary">Pending</span></td>;
+                }
+                
                 break;
             case "InvoiceTotal":
                 if (item.CreditNote && item.InvoiceTotal != null)

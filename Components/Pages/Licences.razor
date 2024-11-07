@@ -43,7 +43,8 @@
     <div class="card">
         <div class="card-body">
             <h5 class="card-title">Licencees</h5>
-            <table class="table table-bordered table-striped small">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped">
                 <thead>
                     <tr>
                         <th class="text-center">
@@ -78,45 +79,45 @@
                                 </button>
                             </td>
 
-                            <td>@customerName.Name</td>
-                            <td class="text-end">@customerName.CALs</td>
+                            <td class="align-middle" @onclick=" (()=> ToggleViewLicences(customerName))"><h6>@customerName.Name</h6></td>
+                            <td class="text-end align-middle">@customerName.CALs</td>
                             @if (customerName.IsMaintained)
                             {
                                 @if ((customerName.LicenceExpiration - DateTime.Now).Days < 30)
                                 {
                                     @if ((customerName.LicenceExpiration - DateTime.Now).Days < 0)
                                     {
-                                        <td class="text-center"><span class="badge bg-danger">Yes</span></td>
+                                        <td class="text-center align-middle"><span class="badge bg-danger">Yes</span></td>
                                     }
                                     else
                                     {
-                                        <td class="text-center"><span class="badge bg-warning">Yes</span></td>
+                                        <td class="text-center align-middle"><span class="badge bg-warning">Yes</span></td>
                                     }
                                 }
                                 else
                                 {
-                                    <td class="text-center"><span class="badge bg-success">Yes</span></td>
+                                    <td class="text-center align-middle"><span class="badge bg-success">Yes</span></td>
                                 }
                             }
                             else
                             {
-                                <td class="text-center"><span class="badge bg-danger">No</span></td>
+                                <td class="text-center align-middle"><span class="badge bg-danger">No</span></td>
                             }
 
                             @if ((customerName.LicenceExpiration - DateTime.Now).Days < 30)
                             {
                                 @if ((customerName.LicenceExpiration - DateTime.Now).Days < 0)
                                 {
-                                    <td class="text-end"><span class="badge bg-danger">@customerName.LicenceExpiration.ToString(@BrowserService.DateFormat)</span></td>
+                                    <td class="text-end align-middle"><span class="badge bg-danger">@customerName.LicenceExpiration.ToString(@BrowserService.DateFormat)</span></td>
                                 }
                                 else
                                 {
-                                    <td class="text-end"><span class="badge bg-warning">@customerName.LicenceExpiration.ToString(@BrowserService.DateFormat)</span></td>
+                                    <td class="text-end align-middle"><span class="badge bg-warning">@customerName.LicenceExpiration.ToString(@BrowserService.DateFormat)</span></td>
                                 }
                             }
                             else
                             {
-                                <td class="text-end"><span class="badge bg-success">@customerName.LicenceExpiration.ToString(@BrowserService.DateFormat)</span></td>
+                                <td class="text-end align-middle"><span class="badge bg-success">@customerName.LicenceExpiration.ToString(@BrowserService.DateFormat)</span></td>
                             }                            
                         </tr>
                         if (customerName.isExpanded && customerName.RegistrationLicences != null)
@@ -125,7 +126,8 @@
                                 <td></td>
                                 <td colspan="4">
                                     <h5>Licences</h5>
-                                    <table class="table table-bordered table-striped small">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-striped">
                                         <thead>
                                             <tr>
                                                 <th>Registered Name</th>
@@ -156,31 +158,31 @@
                                                     </tr>
                                                 }
                                                 <tr>
-                                                    <td>@licence.RegistrationName</td>
-                                                    <td>@licence.ResourceName</td>
-                                                    <td class="text-end">@licence.Version</td>
-                                                    <td class="text-end">@licence.IssueDate.ToString(@BrowserService.DateFormat)</td>
-                                                    <td class="text-end">@licence.CommenceDate.ToString(@BrowserService.DateFormat)</td>
+                                                    <td class="align-middle">@licence.RegistrationName</td>
+                                                    <td class="align-middle">@licence.ResourceName</td>
+                                                    <td class="text-end align-middle">@licence.Version</td>
+                                                    <td class="text-end align-middle">@licence.IssueDate.ToString(@BrowserService.DateFormat)</td>
+                                                    <td class="text-end align-middle">@licence.CommenceDate.ToString(@BrowserService.DateFormat)</td>
 
                                                     @if ((licence.ExpiryDate - DateTime.Now).Days < 30)
                                                     {
                                                         if ((licence.ExpiryDate - DateTime.Now).Days < 0)
                                                         {
-                                                            <td class="text-end"><span class="badge bg-danger">@licence.ExpiryDate.ToString(@BrowserService.DateFormat)</span></td>
+                                                            <td class="text-end align-middle"><span class="badge bg-danger">@licence.ExpiryDate.ToString(@BrowserService.DateFormat)</span></td>
                                                         }
                                                         else
                                                         {
-                                                            <td class="text-end"><span class="badge bg-warning">@licence.ExpiryDate.ToString(@BrowserService.DateFormat)</span></td>
+                                                            <td class="text-end align-middle"><span class="badge bg-warning bg-subtle">@licence.ExpiryDate.ToString(@BrowserService.DateFormat)</span></td>
                                                         }
                                                     }
                                                     else
                                                     {
-                                                        <td class="text-end"><span class="badge bg-success">@licence.ExpiryDate.ToString(@BrowserService.DateFormat)</span></td>
-                                                    }                                                    
+                                                        <td class="text-end align-middle"><span class="badge bg-success">@licence.ExpiryDate.ToString(@BrowserService.DateFormat)</span></td>
+                                                    }
 
-                                                    <td>@(licence.LicenceType == 0 ? "Pooled" : "Named")</td>
-                                                    <td class="text-end">@licence.CALs</td>
-                                                    <td>@licence.UserName</td>
+                                                    <td class="align-middle">@(licence.LicenceType == 0 ? "Pooled" : "Named")</td>
+                                                    <td class="text-end align-middle">@licence.CALs</td>
+                                                    <td class="align-middle">@licence.UserName</td>
                                                     <td class="text-center">
                                                         <button @onclick="(() => DownloadLicence(licence))" type="button" class="btn btn-success">
                                                             Download
@@ -192,12 +194,14 @@
                                             }
                                         </tbody>
                                     </table>
+                                    </div>
                                 </td>
                             </tr>
                         }
                     }
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
 
@@ -237,6 +241,7 @@
         bool oldAPIRequestInPogress = APIRequestInPogress;
         try
         {
+            APIRequestInPogress = true;
             customerNames = await JiwaAPI.GetAsync(licensedCustomerNamesGETRequest, WebPortalUserSessionStateContainer?.WebPortalUserSession?.Id, null);
         }
         catch (ServiceStack.WebServiceException webServiceException)
@@ -273,6 +278,7 @@
             bool oldAPIRequestInPogress = APIRequestInPogress;
             try
             {
+                APIRequestInPogress = true;
                 customerName.RegistrationLicences = await JiwaAPI.GetAsync(customerLicencesGETRequest, WebPortalUserSessionStateContainer?.WebPortalUserSession?.Id, null);
                 customerName.LicencesHaveBeenRead = true;                                
             }
@@ -307,6 +313,7 @@
         bool oldAPIRequestInPogress = APIRequestInPogress;
         try
         {
+            APIRequestInPogress = true;
             LicenceGETRequest licenceGETRequest = new LicenceGETRequest() { LicenceID = licence.RecID, AsAttachment = false };            
             byte[] xmlLicence = await JiwaAPI.GetAsync<byte[]>(licenceGETRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
             var fileStream = new MemoryStream(xmlLicence);
