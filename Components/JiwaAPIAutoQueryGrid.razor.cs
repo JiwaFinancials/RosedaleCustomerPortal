@@ -451,7 +451,7 @@ namespace JiwaCustomerPortal.Components
             return (CurrentPageNumber() == PageCount());
         }
 
-        public async void OnTakeNextClick()
+        public async Task OnTakeNextClick()
         {
             if (AutoQuery.Skip == null)
             {
@@ -467,7 +467,7 @@ namespace JiwaCustomerPortal.Components
             await ExecuteAutoQuery();
         }
 
-        public async void OnTakePreviousClick()
+        public async Task OnTakePreviousClick()
         {
             AutoQuery.Skip -= AutoQuery.Take;
 
@@ -479,7 +479,7 @@ namespace JiwaCustomerPortal.Components
             await ExecuteAutoQuery();
         }
 
-        public async void OnPageBlockClick(int pageNumberBlock)
+        public async Task OnPageBlockClick(int pageNumberBlock)
         {
             AutoQuery.Skip = AutoQuery.Take * pageNumberBlock;
             await ExecuteAutoQuery();
@@ -491,7 +491,7 @@ namespace JiwaCustomerPortal.Components
             ShowFilterDialogColumn = column;
         }
 
-        public async void FilterClosed(bool resultOK)
+        public async Task FilterClosed(bool resultOK)
         {
             if (resultOK)
             {
@@ -516,7 +516,7 @@ namespace JiwaCustomerPortal.Components
             }
         }
        
-        public async void OnSelectItem(Model item)
+        public async Task OnSelectItem(Model item)
         {
             SelectedItem = item;
             if (ItemSelectedCallbackMethod.HasDelegate)

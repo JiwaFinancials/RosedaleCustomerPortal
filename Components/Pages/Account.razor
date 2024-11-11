@@ -390,7 +390,7 @@
                                     <tr>
                                         <td>@backorder.PartNo</td>
                                         <td>@backorder.Description</td>
-                                        <td><a href="SalesOrderPDF/@backorder.InvoiceID" target="_blank" rel="noopener noreferrer">@backorder.InvoiceNo</a></td>
+                                        <td><a href="SalesOrder/@backorder.InvoiceID">@backorder.InvoiceNo</a></td>
                                         <td>@backorder.CustomerOrderNo</td>
                                         <td class="text-end">@backorder.Date.ToString(@BrowserService.DateFormat)</td>
                                         <td class="text-end">@backorder.Quantity.ToString($"#,0.{new String('0', backorder.QuantityDecimalPlaces)}")</td>
@@ -565,7 +565,7 @@
         NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
     }
 
-    public async void APIException(Exception ex)
+    public async Task APIException(Exception ex)
     {
         // first we need to work out what type of exception this was.  If it as a 401 (Not Authenticated), then we just redirect to to the login page
         // Anything else, we set the errorMessage property so the component displays the error to the user.
@@ -599,7 +599,7 @@
             case "InvRemitNo":
                 if (item.Description == "Sales Orders")
                 {
-                    content = @<td><a href="SalesOrderPDF/@item.SourceID" target="_blank" rel="noopener noreferrer">@item.InvRemitNo</a></td>;
+                    content = @<td><a href="SalesOrder/@item.SourceID">@item.InvRemitNo</a></td>;
                 }
                 else
                 {
@@ -733,7 +733,7 @@
         switch (columnId)
         {
             case "InvoiceNoDashHistoryNo":
-                content = @<td><a href="SalesOrderPDF/@item.InvoiceID" target="_blank" rel="noopener noreferrer">@item.InvoiceNoDashHistoryNo</a></td>;
+                content = @<td><a href="SalesOrder/@item.InvoiceID">@item.InvoiceNoDashHistoryNo</a></td>;
                 break;
             case "Status":
                 if (item.Status >= 1)
@@ -909,7 +909,7 @@
         ContactNameToDelete = ContactName;
     }      
 
-    public async void CreateContactDialogClosed(JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactName)
+    public async Task CreateContactDialogClosed(JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactName)
     {
         if (ContactName != null)
         {
@@ -969,7 +969,7 @@
         StateHasChanged();
     }
 
-    public async void EditContactDialogClosed(JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactName)
+    public async Task EditContactDialogClosed(JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactName)
     {
         if (ContactName != null)
         {
@@ -1037,7 +1037,7 @@
         StateHasChanged();
     }
 
-    public async void DeleteContactConfirmationDialogClosed(bool resultOK)
+    public async Task DeleteContactConfirmationDialogClosed(bool resultOK)
     {
         if (resultOK)
         {

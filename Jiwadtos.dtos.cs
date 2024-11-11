@@ -8,9 +8,16 @@ using ServiceStack.DataAnnotations;
 using JiwaFinancials.Jiwa.JiwaServiceModel.Tables;
 using ServiceStack.Web;
 using System.Reflection.Metadata;
+using JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields;
 using JiwaFinancials.Jiwa.JiwaServiceModel.Debtors;
-using JiwaFinancials.Jiwa.JiwaServiceModel.Tags;
+using JiwaFinancials.Jiwa.JiwaServiceModel.Notes;
+using JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders;
+using JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes;
+using JiwaFinancials.Jiwa.JiwaServiceModel.Staff;
 using JiwaFinancials.Jiwa.JiwaServiceModel.Startup.Diagnostics;
+using JiwaFinancials.Jiwa.JiwaServiceModel.Tags;
+using JiwaFinancials.Jiwa.JiwaServiceModel.Tax;
+using JiwaCustomerPortal.Components.Pages;
 
 #region "DTOs purpose made for this app"
 
@@ -385,10 +392,69 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel
         public virtual string ContactNameID { get; set; }
         public virtual List<Tag> Tags { get; set; }
     }
+
+    [Route("/SalesOrders/{InvoiceID}", "GET")]
+    [ApiResponse(Description = "Read OK", StatusCode = 200)]
+    [ApiResponse(Description = "Not authenticated", StatusCode = 401)]
+    [ApiResponse(Description = "Not authorised", StatusCode = 403)]
+    [ApiResponse(Description = "No Sales Order with the InvoiceID provided was found", StatusCode = 404)]
+    public partial class SalesOrderGETRequest
+        : IReturn<JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrder>
+    {
+        public virtual string InvoiceID { get; set; }
+    }
+
+    [Route("/SalesQuotes/{QuoteID}", "GET")]
+    [ApiResponse(Description = "Read OK", StatusCode = 200)]
+    [ApiResponse(Description = "Not authenticated", StatusCode = 401)]
+    [ApiResponse(Description = "Not authorised", StatusCode = 403)]
+    [ApiResponse(Description = "No Sales Quote with the QuoteID provided was found", StatusCode = 404)]
+    public partial class SalesQuoteGETRequest
+        : IReturn<SalesQuote>
+    {
+        public virtual string QuoteID { get; set; }
+    }
 }
 #endregion
 
 #region "Models"
+#region "Custom Fields"
+namespace JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields
+{
+    public enum CellTypes
+    {
+        Date = 0,
+        Text = 1,
+        Float = 2,
+        Integer = 3,
+        Lookup = 7,
+        Combo = 8,
+        Checkbox = 10,
+    }
+
+    public partial class CustomField
+    {
+        public virtual string SettingID { get; set; }
+        public virtual string SettingName { get; set; }
+        public virtual string PluginID { get; set; }
+        public virtual string PluginName { get; set; }
+        public virtual CellTypes CellType { get; set; }
+        public virtual int DisplayOrder { get; set; }
+    }
+
+    public partial class CustomFieldValue
+    {
+        public virtual string SettingID { get; set; }
+        public virtual string SettingName { get; set; }
+        public virtual string Contents { get; set; }
+        public virtual string PluginID { get; set; }
+        public virtual string PluginName { get; set; }
+    }
+
+}
+#endregion
+
+#region "Debtors"
 namespace JiwaFinancials.Jiwa.JiwaServiceModel.Debtors
 {
     // Properties not relevant are commented out so we don't have to have their dto types defined here either 
@@ -656,6 +722,1003 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel.Debtors
     }
     #endregion
 }
+#endregion
+
+#region "Inventory"
+public partial class InventoryUnitOfMeasure
+{
+    public virtual string RecID { get; set; }
+    public virtual InventoryUnitOfMeasure InnerUnitOfMeasure { get; set; }
+    public virtual decimal? QuantityInnersPerUnitOfMeasure { get; set; }
+    public virtual bool? IsSell { get; set; }
+    public virtual bool? IsDefaultSell { get; set; }
+    public virtual bool? IsPurchase { get; set; }
+    public virtual int? ItemNo { get; set; }
+    public virtual DateTimeOffset? LastSavedDateTime { get; set; }
+    public virtual string UnitOfMeasureID { get; set; }
+    public virtual string Name { get; set; }
+    public virtual string PartNo { get; set; }
+    public virtual string Barcode { get; set; }
+    public virtual decimal? Length { get; set; }
+    public virtual decimal? Width { get; set; }
+    public virtual decimal? Height { get; set; }
+    public virtual decimal? Volume { get; set; }
+    public virtual decimal? Weight { get; set; }
+    public virtual List<CustomFieldValue> CustomFieldValues { get; set; }
+    public virtual bool? IsEnabled { get; set; }
+}
+#endregion
+
+#region "Notes"
+namespace JiwaFinancials.Jiwa.JiwaServiceModel.Notes
+{
+    public partial class Note
+    {
+        public virtual string NoteID { get; set; }
+        public virtual NoteType NoteType { get; set; }
+        public virtual int? LineNo { get; set; }
+        public virtual DateTimeOffset? LastSavedDateTime { get; set; }
+        public virtual string LastModifiedByStaffID { get; set; }
+        public virtual string LastModifiedByStaffUsername { get; set; }
+        public virtual string LastModifiedByStaffTitle { get; set; }
+        public virtual string LastModifiedByStaffFirstName { get; set; }
+        public virtual string LastModifiedByStaffSurname { get; set; }
+        public virtual string NoteText { get; set; }
+        public virtual byte[] RowHash { get; set; }
+    }
+
+    public partial class NoteType
+    {
+        public virtual string NoteTypeID { get; set; }
+        public virtual string Description { get; set; }
+        public virtual bool? DefaultType { get; set; }
+        public virtual int? ItemNo { get; set; }
+        public virtual DateTimeOffset? LastSavedDateTime { get; set; }
+        public virtual byte[] RowHash { get; set; }
+    }
+}
+
+#endregion
+
+#region "Sales Order"
+namespace JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders
+{
+    public partial class CartageCharge
+    {
+        public virtual decimal? ExTaxAmount { get; set; }
+        public virtual decimal? FXExTaxAmount { get; set; }
+        public virtual decimal? TaxAmount { get; set; }
+        public virtual decimal? FXTaxAmount { get; set; }
+        public virtual TaxRate TaxRate { get; set; }
+    }
+
+    public partial class CreditReason
+    {
+        public virtual string CreditReasonID { get; set; }
+        public virtual string CreditReasonDescription { get; set; }
+        public virtual bool? CreditIntoStock { get; set; }
+        public virtual bool? IsEnabled { get; set; }
+        public virtual bool? IsDefault { get; set; }
+        public virtual DateTimeOffset? LastSavedDateTime { get; set; }
+        public virtual int? ItemNo { get; set; }
+    }
+
+    public partial class DeliveryMethod
+    {
+        public virtual string RecID { get; set; }
+        public virtual string Name { get; set; }
+        public virtual bool? IsEnabled { get; set; }
+        public virtual bool? IsDefault { get; set; }
+        public virtual int? ItemNo { get; set; }
+        public virtual DateTimeOffset? LastSavedDateTime { get; set; }
+        public virtual byte[] RowHash { get; set; }
+    }
+
+    public partial class Origin
+    {
+        public virtual string RecID { get; set; }
+        public virtual string Name { get; set; }
+        public virtual bool? IsEnabled { get; set; }
+        public virtual bool? IsDefault { get; set; }
+        public virtual int? ItemNo { get; set; }
+        public virtual DateTimeOffset? LastSavedDateTime { get; set; }
+        public virtual byte[] RowHash { get; set; }
+    }
+
+    public partial class PaymentType
+    {
+        public virtual string PaymentTypeID { get; set; }
+        public virtual string Name { get; set; }
+        public virtual string Code { get; set; }
+        public virtual int? ItemNo { get; set; }
+        public virtual bool? IsEnabled { get; set; }
+        public virtual bool? IsDefault { get; set; }
+        public virtual bool? IsCreditCard { get; set; }
+        public virtual bool? IsPOS { get; set; }
+        //public virtual BankAccount BankAccount { get; set; } // Don't need this, so we don't include it
+        public virtual DateTimeOffset? LastSavedDateTime { get; set; }
+    }
+
+    public partial class SalesOrder
+    {
+        public virtual string Type { get; set; }
+        public virtual SalesOrderSystemSettings SystemSettings { get; set; }
+        public virtual DateTimeOffset? LastSavedDateTime { get; set; }
+        public virtual DateTime? InitiatedDate { get; set; }
+        public virtual DateTime? InvoiceInitDate { get; set; }
+        public virtual SalesOrderTypes? SalesOrderType { get; set; }
+        public virtual SalesOrderOrderTypes? OrderType { get; set; }
+        public virtual SalesOrderStatuses? Status { get; set; }
+        public virtual SalesOrderEDIPickStatuses? EDIStatus { get; set; }
+        public virtual SalesOrderBillTypes? BillType { get; set; }
+        public virtual DateTime? ExpectedDeliveryDate { get; set; }
+        public virtual DateTime? DeliveredDate { get; set; }
+        public virtual bool? Delivered { get; set; }
+        public virtual SalesOrderEDIPickStatuses? EDIPickStatus { get; set; }
+        public virtual SalesOrderEDIOrderTypes? EDIOrderType { get; set; }
+        public virtual DateTime? EDIDeliverNotBeforeDate { get; set; }
+        public virtual DateTime? EDIDeliverNotAfterDate { get; set; }
+        public virtual SalesOrderCashSales CashSales { get; set; }
+        public virtual bool? DropShipment { get; set; }
+        public virtual decimal? Cartage1ExGst { get; set; }
+        public virtual decimal? FXCartage1ExGst { get; set; }
+        public virtual decimal? Cartage1GstRate { get; set; }
+        public virtual decimal? Cartage1Gst { get; set; }
+        public virtual decimal? FXCartage1Gst { get; set; }
+        public virtual decimal? Cartage2ExGst { get; set; }
+        public virtual decimal? FXCartage2ExGst { get; set; }
+        public virtual decimal? Cartage2GstRate { get; set; }
+        public virtual decimal? Cartage2Gst { get; set; }
+        public virtual decimal? FXCartage2Gst { get; set; }
+        public virtual decimal? Cartage3ExGst { get; set; }
+        public virtual decimal? FXCartage3ExGst { get; set; }
+        public virtual decimal? Cartage3GstRate { get; set; }
+        public virtual decimal? Cartage3Gst { get; set; }
+        public virtual decimal? FXCartage3Gst { get; set; }
+        public virtual decimal? RCTIAmount { get; set; }
+        public virtual decimal? FXRCTIAmount { get; set; }
+        public virtual DateTime? RCTIDate { get; set; }
+        public virtual SalesOrderJobCosting JobCosting { get; set; }
+        public virtual string InvoiceID { get; set; }
+        public virtual string InvoiceNo { get; set; }
+        public virtual string LogicalID { get; set; }
+        public virtual string LogicalWarehouseDescription { get; set; }
+        public virtual string PhysicalWarehouseDescription { get; set; }
+        public virtual bool? CreditNote { get; set; }
+        public virtual string StaffID { get; set; }
+        public virtual string StaffUserName { get; set; }
+        public virtual string StaffTitle { get; set; }
+        public virtual string StaffFirstName { get; set; }
+        public virtual string StaffSurname { get; set; }
+        public virtual string BranchID { get; set; }
+        public virtual string BranchDescription { get; set; }
+        public virtual string BranchName { get; set; }
+        public virtual string OrderNo { get; set; }
+        public virtual string SOReference { get; set; }
+        public virtual string SenderEDIAddress { get; set; }
+        public virtual string ReceiverEDIAddress { get; set; }
+        public virtual string EDIVendorNumber { get; set; }
+        public virtual string EDIBuyerNumber { get; set; }
+        public virtual string DebtorID { get; set; }
+        public virtual string DebtorAccountNo { get; set; }
+        public virtual string DebtorName { get; set; }
+        public virtual string DebtorEmailAddress { get; set; }
+        public virtual string DebtorContactName { get; set; }
+        public virtual string EDIASN { get; set; }
+        public virtual string DeliveryAddressee { get; set; }
+        public virtual string DeliveryAddressPhone { get; set; }
+        public virtual string DeliveryAddress1 { get; set; }
+        public virtual string DeliveryAddress2 { get; set; }
+        public virtual string DeliveryAddressSuburb { get; set; }
+        public virtual string DeliveryAddressState { get; set; }
+        public virtual string DeliveryAddressContactName { get; set; }
+        public virtual string DeliveryAddressPostcode { get; set; }
+        public virtual string DeliveryAddressCountry { get; set; }
+        public virtual decimal? DeliveryAddressLatitude { get; set; }
+        public virtual decimal? DeliveryAddressLongitude { get; set; }
+        public virtual string DeliveryAddressNotes { get; set; }
+        public virtual string DeliveryAddressCourierDetails { get; set; }
+        public virtual string DeliveryAddressEmailAddress { get; set; }
+        public virtual string RCTINo { get; set; }
+        public virtual List<CustomFieldValue> CustomFieldValues { get; set; }
+        public virtual List<Note> Notes { get; set; }
+        public virtual List<Document> Documents { get; set; }
+        public virtual List<SalesOrderPayment> Payments { get; set; }
+        public virtual List<SalesOrderLine> Lines { get; set; }
+        public virtual List<SalesOrderHistory> Histories { get; set; }
+        public virtual List<SalesOrderASN> ASNs { get; set; }
+        public virtual Origin Origin { get; set; }
+        public virtual DeliveryMethod DeliveryMethod { get; set; }
+        public virtual CreditReason CreditReason { get; set; }
+        public virtual string CreditNoteFromInvoiceHistoryID { get; set; }
+        public virtual string CurrencyID { get; set; }
+        public virtual string CurrencyShortName { get; set; }
+        public virtual decimal? CurrencyRate { get; set; }
+        public enum SalesOrderTypes
+        {
+            e_SalesOrderNormalSalesOrder,
+            e_SalesOrderBackToBack,
+        }
+
+        public enum SalesOrderOrderTypes
+        {
+            e_SalesOrderOrderTypeReserveOrder,
+            e_SalesOrderOrderTypeInvoiceOrder,
+            e_SalesOrderOrderTypeForwardOrder,
+            e_SalesOrderOrderTypeActiveOrder,
+        }
+
+        public enum SalesOrderStatuses
+        {
+            e_SalesOrderEntered,
+            e_SalesOrderProcessed,
+            e_SalesOrderClosed,
+            e_SalesOrderUnprocessedPrinted,
+        }
+
+        public enum SalesOrderEDIPickStatuses
+        {
+            e_SalesOrderHistoryEDIPickStatusNone,
+            e_SalesOrderHistoryEDIPickStatusPOReceived,
+            e_SalesOrderHistoryEDIPickStatusPOAcknowledgementReadyToSend,
+            e_SalesOrderHistoryEDIPickStatusPOAcknowledgementSent,
+            e_SalesOrderHistoryEDIPickStatusReadyToBePicked,
+            e_SalesOrderHistoryEDIPickStatusPicking,
+            e_SalesOrderHistoryEDIPickStatusPicked,
+            e_SalesOrderHistoryEDIPickStatusASNReadyToSend,
+            e_SalesOrderHistoryEDIPickStatusASNSent,
+            e_SalesOrderHistoryEDIPickStatusRCTIReceived,
+            e_SalesOrderHistoryEDIPickStatusError,
+            e_SalesOrderHistoryEDIPickStatusRejectionReadyToSend,
+            e_SalesOrderHistoryEDIPickStatusRejectionSent,
+        }
+
+        public enum SalesOrderBillTypes
+        {
+            e_SalesOrderShipAndBill,
+            e_SalesOrderBillWhenComplete,
+            e_SalesOrderShipWhenComplete,
+        }
+
+        public enum SalesOrderEDIOrderTypes
+        {
+            e_SalesOrderEDIOrderTypeNormal,
+            e_SalesOrderEDIOrderTypeConsolidated,
+        }
+
+    }
+
+    public partial class SalesOrderASN
+    {
+        public virtual string ASNNo { get; set; }
+        public virtual string PurchaseOrderNo { get; set; }
+        public virtual string ReceiptNo { get; set; }
+        public virtual decimal? GrossAmount { get; set; }
+        public virtual decimal? TotalGSTAmount { get; set; }
+        public virtual DateTime? ReceiptDate { get; set; }
+    }
+
+    public partial class SalesOrderCarrier
+    {
+        public virtual string CarrierID { get; set; }
+        public virtual string CarrierName { get; set; }
+        public virtual string AccountNo { get; set; }
+        public virtual SalesOrderCarrierService Service { get; set; }
+        public virtual bool? UseLeastCost { get; set; }
+        public virtual FreightChargeTos? ChargeTo { get; set; }
+        public virtual FreightSystemStatuses? Status { get; set; }
+        public virtual List<SalesOrderFreightItem> FreightItemCollection { get; set; }
+        public virtual List<SalesOrderConsignmentNote> ConsignmentNoteCollection { get; set; }
+        public enum FreightSystemStatuses
+        {
+            FreightSystemStatusNone,
+            FreightSystemStatusReadyToSend,
+            FreightSystemStatusSent,
+            FreightSystemStatusCompleted,
+        }
+
+        public enum FreightChargeTos
+        {
+            FreightChargeToSender,
+            FreightChargeToReceiver,
+        }
+
+    }
+
+    public partial class SalesOrderCarrierFreightDescription
+    {
+        public virtual string CarrierFreightDescriptionID { get; set; }
+        public virtual string Description { get; set; }
+    }
+
+    public partial class SalesOrderCarrierService
+    {
+        public virtual string CarrierServiceID { get; set; }
+        public virtual string Name { get; set; }
+        public virtual decimal? MaximumWeight { get; set; }
+    }
+
+    public partial class SalesOrderCashSales
+    {
+        public virtual string Name { get; set; }
+        public virtual string Company { get; set; }
+        public virtual string Address1 { get; set; }
+        public virtual string Address2 { get; set; }
+        public virtual string Address3 { get; set; }
+        public virtual string Address4 { get; set; }
+        public virtual string PostCode { get; set; }
+        public virtual string Phone { get; set; }
+        public virtual string Fax { get; set; }
+        public virtual string ContactName { get; set; }
+        public virtual string Country { get; set; }
+        public virtual string EmailAddress { get; set; }
+    }
+
+    public partial class SalesOrderConsignmentNote
+    {
+        public virtual string ConsignmentNoteID { get; set; }
+        public virtual DateTime? ConsignmentNoteDate { get; set; }
+        public virtual decimal? ExGSTAmount { get; set; }
+        public virtual decimal? GSTAmount { get; set; }
+        public virtual string ConsignmentNoteNo { get; set; }
+        public virtual decimal? IncGSTAmount { get; set; }
+    }
+
+    public partial class SalesOrderFreightItem
+    {
+        public virtual string FreightItemID { get; set; }
+        public virtual int? NumberItems { get; set; }
+        public virtual decimal? ItemWeight { get; set; }
+        public virtual decimal? ItemCubic { get; set; }
+        public virtual decimal? ItemLength { get; set; }
+        public virtual decimal? ItemWidth { get; set; }
+        public virtual decimal? ItemHeight { get; set; }
+        public virtual string Reference { get; set; }
+        public virtual SalesOrderCarrierFreightDescription FreightDescription { get; set; }
+        public virtual SalesOrderConsignmentNote ConsignmentNote { get; set; }
+        public virtual List<CustomFieldValue> CustomFieldValues { get; set; }
+    }
+
+    public partial class SalesOrderHistory
+    {
+        public virtual string InvoiceHistoryID { get; set; }
+        public virtual int? HistoryNo { get; set; }
+        public virtual SalesOrderHistoryStatuses? Status { get; set; }
+        public virtual SalesOrderHistoryEDIPickStatuses? EDIPickStatus { get; set; }
+        public virtual string DBTransID { get; set; }
+        public virtual string Ref { get; set; }
+        public virtual string LastModifiedBy { get; set; }
+        public virtual decimal? HistoryTotal { get; set; }
+        public virtual decimal? AmountPaid { get; set; }
+        public virtual decimal? FXAmountPaid { get; set; }
+        public virtual decimal? TotalQuantityDelivered { get; set; }
+        public virtual string RunNo { get; set; }
+        public virtual bool? Delivered { get; set; }
+        public virtual DateTime? DeliveredDate { get; set; }
+        public virtual DateTime? RecordDate { get; set; }
+        public virtual DateTime? DateCreated { get; set; }
+        public virtual DateTime? DateLastSaved { get; set; }
+        public virtual DateTime? DatePosted { get; set; }
+        public virtual DateTime? DateProcessed { get; set; }
+        public virtual bool? InvoicePrinted { get; set; }
+        public virtual bool? DocketPrinted { get; set; }
+        public virtual bool? PackSlipPrinted { get; set; }
+        public virtual bool? PickSheetPrinted { get; set; }
+        public virtual bool? OtherPrinted { get; set; }
+        public virtual bool? InvoiceEmailed { get; set; }
+        public virtual bool? DocketEmailed { get; set; }
+        public virtual bool? PackSlipEmailed { get; set; }
+        public virtual bool? PickSheetEmailed { get; set; }
+        public virtual bool? OtherEmailed { get; set; }
+        public virtual string DeliveryAddressContactName { get; set; }
+        public virtual string DeliveryAddressee { get; set; }
+        public virtual string DeliveryAddressPhone { get; set; }
+        public virtual string DeliveryAddress1 { get; set; }
+        public virtual string DeliveryAddress2 { get; set; }
+        public virtual string DeliveryAddress3 { get; set; }
+        public virtual string DeliveryAddress4 { get; set; }
+        public virtual string DeliveryAddressPostcode { get; set; }
+        public virtual string DeliveryAddressCountry { get; set; }
+        public virtual decimal? DeliveryAddressLatitude { get; set; }
+        public virtual decimal? DeliveryAddressLongitude { get; set; }
+        public virtual string Notes { get; set; }
+        public virtual string CourierDetails { get; set; }
+        public virtual string DeliveryAddressEmailAddress { get; set; }
+        public virtual string FreightForwardAddressPhone { get; set; }
+        public virtual string FreightForwardAddress1 { get; set; }
+        public virtual string FreightForwardAddress2 { get; set; }
+        public virtual string FreightForwardAddress3 { get; set; }
+        public virtual string FreightForwardAddress4 { get; set; }
+        public virtual string FreightForwardAddressPostcode { get; set; }
+        public virtual string FreightForwardAddressCountry { get; set; }
+        public virtual decimal? FreightForwardAddressLatitude { get; set; }
+        public virtual decimal? FreightForwardAddressLongitude { get; set; }
+        public virtual string FreightForwardAddressNotes { get; set; }
+        public virtual string FreightForwardAddressCourierDetails { get; set; }
+        public virtual string FreightForwardAddressEmailAddress { get; set; }
+        public virtual string ConsignmentNote { get; set; }
+        public virtual string EDIASNNumber { get; set; }
+        public virtual bool? DropShipment { get; set; }
+        public virtual CartageCharge CartageCharge1 { get; set; }
+        public virtual CartageCharge CartageCharge2 { get; set; }
+        public virtual CartageCharge CartageCharge3 { get; set; }
+        public virtual SalesOrderCarrier Carrier { get; set; }
+        public virtual List<CustomFieldValue> CustomFieldValues { get; set; }
+        public virtual StaffMember ProcessedBy { get; set; }
+        public virtual List<SalesOrderLine> Lines { get; set; }
+        public enum SalesOrderHistoryStatuses
+        {
+            e_SalesOrderHistoryStatusEntering,
+            e_SalesOrderHistoryStatusEntered,
+            e_SalesOrderHistoryStatusReadyForPicking,
+            e_SalesOrderHistoryStatusPicking,
+            e_SalesOrderHistoryStatusPicked,
+            e_SalesOrderHistoryStatusDelivery,
+            e_SalesOrderHistoryStatusDelivered,
+            e_SalesOrderHistoryStatusInvoicing,
+            e_SalesOrderHistoryStatusInvoiced,
+        }
+
+        public enum SalesOrderHistoryEDIPickStatuses
+        {
+            e_SalesOrderHistoryEDIPickStatusNone,
+            e_SalesOrderHistoryStatuse_SalesOrderHistoryEDIPickStatusPOReceivedEntered,
+            e_SalesOrderHistoryEDIPickStatusPOAcknowledgementReadyToSend,
+            e_SalesOrderHistoryEDIPickStatusPOAcknowledgementSent,
+            e_SalesOrderHistoryEDIPickStatusReadyToBePicked,
+            e_SalesOrderHistoryEDIPickStatusPicking,
+            e_SalesOrderHistoryEDIPickStatusPicked,
+            e_SalesOrderHistoryEDIPickStatusASNReadyToSend,
+            e_SalesOrderHistoryEDIPickStatusASNSent,
+            e_SalesOrderHistoryEDIPickStatusRCTIReceived,
+            e_SalesOrderHistoryEDIPickStatusError,
+            e_SalesOrderHistoryEDIPickStatusRejectionReadyToSend,
+            e_SalesOrderHistoryEDIPickStatusRejectionSent,
+        }
+
+    }
+
+    public partial class SalesOrderJobCosting
+    {
+        public virtual bool? GSTApplicable { get; set; }
+        public virtual string JobCostID { get; set; }
+        public virtual string JobCostNo { get; set; }
+        public virtual string Description { get; set; }
+    }
+
+    public partial class SalesOrderLine
+    {
+        public virtual int? ItemNo { get; set; }
+        public virtual bool? CommentLine { get; set; }
+        public virtual decimal? QuantityOrdered { get; set; }
+        public virtual decimal? QuantityDemand { get; set; }
+        public virtual decimal? QuantityThisDel { get; set; }
+        public virtual decimal? QuantityBackOrd { get; set; }
+        public virtual bool? Picked { get; set; }
+        public virtual decimal? PriceExGst { get; set; }
+        public virtual decimal? FXPriceExGst { get; set; }
+        public virtual decimal? PriceIncGst { get; set; }
+        public virtual decimal? FXPriceIncGst { get; set; }
+        public virtual decimal? DiscountedPrice { get; set; }
+        public virtual decimal? FXDiscountedPrice { get; set; }
+        public virtual decimal? TaxToCharge { get; set; }
+        public virtual decimal? FXTaxToCharge { get; set; }
+        public virtual TaxRate TaxRate { get; set; }
+        public virtual decimal? UnitCost { get; set; }
+        public virtual bool? FixSellPrice { get; set; }
+        public virtual bool? FixPrice { get; set; }
+        public virtual decimal? UserDefinedFloat1 { get; set; }
+        public virtual decimal? UserDefinedFloat2 { get; set; }
+        public virtual decimal? UserDefinedFloat3 { get; set; }
+        public virtual DateTime? ForwardOrderDate { get; set; }
+        public virtual DateTime? ScheduledDate { get; set; }
+        public virtual decimal? LineTotal { get; set; }
+        public virtual decimal? FXLineTotal { get; set; }
+        public virtual decimal? Weight { get; set; }
+        public virtual decimal? Cubic { get; set; }
+        public virtual decimal? QuotedDiscountedPrice { get; set; }
+        public virtual decimal? FXQuotedDiscountedPrice { get; set; }
+        public virtual decimal? QuotedDiscountPercentage { get; set; }
+        public virtual decimal? DiscountedPercentage { get; set; }
+        public virtual decimal? DiscountGiven { get; set; }
+        public virtual decimal? FXDiscountGiven { get; set; }
+        public virtual short? QuantityDecimalPlaces { get; set; }
+        public virtual decimal? QuantityOriginalOrdered { get; set; }
+        public virtual SalesOrderSerialStockSelectionTypesEnum? SalesOrderSerialStockSelectionTypes { get; set; }
+        public virtual bool? NonInventory { get; set; }
+        public virtual string InvoiceLineID { get; set; }
+        public virtual string InventoryID { get; set; }
+        public virtual string PartNo { get; set; }
+        public virtual string Description { get; set; }
+        public virtual string CommentText { get; set; }
+        public virtual string Aux2 { get; set; }
+        public virtual string LineLinkID { get; set; }
+        public virtual string EDIStoreLocationCode { get; set; }
+        public virtual string EDIDCLocationCode { get; set; }
+        public virtual string CostCenter { get; set; }
+        public virtual string Stage { get; set; }
+        public virtual List<CustomFieldValue> CustomFieldValues { get; set; }
+        public virtual List<SalesOrderLineDetail> LineDetails { get; set; }
+        public virtual List<SalesOrderShippingLabel> ShippingLabels { get; set; }
+        public virtual InventoryUnitOfMeasure UnitOfMeasure { get; set; }
+        public virtual SalesOrderKitLineTypesEnum? KitLineType { get; set; }
+        public virtual decimal? KitUnits { get; set; }
+        public virtual string KitHeaderLineID { get; set; }
+        public virtual string SKUUnitName { get; set; }
+
+        public enum SalesOrderSerialStockSelectionTypesEnum
+        {
+            e_SalesOrderSerialStockSelectionPrompted,
+            e_SalesOrderSerialStockSelectionFIFO,
+        }
+
+        public enum SalesOrderKitLineTypesEnum
+        {
+            e_SalesOrderNormalLine,
+            e_SalesOrderKitHeader,
+            e_SalesOrderKitComponent,
+        }
+
+    }
+
+    public partial class SalesOrderLineDetail
+    {
+        public virtual decimal? Cost { get; set; }
+        public virtual DateTime? DateIn { get; set; }
+        public virtual DateTime? ExpiryDate { get; set; }
+        public virtual decimal? SpecialPrice { get; set; }
+        public virtual decimal? Quantity { get; set; }
+        public virtual string LineDetailID { get; set; }
+        public virtual string BinLocationID { get; set; }
+        public virtual string BinLocation { get; set; }
+        public virtual string BinLocationShortName { get; set; }
+        public virtual string SerialNo { get; set; }
+        public virtual string SOHID { get; set; }
+        public virtual string IN_LogicalID { get; set; }
+    }
+
+    public partial class SalesOrderPayment
+    {
+        public virtual int? HistoryNo { get; set; }
+        public virtual PaymentType PaymentType { get; set; }
+        public virtual decimal? AmountPaid { get; set; }
+        public virtual decimal? FXAmountPaid { get; set; }
+        public virtual DateTime? PaymentDate { get; set; }
+        public virtual bool? ProcessPayment { get; set; }
+        public virtual PaymentAuthStatuses? AuthorisationStatus { get; set; }
+        public virtual int? PaymentGatewayReturnCode { get; set; }
+        public virtual bool? Processed { get; set; }
+        public virtual DateTime? CardExpiry { get; set; }
+        public virtual string PaymentID { get; set; }
+        public virtual string PaymentRef { get; set; }
+        public virtual string AuthorisationNumber { get; set; }
+        public virtual string PaymentGatewayReturnMessage { get; set; }
+        public virtual string CardNumber { get; set; }
+        public virtual string CardHolder { get; set; }
+        public virtual string BankName { get; set; }
+        public virtual string BSBN { get; set; }
+        public virtual string BankAcc { get; set; }
+        public virtual string AccountName { get; set; }
+        public enum PaymentAuthStatuses
+        {
+            NoAuthorisationNeeded,
+            AuthorisationRequired,
+            Authorised,
+            Declined,
+            Error,
+        }
+
+    }
+
+    public partial class SalesOrderShippingLabel
+    {
+        public virtual decimal? Quantity { get; set; }
+        public virtual DateTime? UseByDate { get; set; }
+        public virtual int? LabelNumber { get; set; }
+        public virtual decimal? SpareNumeric1 { get; set; }
+        public virtual decimal? SpareNumeric2 { get; set; }
+        public virtual decimal? SpareNumeric3 { get; set; }
+        public virtual DateTime? SpareDate1 { get; set; }
+        public virtual DateTime? SpareDate2 { get; set; }
+        public virtual DateTime? SpareDate3 { get; set; }
+        public virtual string ShippingLabelID { get; set; }
+        public virtual string SSCCNumber { get; set; }
+        public virtual string BatchNo { get; set; }
+        public virtual string Reference { get; set; }
+        public virtual string SpareString1 { get; set; }
+        public virtual string SpareString2 { get; set; }
+        public virtual string SpareString3 { get; set; }
+        public virtual DateTimeOffset? LastSavedDateTime { get; set; }
+    }
+
+    public partial class SalesOrderSystemSettings
+    {
+        public virtual bool? ForceInventorySelection { get; set; }
+        public virtual bool? SuppressLineRetotalling { get; set; }
+        public virtual bool? IgnoreDebtorOnHold { get; set; }
+        public virtual bool? CompensateTaxRounding { get; set; }
+    }
+
+}
+#endregion
+
+#region Sales Quote"
+namespace JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes
+{
+    public partial class CartageCharge
+    {
+        public virtual decimal? ExTaxAmount { get; set; }
+        public virtual decimal? FXExTaxAmount { get; set; }
+        public virtual decimal? TaxAmount { get; set; }
+        public virtual decimal? FXTaxAmount { get; set; }
+        public virtual TaxRate TaxRate { get; set; }
+    }
+
+    public partial class OpportunityStatusReason
+    {
+        public virtual string OpportunityStatusReasonID { get; set; }
+        public virtual string Description { get; set; }
+        public virtual string Note { get; set; }
+        public virtual OpportunityStatusReasonTypes? StatusType { get; set; }
+        public enum OpportunityStatusReasonTypes
+        {
+            OnGoing = 0,
+            Won = 1,
+            Lost = 1,
+        }
+
+    }
+
+    public partial class SalesQuote
+    {
+        public virtual string Type { get; set; }
+        public virtual SalesQuoteSettings SystemSettings { get; set; }
+        public virtual DateTimeOffset? LastSavedDateTime { get; set; }
+        public virtual string QuoteID { get; set; }
+        public virtual string QuoteNo { get; set; }
+        public virtual string LogicalID { get; set; }
+        public virtual string LogicalWarehouseDescription { get; set; }
+        public virtual string PhysicalWarehouseDescription { get; set; }
+        public virtual string StaffID { get; set; }
+        public virtual string StaffUserName { get; set; }
+        public virtual string StaffTitle { get; set; }
+        public virtual string StaffFirstName { get; set; }
+        public virtual string StaffSurname { get; set; }
+        public virtual string BranchID { get; set; }
+        public virtual string BranchName { get; set; }
+        public virtual string BranchDescription { get; set; }
+        public virtual DateTime? InitiatedDate { get; set; }
+        public virtual DateTime? InvoiceInitDate { get; set; }
+        public virtual string OrderNo { get; set; }
+        public virtual string TaxExemptionNo { get; set; }
+        public virtual string SOReference { get; set; }
+        public virtual e_SalesQuoteTypes? SalesQuoteType { get; set; }
+        public virtual e_SalesQuoteOrderTypes? OrderType { get; set; }
+        public virtual e_SalesQuoteStatuses? Status { get; set; }
+        public virtual e_SalesQuoteBillTypes? BillType { get; set; }
+        public virtual DateTime? ExpectedDeliveryDate { get; set; }
+        public virtual string DebtorID { get; set; }
+        public virtual string DebtorAccountNo { get; set; }
+        public virtual string DebtorName { get; set; }
+        public virtual string DebtorEmailAddress { get; set; }
+        public virtual string DebtorContactName { get; set; }
+        public virtual string DeliveryAddressee { get; set; }
+        public virtual string DeliveryAddressPhone { get; set; }
+        public virtual string DeliveryAddress1 { get; set; }
+        public virtual string DeliveryAddress2 { get; set; }
+        public virtual string DeliveryAddressSuburb { get; set; }
+        public virtual string DeliveryAddressState { get; set; }
+        public virtual string DeliveryAddressContactName { get; set; }
+        public virtual string DeliveryAddressPostcode { get; set; }
+        public virtual string DeliveryAddressCountry { get; set; }
+        public virtual decimal? DeliveryAddressLatitude { get; set; }
+        public virtual decimal? DeliveryAddressLongitude { get; set; }
+        public virtual string DeliveryAddressNotes { get; set; }
+        public virtual string DeliveryAddressCourierDetails { get; set; }
+        public virtual string DeliveryAddressEmailAddress { get; set; }
+        public virtual bool? DropShipment { get; set; }
+        public virtual decimal? Cartage1ExGst { get; set; }
+        public virtual decimal? FXCartage1ExGst { get; set; }
+        public virtual decimal? Cartage1GstRate { get; set; }
+        public virtual decimal? Cartage1Gst { get; set; }
+        public virtual decimal? FXCartage1Gst { get; set; }
+        public virtual decimal? Cartage2ExGst { get; set; }
+        public virtual decimal? FXCartage2ExGst { get; set; }
+        public virtual decimal? Cartage2GstRate { get; set; }
+        public virtual decimal? Cartage2Gst { get; set; }
+        public virtual decimal? FXCartage2Gst { get; set; }
+        public virtual decimal? Cartage3ExGst { get; set; }
+        public virtual decimal? FXCartage3ExGst { get; set; }
+        public virtual decimal? Cartage3GstRate { get; set; }
+        public virtual decimal? Cartage3Gst { get; set; }
+        public virtual decimal? FXCartage3Gst { get; set; }
+        public virtual List<CustomFieldValue> CustomFieldValues { get; set; }
+        public virtual List<Note> Notes { get; set; }
+        public virtual List<Document> Documents { get; set; }
+        public virtual List<SalesQuoteLine> Lines { get; set; }
+        public virtual List<SalesQuoteHistory> Histories { get; set; }
+        public virtual SalesQuoteCashSales CashSales { get; set; }
+        public virtual SalesQuoteJobCosting JobCosting { get; set; }
+        public virtual Origin Origin { get; set; }
+        public virtual DeliveryMethod DeliveryMethod { get; set; }
+        public virtual string CurrencyID { get; set; }
+        public virtual string CurrencyShortName { get; set; }
+        public virtual decimal? CurrencyRate { get; set; }
+        public enum e_SalesQuoteTypes
+        {
+            e_SalesQuoteNormalSalesOrder,
+            e_SalesQuoteBackToBack,
+        }
+
+        public enum e_SalesQuoteBillTypes
+        {
+            e_SalesQuoteShipAndBill,
+            e_SalesQuoteBillWhenComplete,
+            e_SalesQuoteShipWhenComplete,
+        }
+
+        public enum e_SalesQuoteStatuses
+        {
+            e_SalesQuoteEntered,
+            e_SalesQuoteClosed,
+        }
+
+        public enum e_SalesQuoteOrderTypes
+        {
+            e_SalesQuoteOrderTypeReserveOrder,
+            e_SalesQuoteOrderTypeInvoiceOrder,
+            e_SalesQuoteOrderTypeForwardOrder,
+            e_SalesQuoteOrderTypeActiveOrder,
+        }
+
+    }
+
+    public partial class SalesQuoteCashSales
+    {
+        public virtual string Name { get; set; }
+        public virtual string Company { get; set; }
+        public virtual string Address1 { get; set; }
+        public virtual string Address2 { get; set; }
+        public virtual string Address3 { get; set; }
+        public virtual string Address4 { get; set; }
+        public virtual string PostCode { get; set; }
+        public virtual string Phone { get; set; }
+        public virtual string Fax { get; set; }
+        public virtual string ContactName { get; set; }
+        public virtual string Country { get; set; }
+        public virtual string EmailAddress { get; set; }
+    }
+
+    public partial class SalesQuoteHistory
+    {
+        public virtual string QuoteHistoryID { get; set; }
+        public virtual int? HistoryNo { get; set; }
+        public virtual SalesStage SalesStage { get; set; }
+        public virtual CartageCharge CartageCharge1 { get; set; }
+        public virtual CartageCharge CartageCharge2 { get; set; }
+        public virtual CartageCharge CartageCharge3 { get; set; }
+        public virtual OpportunityStatusReason OpportunityStatusReason { get; set; }
+        public virtual string Ref { get; set; }
+        public virtual string LastModifiedBy { get; set; }
+        public virtual decimal? HistoryTotal { get; set; }
+        public virtual decimal? FXHistoryTotal { get; set; }
+        public virtual DateTime? RecordDate { get; set; }
+        public virtual DateTime? ExpiryDate { get; set; }
+        public virtual int? ExpiryDays { get; set; }
+        public virtual bool? DocketPrinted { get; set; }
+        public virtual string DeliveryAddressPhone { get; set; }
+        public virtual string DelAddress1 { get; set; }
+        public virtual string DelAddress2 { get; set; }
+        public virtual string DelAddress3 { get; set; }
+        public virtual string DelAddress4 { get; set; }
+        public virtual string PostCode { get; set; }
+        public virtual string DeliveryAddressCountry { get; set; }
+        public virtual decimal? DeliveryAddressLatitude { get; set; }
+        public virtual decimal? DeliveryAddressLongitude { get; set; }
+        public virtual string Notes { get; set; }
+        public virtual string CourierDetails { get; set; }
+        public virtual string DeliveryAddressEmailAddress { get; set; }
+        public virtual string FreightForwardAddressPhone { get; set; }
+        public virtual string FreightForwardAddress1 { get; set; }
+        public virtual string FreightForwardAddress2 { get; set; }
+        public virtual string FreightForwardAddress3 { get; set; }
+        public virtual string FreightForwardAddress4 { get; set; }
+        public virtual string FreightForwardAddressPostcode { get; set; }
+        public virtual string FreightForwardAddressCountry { get; set; }
+        public virtual decimal? FreightForwardAddressLatitude { get; set; }
+        public virtual decimal? FreightForwardAddressLongitude { get; set; }
+        public virtual string FreightForwardNotes { get; set; }
+        public virtual string FreightForwardCourierDetails { get; set; }
+        public virtual string FreightForwardAddressEmailAddress { get; set; }
+        public virtual bool? InvoicePrinted { get; set; }
+        public virtual string DelContactName { get; set; }
+        public virtual DateTime? ExpectedCloseDate { get; set; }
+        public virtual StatusTypes? OpportunityStatus { get; set; }
+        public virtual string OpportunityNote { get; set; }
+        public virtual bool? InvoiceEmailed { get; set; }
+        public virtual bool? DropShipment { get; set; }
+        public virtual string DeliveryAddressee { get; set; }
+        public virtual List<SalesQuoteLine> Lines { get; set; }
+        public virtual decimal? CurrencyRate { get; set; }
+        public enum StatusTypes
+        {
+            OnGoing = 0,
+            Won = 1,
+            Lost = 1,
+        }
+
+    }
+
+    public partial class SalesQuoteJobCosting
+    {
+        public virtual bool? GSTApplicable { get; set; }
+        public virtual string JobCostID { get; set; }
+        public virtual string JobCostNo { get; set; }
+        public virtual string Description { get; set; }
+    }
+
+    public partial class SalesQuoteLine
+    {
+        public virtual int? ItemNo { get; set; }
+        public virtual string QuoteLineID { get; set; }
+        public virtual string InventoryID { get; set; }
+        public virtual string PartNo { get; set; }
+        public virtual string Description { get; set; }
+        public virtual bool? CommentLine { get; set; }
+        public virtual string CommentText { get; set; }
+        public virtual decimal? QuantityOrdered { get; set; }
+        public virtual decimal? PriceExGst { get; set; }
+        public virtual decimal? FXPriceExGst { get; set; }
+        public virtual decimal? PriceIncGst { get; set; }
+        public virtual decimal? FXPriceIncGst { get; set; }
+        public virtual decimal? DiscountedPrice { get; set; }
+        public virtual decimal? FXDiscountedPrice { get; set; }
+        public virtual decimal? TaxToCharge { get; set; }
+        public virtual decimal? FXTaxToCharge { get; set; }
+        public virtual TaxRate TaxRate { get; set; }
+        public virtual decimal? UnitCost { get; set; }
+        public virtual string LineLinkID { get; set; }
+        public virtual bool? FixSellPrice { get; set; }
+        public virtual decimal? UserDefinedFloat1 { get; set; }
+        public virtual decimal? UserDefinedFloat2 { get; set; }
+        public virtual decimal? UserDefinedFloat3 { get; set; }
+        public virtual decimal? LineTotal { get; set; }
+        public virtual decimal? FXLineTotal { get; set; }
+        public virtual decimal? Weight { get; set; }
+        public virtual decimal? Cubic { get; set; }
+        public virtual decimal? DiscountedPercentage { get; set; }
+        public virtual decimal? DiscountGiven { get; set; }
+        public virtual decimal? FXDiscountGiven { get; set; }
+        public virtual short? QuantityDecimalPlaces { get; set; }
+        public virtual decimal? QuantityOriginalOrdered { get; set; }
+        public virtual bool? NonInventory { get; set; }
+        public virtual List<CustomFieldValue> CustomFieldValues { get; set; }
+        public virtual SalesQuoteKitLineTypesEnum? KitLineType { get; set; }
+        public virtual decimal? KitUnits { get; set; }
+        public virtual string KitHeaderLineID { get; set; }
+        public virtual InventoryUnitOfMeasure UnitOfMeasure { get; set; }
+        public virtual string SKUUnitName { get; set; }
+
+        public enum SalesQuoteKitLineTypesEnum
+        {
+            e_SalesQuoteNormalLine,
+            e_SalesQuoteKitHeader,
+            e_SalesQuoteKitComponent,
+        }
+
+    }
+
+    public partial class SalesQuoteSettings
+    {
+        public virtual string Cat1Description { get; set; }
+        public virtual string Cat2Description { get; set; }
+        public virtual string Cat3Description { get; set; }
+        public virtual string Cat4Description { get; set; }
+        public virtual string Cat5Description { get; set; }
+        public virtual bool? DisplayProductUpSellPopUp { get; set; }
+        public virtual short? MoneyDecimalPlaces { get; set; }
+        public virtual short? SalesOrdersMoneyDecimalPlaces { get; set; }
+        public virtual string SalesOrdersMoneyFormatStr { get; set; }
+        public virtual string MoneyFormatStr { get; set; }
+        public virtual int? ComponentsForeColour { get; set; }
+        public virtual int? KitRoundingForeColour { get; set; }
+        public virtual int? KitForeColour { get; set; }
+        public virtual int? NonInventoryForeColour { get; set; }
+        public virtual decimal? DefaultQuantity { get; set; }
+        public virtual string GroupedCaption2 { get; set; }
+        public virtual bool? AllowInvoiceNumberOverride { get; set; }
+        public virtual bool? AllowPriceOverride { get; set; }
+        public virtual bool? AllowOtherOverrides { get; set; }
+        public virtual bool? AllowManualPartNoEntry { get; set; }
+        public virtual bool? AllowNonInventoryItems { get; set; }
+        public virtual bool? AllowTaxRateOverrides { get; set; }
+        public virtual bool? IncludeValueOfBackOrdersInCreditLimitCheck { get; set; }
+        public virtual bool? PrintInvoicesWithZeroQuantityDel { get; set; }
+        public virtual short? InvoicePrinterCopies { get; set; }
+        public virtual bool? PrintToScreen { get; set; }
+        public virtual bool? AllowModificationOfPrintedUnprocessedInvoices { get; set; }
+        public virtual bool? CheckForDuplicateOrderNos { get; set; }
+        public virtual bool? UseDefaultSalesPerson { get; set; }
+        public virtual bool? DefaultInvoiceTypeIsWholesale { get; set; }
+        public virtual string LinkSELECT { get; set; }
+        public virtual string LinkTITLE { get; set; }
+        public virtual string LinkDESC { get; set; }
+        public virtual string LinkKEY { get; set; }
+        public virtual string LinkID { get; set; }
+        public virtual bool? AllowKitComponentOverride { get; set; }
+        public virtual bool? PostTendered { get; set; }
+        public virtual bool? AllowInitDateEdit { get; set; }
+        public virtual bool? UseZeroCreditLimit { get; set; }
+        public virtual bool? CollectJobCostCode { get; set; }
+        public virtual bool? IgnoreBackOrderAllocations { get; set; }
+        public virtual bool? UsePicking { get; set; }
+        public virtual bool? ShowOnlyUsersDebtors { get; set; }
+        public virtual bool? AllowSaveToOrderWhenDebtorOnHold { get; set; }
+        public virtual bool? AddFreightToAllSnapshots { get; set; }
+        public virtual bool? DontChangePickPrices { get; set; }
+        public virtual bool? AutoKitPricing { get; set; }
+        public virtual bool? InvoicesFromQuotesUseActivateDate { get; set; }
+        public virtual bool? GrabSOHFromDefaultBin { get; set; }
+        public virtual bool? UseTaxExemption { get; set; }
+        public virtual bool? ValidateABN { get; set; }
+        public virtual bool? CompensateTaxRounding { get; set; }
+        public virtual bool? UseBranching { get; set; }
+        public virtual string InvoiceTypeDescription1 { get; set; }
+        public virtual string InvoiceTypeDescription2 { get; set; }
+        public virtual bool? AllowInvoiceTypeChange { get; set; }
+        public virtual bool? AllowForwardOrders { get; set; }
+        public virtual bool? AllowActiveOrders { get; set; }
+        public virtual string DocketNumHeader { get; set; }
+        public virtual string CreditNoteHeader { get; set; }
+        public virtual bool? BuildPaymentReferenceFromDebtor { get; set; }
+        public virtual string QuoteNoDescription { get; set; }
+        public virtual string ShortDateFormat { get; set; }
+        public virtual bool? ManualPrintSelection { get; set; }
+        public virtual bool? UseDirectTaxIfSellPriceIncTax { get; set; }
+        public virtual string JobCodeSeparator { get; set; }
+        public virtual bool? UseKitRoundingPart { get; set; }
+        public virtual string KitRoundingPartID { get; set; }
+        public virtual short? DiscountPercentDecimalPlaces { get; set; }
+        public virtual short? DefaultQuoteExpiryDays { get; set; }
+        public virtual bool? AllowDocumentManipulationOnClosedQuote { get; set; }
+        public virtual string DefaultDocumentTypeKey { get; set; }
+        public virtual string DefaultNoteTypeKey { get; set; }
+        public virtual bool? CopySalesQuoteIncludesNotes { get; set; }
+        public virtual bool? CopySalesQuoteIncludesDocuments { get; set; }
+        public virtual bool? DontApplyDebtorDiscounts { get; set; }
+        public virtual bool? UserTodoOnly { get; set; }
+        public virtual bool? DoNotReadSOHLevelsForQuotes { get; set; }
+    }
+
+    public partial class SalesStage
+    {
+        public virtual string SalesStageID { get; set; }
+        public virtual DateTimeOffset? LastSavedDateTime { get; set; }
+        public virtual int? ItemNo { get; set; }
+        public virtual string Description { get; set; }
+        public virtual short? PercentComplete { get; set; }
+        public virtual bool? IsDefault { get; set; }
+        public virtual bool? IsEnabled { get; set; }
+    }
+}
+#endregion
+
+#region "Staff"
+namespace JiwaFinancials.Jiwa.JiwaServiceModel.Staff
+{
+    public partial class StaffMember
+    {
+        public virtual string StaffID { get; set; }
+        public virtual string Title { get; set; }
+        public virtual string FirstName { get; set; }
+        public virtual string Surname { get; set; }
+        public virtual string Username { get; set; }
+        public virtual bool? IsActive { get; set; }
+        public virtual bool? IsEnabled { get; set; }
+    }
+
+}
+#endregion
 
 #region "Tags"
 namespace JiwaFinancials.Jiwa.JiwaServiceModel.Tags
@@ -669,6 +1732,37 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel.Tags
         public virtual byte[] RowHash { get; set; }
         public virtual int? ItemNo { get; set; }
     }
+}
+#endregion
+
+#region "Tax"
+namespace JiwaFinancials.Jiwa.JiwaServiceModel.Tax
+{
+    public partial class TaxRate
+    {
+        public virtual string RecID { get; set; }
+        public virtual string TaxID { get; set; }
+        public virtual string Description { get; set; }
+        public virtual TaxRateTypes? GSTTaxGroup { get; set; }
+        public virtual decimal? Rate { get; set; }
+        public virtual bool? IsDefaultRate { get; set; }
+        public virtual decimal? BASCode { get; set; }
+        public virtual bool? IsDefaultRateInGroup { get; set; }
+        public virtual bool? IsEnabled { get; set; }
+        public virtual Account LedgerAccount { get; set; }
+        public virtual DateTimeOffset? LastSavedDateTime { get; set; }
+        public virtual List<CustomFieldValue> CustomFieldValues { get; set; }
+    }
+
+    public enum TaxRateTypes
+    {
+        WST,
+        GSTIn,
+        GSTOut,
+        GSTAdjustmentsIn,
+        GSTAdjustmentsOut,
+    }
+
 }
 #endregion
 #endregion

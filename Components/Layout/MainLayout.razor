@@ -38,6 +38,8 @@
         <NavMenu />
     </div>        
     <main>
+        <StatusMessage Message="@statusMessage" />
+
         <div class="@HeaderAttribute()">            
             @* we use a section outlet to host the component to display user info (debtor name, email address) because
                 that's the only way for another page to communicate back to this one that it needs to update when the
@@ -84,6 +86,7 @@
 @code 
 {
     private JiwaFinancials.Jiwa.JiwaServiceModel.WebPortalUserSession? _WebPortalUserSession = null;
+    private string? statusMessage;
 
     public bool IsDarkColourMode
     {
@@ -122,33 +125,59 @@
         // Set the colour mode
         string currentColourMode = ColourModeService.ColourMode;
         string newColourMode = null;
-        ProtectedBrowserStorageResult<string> colourModeResult = await ProtectedLocalStore.GetAsync<string>("ColourMode");
-        if (colourModeResult.Value != null)
+
+        try
         {
-            newColourMode = colourModeResult.Value;
-            ColourModeService.ColourMode = colourModeResult.Value;
+            ProtectedBrowserStorageResult<string> colourModeResult = await ProtectedLocalStore.GetAsync<string>("ColourMode");
+            if (colourModeResult.Value != null)
+            {
+                newColourMode = colourModeResult.Value;
+                ColourModeService.ColourMode = colourModeResult.Value;
+            }
+            else
+            {
+                // get the colour mode from the browser preference
+                bool isdarkTheme = await BrowserService.IsDarkMode();
+                newColourMode = isdarkTheme ? "dark" : "light";
+            }
+
+            if (colourModeResult.Value != currentColourMode)
+            {
+                // if the colour mode now is different to what we started with (the default), then refresh the page to impact the change in App.razor which uses the theme colour
+                ColourModeService.ColourMode = newColourMode;
+                NavigationManager.Refresh();
+            }
+
         }
-        else
+        catch (Exception ex)
         {
-            // get the colour mode from the browser preference
-            bool isdarkTheme = await BrowserService.IsDarkMode();
-            newColourMode = isdarkTheme ? "dark" : "light";
+            if (ex.Message.StartsWith("The payload was invalid"))
+            {
+                // This just means the browser storage we tried to read for the colourmode was stale, we can ignore this
+            }
+            else
+            {
+                statusMessage = ex.Message;
+                throw;
+            }
         }
 
         Config.BootStrapVersion = await BrowserService.BootstrapVersion();
 
-        if (colourModeResult.Value != currentColourMode)
-        {
-            // if the colour mode now is different to what we started with (the default), then refresh the page to impact the change in App.razor which uses the theme colour
-            ColourModeService.ColourMode = newColourMode;
-            NavigationManager.Refresh();
-        }
-
         // Work out the date format from the browser and store it - we use this to display dates everywhere
-        await BrowserService.GetUserLocalDateFormat();        
-
+        await BrowserService.GetUserLocalDateFormat();
 
         // Setting the protected local store of the WebPortalUserSessionStateContainer will cause a re-authenticate if there is a stored ss-id
-        await WebPortalUserSessionStateContainer.SetProtectedLocalStore(ProtectedLocalStore);        
+        try
+        {
+            await WebPortalUserSessionStateContainer.SetProtectedLocalStore(ProtectedLocalStore);
+        }
+        catch (Exception ex)
+        {
+            if (ex.Message.StartsWith("The payload was invalid"))
+            {
+                // This just means the browser storage we tried to read for the ss-id was stale, we can ignore this - they'll just need to re-authenticate
+            }
+        }
     }
 }

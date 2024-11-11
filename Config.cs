@@ -88,6 +88,36 @@ namespace JiwaCustomerPortal
             JiwaAPISystemInformation = await JiwaAPI.GetAsync(new SystemInformationGETRequest(), jiwaAPIKey: JiwaAPIKey);
         }
 
+        public static string FormattedDecimals(decimal value, short decimalPlaces)
+        {
+            string decimalsFormat = new string('0', decimalPlaces);
+            return value.ToString($"###,###,###,###,###.{decimalsFormat}");
+        }
+
+        public static string FormattedDecimals(decimal? value, short decimalPlaces)
+        {
+            if (value != null)
+            {
+                return FormattedDecimals(value.Value, decimalPlaces);
+            }
+            else
+            {
+                return "";
+            }
+        }
+
+        public static string FormattedDecimals(decimal? value, short? decimalPlaces)
+        {
+            if (decimalPlaces == null)
+            {
+                return FormattedDecimals(value, 0);
+            }
+            else
+            {
+                return FormattedDecimals(value, decimalPlaces.Value);
+            }
+        }
+
         public static string FormattedCurrency(decimal value, string CurrencyID)
         {
             JiwaFinancials.Jiwa.JiwaServiceModel.Tables.FX_Currency currency = _Currencies[CurrencyID];
