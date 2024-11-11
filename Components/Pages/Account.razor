@@ -732,7 +732,7 @@
         switch (columnId)
         {
             case "InvoiceNoDashHistoryNo":
-                content = @<td><a href="SalesOrderPDF/@item.InvoiceID" target="_blank" rel="noopener noreferrer">@item.InvoiceNoDashHistoryNo</a></td>;
+                content = @<td><a href="SalesOrder/@item.InvoiceID">@item.InvoiceNoDashHistoryNo</a></td>;
                 break;
             case "InvoiceTotal":
                 if (item.CreditNote && item.InvoiceTotal != null)

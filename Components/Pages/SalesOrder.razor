@@ -1,0 +1,364 @@
+﻿@page "/SalesOrder/{InvoiceId}"
+@attribute [type: RenderModeInteractiveServer]
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using ServiceStack;
+@inject ProtectedLocalStorage ProtectedLocalStore
+@inject NavigationManager NavigationManager
+@inject WebPortalUserSessionStateContainer WebPortalUserSessionStateContainer
+@inject BrowserService BrowserService
+
+<PageTitle>Sales Order</PageTitle>
+
+@if (APIRequestInPogress)
+{
+    <div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0">
+                <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<StatusMessage Message="@statusMessage"/>
+
+@if (salesOrder != null)
+{
+    <div class="row">
+        <div class="col-3">
+            <label for="InvoiceNo" class="form-label">Invoice No.</label>
+            <input type="text" class="form-control" id="InvoiceNo" readonly placeholder="@salesOrder.InvoiceNo">
+        </div>
+        <div class="col-6">
+            <label for="Name" class="form-label">Name</label>
+            <input type="text" class="form-control" id="Name" readonly placeholder="@salesOrder.DebtorName">
+        </div>
+        <div class="col-3 text-end">
+            <a href="/SalesOrderPDF/@salesOrder.InvoiceID" target="_blank" rel="noopener noreferrer">
+                <button class="btn" style="background-color:transparent">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-printer" viewBox="0 0 16 16">
+                        <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1" />
+                        <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1" />
+                    </svg>
+                </button>
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-3">
+            <label for="Date" class="form-label">Date</label>
+            <input type="text" class="form-control" id="Date" readonly placeholder="@salesOrder.InvoiceInitDate.Value.ToString(@BrowserService.DateFormat)">
+        </div>
+        <div class="col-3">
+            <label for="OrderNo" class="form-label">Order No.</label>
+            <input type="text" class="form-control" id="OrderNo" readonly placeholder="@salesOrder.OrderNo">
+        </div>
+        <div class="col-3">
+            <label for="Reference" class="form-label">Reference</label>
+            <input type="text" class="form-control" id="Reference" readonly placeholder="@salesOrder.SOReference">
+        </div>
+    </div>
+
+    <div class="row">
+    </div>
+
+    <br />
+
+    <div class="row">
+        <div class="col-1">
+            <label for="Currency" class="form-label"><img src="data:image/png;base64,@Convert.ToBase64String(Config.Currencies[salesOrder.CurrencyID].Picture)" width="30" height="20"> @salesOrder.CurrencyShortName</label>
+        </div>        
+    </div>
+
+    <br />
+
+    <ul class="nav nav-tabs" id="detailsTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a @onclick='(() => OnSelectTab("Items-tab"))' class=@String.Format("nav-link{0}", SelectedTabId=="Items-tab" ? " active": null) id="Items-tab" data-bs-toggle="tab" data-bs-target="#Items" type="button" role="tab" aria-controls="Items" aria-selected=@String.Format("nav-link{0}", SelectedTabId=="Items-tab" ? "true": "false")>Items</a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a @onclick='(() => OnSelectTab("Shipping-tab"))' class=@String.Format("nav-link{0}", SelectedTabId=="Shipping-tab" ? " active": null) id="Shipping-tab" data-bs-toggle="tab" data-bs-target="#Shipping" type="button" role="tab" aria-controls="Shipping" aria-selected=@String.Format("nav-link{0}", SelectedTabId=="Shipping-tab" ? "true": "false")>Shipping</a>
+        </li>        
+    </ul>
+
+    <div class="tab-content">
+        <div class=@String.Format("tab-pane{0}", SelectedTabId=="Items-tab" ? " active": null) id="Items" role="tabpanel" aria-labelledby="Items-tab">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped small">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Part No.</th>                                        
+                            <th>Description</th>
+                            <th>Unit</th>
+                            <th class="text-end">Quantity</th>
+                            <th class="text-end">Price Ex</th>
+                            <th class="text-end">Total Ex</th>
+                            <th class="text-end">Tax</th>
+                            <th class="text-end">Total Inc.</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrderLine salesOrderLine in salesOrder.Lines)
+                        {
+                            <tr>
+                                @if (salesOrderLine.CommentLine.Value)
+                                {
+                                    <td>@salesOrderLine.ItemNo</td>
+                                    <td colspan="8">@salesOrderLine.CommentText</td>
+                                }
+                                else
+                                {
+                                    <td>@salesOrderLine.ItemNo</td>
+                                    <td>@salesOrderLine.PartNo</td>
+                                    <td>@salesOrderLine.Description</td>
+                                    @if (@salesOrderLine.UnitOfMeasure != null)
+                                    {
+                                        <td>@salesOrderLine.UnitOfMeasure.Name</td>
+                                    }
+                                    else
+                                    {
+                                        <td>@salesOrderLine.SKUUnitName</td>
+                                    }
+
+                                    <td class="text-end">@Config.FormattedDecimals(@salesOrderLine.QuantityOrdered, salesOrderLine.QuantityDecimalPlaces)</td>
+                                    <td class="text-end">@Config.FormattedCurrency(@salesOrderLine.FXDiscountedPrice, salesOrder.CurrencyID)</td>
+                                    <td class="text-end">@Config.FormattedCurrency(@salesOrderLine.FXLineTotal - salesOrderLine.TaxToCharge, @salesOrder.CurrencyID)</td>
+                                    <td class="text-end">@Config.FormattedCurrency(@salesOrderLine.FXTaxToCharge, salesOrder.CurrencyID)</td>
+                                    <td class="text-end">@Config.FormattedCurrency(@salesOrderLine.FXLineTotal, salesOrder.CurrencyID)</td>
+                                }
+                            </tr>
+                        }
+                        <tr>
+                            <td colspan="6" class="text-end">Sub Total</td>
+                            <td class="text-end">@Config.FormattedCurrency(salesOrder.Lines.Sum(x => x.FXLineTotal - x.TaxToCharge), salesOrder.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency(salesOrder.Lines.Sum(x => x.TaxToCharge), salesOrder.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency(salesOrder.Lines.Sum(x => x.FXLineTotal), salesOrder.CurrencyID)</td>
+                        </tr>
+
+                        @if (salesOrder.Cartage1ExGst + salesOrder.Cartage1Gst != 0)
+                        {
+                            <tr>
+                                <td colspan="6" class="text-end">Freight</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage1ExGst, salesOrder.CurrencyID)</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage1Gst, salesOrder.CurrencyID)</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage1ExGst + salesOrder.Cartage1Gst, salesOrder.CurrencyID)</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            // even if Cartage1 is 0, display as blank to give a better visual appeal - space out the sub total and total
+                            <tr>
+                                <td colspan="6" class="text-end">Freight</td>
+                                <td class="text-end"></td>
+                                <td class="text-end"></td>
+                                <td class="text-end"></td>
+                            </tr>
+                        }
+
+                        @if (salesOrder.Cartage2ExGst + salesOrder.Cartage2Gst != 0)
+                        {
+                            <tr>
+                                <td colspan="6" class="text-end">Freight</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage2ExGst, salesOrder.CurrencyID)</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage2Gst, salesOrder.CurrencyID)</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage2ExGst + salesOrder.Cartage2Gst, salesOrder.CurrencyID)</td>
+                            </tr>
+                        }
+
+                        @if (salesOrder.Cartage3ExGst + salesOrder.Cartage3Gst != 0)
+                        {
+                            <tr>
+                                <td colspan="6" class="text-end">Freight</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage3ExGst, salesOrder.CurrencyID)</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage3Gst, salesOrder.CurrencyID)</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage3ExGst + salesOrder.Cartage3Gst, salesOrder.CurrencyID)</td>
+                            </tr>
+                        }
+
+                        <tr>
+                            <td colspan="6" class="text-end">Total</td>
+                            <td class="text-end">@Config.FormattedCurrency(salesOrder.Lines.Sum(x => x.FXLineTotal - x.TaxToCharge) + salesOrder.Cartage1ExGst + salesOrder.Cartage2ExGst + salesOrder.Cartage3ExGst, salesOrder.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency(salesOrder.Lines.Sum(x => x.TaxToCharge) + salesOrder.Cartage1Gst + salesOrder.Cartage2Gst + salesOrder.Cartage3Gst, salesOrder.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency(salesOrder.Lines.Sum(x => x.FXLineTotal) + salesOrder.Cartage1ExGst + salesOrder.Cartage2ExGst + salesOrder.Cartage3ExGst + salesOrder.Cartage1Gst + salesOrder.Cartage2Gst + salesOrder.Cartage3Gst, salesOrder.CurrencyID)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class=@String.Format("tab-pane{0}", SelectedTabId=="Shipping-tab" ? " active": null) id="Addresses" role="tabpanel" aria-labelledby="Shipping-tab">
+            <div class="d-grid gap-3">
+                <div></div>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Shipping Address</h5>
+
+                        <div class="row">
+                            <div class="col-3">
+                                <label for="DeliveryAddressee" class="form-label">Addressee</label>
+                                <input type="text" class="form-control" id="DeliveryAddressee" readonly placeholder="@salesOrder.DeliveryAddressee">
+                            </div>
+                            <div class="col-3">
+                                <label for="DeliveryAddressContactName" class="form-label">Contact Name</label>
+                                <input type="text" class="form-control" id="DeliveryAddressContactName" readonly placeholder="@salesOrder.DeliveryAddressContactName">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-3">
+                                <label for="DeliveryAddress1" class="form-label">Address 1</label>
+                                <input type="text" class="form-control" id="DeliveryAddress1" readonly placeholder="@salesOrder.DeliveryAddress1">
+                            </div>
+                            <div class="col-3">
+                                <label for="DeliveryAddress2" class="form-label">Address 2</label>
+                                <input type="text" class="form-control" id="DeliveryAddress2" readonly placeholder="@salesOrder.DeliveryAddress2">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-3">
+                                <label for="DeliveryAddressState" class="form-label">State</label>
+                                <input type="text" class="form-control" id="DeliveryAddressState" readonly placeholder="@salesOrder.DeliveryAddressState">
+                            </div>
+                            <div class="col-3">
+                                <label for="DeliveryAddressSuburb" class="form-label">Suburb</label>
+                                <input type="text" class="form-control" id="DeliveryAddressSuburb" readonly placeholder="@salesOrder.DeliveryAddressSuburb">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-3">
+                                <label for="DeliveryAddressPostcode" class="form-label">Postcode</label>
+                                <input type="text" class="form-control" id="DeliveryAddressPostcode" readonly placeholder="@salesOrder.DeliveryAddressPostcode">
+                            </div>
+                            <div class="col-3">
+                                <label for="DeliveryAddressCountry" class="form-label">Country</label>
+                                <input type="text" class="form-control" id="DeliveryAddressCountry" readonly placeholder="@salesOrder.DeliveryAddressCountry">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-3">
+                                <label for="DeliveryAddressCourierDetails" class="form-label">Delivery Instructions</label>
+                                <input type="text" class="form-control" id="DeliveryAddressCourierDetails" readonly placeholder="@salesOrder.DeliveryAddressCourierDetails">
+                            </div>
+                            <div class="col-3">
+                                <label for="DeliveryAddressNotes" class="form-label">Notes</label>
+                                <input type="text" class="form-control" id="DeliveryAddressNotes" readonly placeholder="@salesOrder.DeliveryAddressNotes">
+                            </div>
+                        </div>
+                    </div>
+                </div>                
+            </div>
+        </div>        
+    </div>    
+}
+@code {
+    [Parameter]
+    public string InvoiceId { get; set; }
+
+    private bool APIRequestInPogress;
+    private string? statusMessage;
+    private JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrder salesOrder { get; set; }
+    private string SelectedTabId { get; set; } = "Items-tab";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if (WebPortalUserSessionStateContainer.ProtectedLocalStore == null)
+        {
+            try
+            {
+                await WebPortalUserSessionStateContainer.SetProtectedLocalStore(ProtectedLocalStore);
+            }
+            catch (Exception ex)
+            {
+                statusMessage = ex.Message;
+                return;
+            }
+        }
+
+        if (WebPortalUserSessionStateContainer.WebPortalUserSession == null)
+        {
+            // not authenticated
+            NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            return;
+        }
+
+        bool oldAPIRequestInPogress = APIRequestInPogress;        
+        APIRequestInPogress = true;
+
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderGETRequest salesOrderGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderGETRequest() { InvoiceID = InvoiceId };
+        try
+        {
+            salesOrder = await JiwaAPI.GetAsync(salesOrderGETRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+        }
+        catch (ServiceStack.WebServiceException webServiceException)
+        {
+            if (webServiceException.StatusCode == 401)
+            {
+                // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            }
+            else
+            {
+                statusMessage = webServiceException.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+        finally
+        {
+            APIRequestInPogress = oldAPIRequestInPogress;
+        }        
+    }       
+
+    private async Task OnSelectTab(string tabId)
+    {
+        SelectedTabId = tabId;
+    }
+
+    private async Task PrintSalesOrder()
+    {
+        NavigationManager.NavigateTo($"SalesOrderPDF/{salesOrder.InvoiceID}", options: new NavigationOptions() {  });
+    }
+
+    public void NoAuthenticationToken()
+    {
+        // user had no auth token to provide - redirect to logon
+        NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+    }
+
+    public async void APIException(Exception ex)
+    {
+        // first we need to work out what type of exception this was.  If it as a 401 (Not Authenticated), then we just redirect to to the login page
+        // Anything else, we set the errorMessage property so the component displays the error to the user.
+        if (ex is ServiceStack.WebServiceException)
+        {
+            ServiceStack.WebServiceException webServiceException = (ServiceStack.WebServiceException)ex;
+            if (webServiceException.StatusCode == 401)
+            {
+                // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            }
+            else
+            {
+                statusMessage = webServiceException.ErrorMessage;
+            }
+        }
+        else
+        {
+            statusMessage = ex.Message;
+        }
+    }    
+}
