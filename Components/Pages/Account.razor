@@ -485,17 +485,17 @@
         DebtorsTransactionsAutoQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_Debtor_Transactions_ListQuery()
             {
                 OrderByDesc = "TranDate",
-                    Fields = "InvRemitNo,TranDate,Description,DueDate,CurrencyShortName,Ref,Remark,Note,SourceID,DecimalPlaces,CurrencyID,DebitCredit,DebitAmountIncTax,CreditAmountIncTax,GSTAmount,AllocatedAmount,OutstandingAmount",
+                Fields = "InvRemitNo,TranDate,Description,DueDate,CurrencyShortName,Ref,Remark,Note,SourceID,DecimalPlaces,CurrencyID,DebitCredit,DebitAmountIncTax,CreditAmountIncTax,GSTAmount,AllocatedAmount,OutstandingAmount",
                 Take = 10
             };        
 
         SalesOrdersAutoQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesOrder_ListQuery()
-                    {
-                        OrderByDesc = "InvoiceNoDashHistoryNo",
-                        InvoiceTotalNotEqualTo = 0,
-                        Fields = "InvoiceID,InvoiceNoDashHistoryNo,InvoiceInitDate,OrderNo,SOReference,CurrencyShortName,InvoiceTotal,TotalAllocated,DueDate,CreditNote,CurrencyID",
-                        Take = 10
-                    };
+            {
+                OrderByDesc = "InvoiceNoDashHistoryNo",
+                InvoiceTotalNotEqualTo = 0,
+                Fields = "InvoiceID,InvoiceNoDashHistoryNo,InvoiceInitDate,OrderNo,SOReference,CurrencyShortName,InvoiceTotal,TotalAllocated,DueDate,CreditNote,CurrencyID",
+                Take = 10
+            };
 
         SalesQuotesAutoQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesQuote_ListQuery()
             {
@@ -715,7 +715,15 @@
                     }
                     else
                     {
-                        content =@<td class="text-end"></td>;
+                        // Display unallocated credits as a negative in the amount owing.
+                        if(@item.OutstandingAmount.Value == 0)
+                        {
+                            content = @<td class="text-end"></td>;
+                        }
+                        else
+                        {
+                            content = @<td class="text-end">@Config.FormattedCurrency(-@item.OutstandingAmount.Value, item.CurrencyID)</td>;
+                        }
                     }
                 }
                 break;
