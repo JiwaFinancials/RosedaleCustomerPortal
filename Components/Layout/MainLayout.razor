@@ -178,6 +178,11 @@
             {
                 // This just means the browser storage we tried to read for the ss-id was stale, we can ignore this - they'll just need to re-authenticate
             }
+            else
+            {
+                statusMessage = ex.Message;
+                throw;
+            }
         }
     }
 }

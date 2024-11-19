@@ -716,7 +716,15 @@
                     }
                     else
                     {
-                        content =@<td class="text-end"></td>;
+                        // Display unallocated credits as a negative in the amount owing.
+                        if (@item.OutstandingAmount.Value == 0)
+                        {
+                            content = @<td class="text-end"></td>;
+                        }
+                        else
+                        {
+                            content = @<td class="text-end">@Config.FormattedCurrency(-@item.OutstandingAmount.Value, item.CurrencyID)</td>;
+                        }
                     }
                 }
                 break;
