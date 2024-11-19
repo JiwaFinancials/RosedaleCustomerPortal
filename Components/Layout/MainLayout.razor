@@ -161,7 +161,7 @@
                 throw;
             }
         }   
-        
+
         Config.BootStrapVersion = await BrowserService.BootstrapVersion();
 
         // Work out the date format from the browser and store it - we use this to display dates everywhere
@@ -177,6 +177,11 @@
             if (ex.Message.StartsWith("The payload was invalid"))
             {
                 // This just means the browser storage we tried to read for the ss-id was stale, we can ignore this - they'll just need to re-authenticate
+            }
+            else
+            {
+                statusMessage = ex.Message;
+                throw;
             }
         }
     }
