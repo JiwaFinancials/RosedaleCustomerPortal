@@ -17,8 +17,8 @@
     <None Remove="wwwroot\bootstrap\**" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="ServiceStack" Version="8.3.0" />
-    <PackageReference Include="ServiceStack.Client" Version="8.4.0" />
+    <PackageReference Include="ServiceStack" />
+    <PackageReference Include="ServiceStack.Client" />
   </ItemGroup>
   <ItemGroup>
     <UpToDateCheckInput Remove="Components\User\PasswordReset.razor" />
