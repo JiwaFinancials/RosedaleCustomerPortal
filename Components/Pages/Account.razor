@@ -332,7 +332,7 @@
                                       ["CurrencyShortName"] = "Currency",
                                       ["DueDate"] = "Pay By"
                                   } )
-                HiddenColumns=@(new List<string>() { "InvoiceID", "CurrencyID" })
+                HiddenColumns=@(new List<string>() { "InvoiceID", "CurrencyID", "HistoryNo" })
                 AutoQuery="@SalesOrdersAutoQuery"
                 NoAuthenticationTokenCallbackMethod="@NoAuthenticationToken"
                 APIExceptionCallbackMethod="@APIException"
