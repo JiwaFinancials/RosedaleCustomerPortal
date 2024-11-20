@@ -1,40 +1,33 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
-
   <PropertyGroup Label="Globals">
     <SccProjectName>SAK</SccProjectName>
     <SccProvider>SAK</SccProvider>
     <SccAuxPath>SAK</SccAuxPath>
     <SccLocalPath>SAK</SccLocalPath>
   </PropertyGroup>
-
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Remove="wwwroot\bootstrap\**" />
     <Content Remove="wwwroot\bootstrap\**" />
     <EmbeddedResource Remove="wwwroot\bootstrap\**" />
     <None Remove="wwwroot\bootstrap\**" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="ServiceStack" Version="8.3.0" />
-    <PackageReference Include="ServiceStack.Client" Version="8.3.0" />
+    <PackageReference Include="ServiceStack.Client" Version="8.4.0" />
   </ItemGroup>
-
   <ItemGroup>
     <UpToDateCheckInput Remove="Components\User\PasswordReset.razor" />
   </ItemGroup>
-
   <ItemGroup>
     <_ContentIncludedByDefault Remove="Components\ModalDialogOKCancel.razor" />
     <_ContentIncludedByDefault Remove="Components\SignedInUserInfo.razor" />
     <_ContentIncludedByDefault Remove="Components\User\PasswordReset.razor" />
   </ItemGroup>
-
   <ItemGroup>
     <Content Update="Components\Pages\SalesOrder.razor">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
@@ -52,13 +45,10 @@
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
   </ItemGroup>
-
   <ItemGroup>
     <UpToDateCheckInput Remove="Components\ModalDialogOKCancel.razor" />
   </ItemGroup>
-
   <ItemGroup>
     <UpToDateCheckInput Remove="Components\SignedInUserInfo.razor" />
   </ItemGroup>
-
 </Project>
