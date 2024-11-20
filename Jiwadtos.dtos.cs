@@ -74,6 +74,7 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel
         public virtual string SalesQuoteReport { get; set; }
         public virtual string DebtorStatementReport { get; set; }
         public virtual string PluginVersion { get; set; }
+        public virtual string DocketNumHeader { get; set; }
     }
 
     [Route("/Debtors/ContactNames/{ContactNameID}/PasswordReset", "POST")]
@@ -181,15 +182,15 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel
         public virtual DateTime LogoutDateTime { get; set; }
     }
 
-    [Route("/SalesOrders/{InvoiceID}/InvoiceReport/{ReportID}", "GET")]
+    [Route("/SalesOrders/{InvoiceHistoryID}/InvoiceSnapshotReport/{ReportID}", "GET")]
     [ApiResponse(Description = "Read OK", StatusCode = 200)]
     [ApiResponse(Description = "Not authenticated", StatusCode = 401)]
     [ApiResponse(Description = "Not authorised", StatusCode = 403)]
-    [ApiResponse(Description = "No Sales Order with the InvoiceID, or Report with the ReportID provided was found", StatusCode = 404)]
-    public partial class InvoiceReportGETRequest
+    [ApiResponse(Description = "No Sales Order with the InvoiceHistoryID, or Report with the ReportID provided was found", StatusCode = 404)]
+    public partial class InvoiceSnapshotReportGETRequest
         : IReturn<IHttpResult>
     {
-        public virtual string InvoiceID { get; set; }
+        public virtual string InvoiceHistoryID { get; set; }
         public virtual string ReportID { get; set; }
         public virtual bool AsAttachment { get; set; }
     }

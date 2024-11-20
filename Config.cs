@@ -20,6 +20,7 @@ namespace JiwaCustomerPortal
         public static string SalesQuoteReport { get; set; }
         public static string DebtorStatementReport { get; set; }
         public static string CustomerWebPortalPluginVersion { get; set; }
+        public static string DocketNumHeader { get; set; }
 
         public static string _ServiceStackJsonAPIClientVersion;
         public static string ServiceStackJsonAPIClientVersion
@@ -83,6 +84,7 @@ namespace JiwaCustomerPortal
             SalesQuoteReport = response.SalesQuoteReport;
             DebtorStatementReport = response.DebtorStatementReport;
             CustomerWebPortalPluginVersion = response.PluginVersion;
+            DocketNumHeader = response.DocketNumHeader;
 
             JiwaAPISystemInformation = await JiwaAPI.GetAsync(new SystemInformationGETRequest(), jiwaAPIKey: JiwaAPIKey);
         }

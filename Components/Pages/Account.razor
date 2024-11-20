@@ -493,7 +493,7 @@
             {
                 OrderByDesc = "InvoiceNoDashHistoryNo",
                 InvoiceTotalNotEqualTo = 0,
-                Fields = "InvoiceID,InvoiceNoDashHistoryNo,InvoiceInitDate,OrderNo,SOReference,CurrencyShortName,InvoiceTotal,TotalAllocated,DueDate,CreditNote,CurrencyID",
+                    Fields = "InvoiceID,InvoiceNoDashHistoryNo,HistoryNo,InvoiceInitDate,OrderNo,SOReference,CurrencyShortName,InvoiceTotal,TotalAllocated,DueDate,CreditNote,CurrencyID",
                 Take = 10
             };
 
@@ -598,7 +598,7 @@
             case "InvRemitNo":
                 if (item.Description == "Sales Orders")
                 {
-                    content = @<td><a href="SalesOrder/@item.SourceID">@item.InvRemitNo</a></td>;
+                    content = @<td><a href="SalesOrder/@item.SourceID.Trim()?SnapshotNo=@GetSnapshotNoFromInvoiceNoDashDocketNumHeaderHistoryNo(item.InvRemitNo)">@item.InvRemitNo</a></td>;
                 }
                 else
                 {
@@ -740,7 +740,7 @@
         switch (columnId)
         {
             case "InvoiceNoDashHistoryNo":
-                content = @<td><a href="SalesOrder/@item.InvoiceID">@item.InvoiceNoDashHistoryNo</a></td>;
+                content = @<td><a href="SalesOrder/@item.InvoiceID.Trim()?SnapshotNo=@item.HistoryNo">@item.InvoiceNoDashHistoryNo</a></td>;
                 break;
             case "InvoiceTotal":
                 if (item.CreditNote && item.InvoiceTotal != null)
@@ -1083,5 +1083,35 @@
 
         ContactNameToDelete = null;
         StateHasChanged();
+    }
+
+    public short GetSnapshotNoFromInvoiceNoDashDocketNumHeaderHistoryNo(string InvoiceNoDashDocketNumHeaderHistoryNo)
+    {
+        short snapshotNo = 1;
+        // parse the @item.InvRemitNo to try to obtain the snapshot number
+        // Invoices appear in the InvRemitNo in the format {InvoiceNo}-{DocketNumHeader}{HistoryNo}
+        // Eg: 110237-D01
+        // The DocketNumHeader system setting is set in the CustomerWebPortalSettings when this web app first starts up.  It may be blank or null.
+        // So we get everthing to the right of the last hyphen (-) and remove the DocketNumHeader if that was not null or blank and what is left
+        // should be the snapshot number.
+        int hyphenIndex = InvoiceNoDashDocketNumHeaderHistoryNo.LastIndexOf('-');
+        if (hyphenIndex != -1)
+        {
+            string docketNo = InvoiceNoDashDocketNumHeaderHistoryNo.Substring(hyphenIndex);
+
+            if (!string.IsNullOrWhiteSpace(Config.DocketNumHeader))
+            {
+                docketNo = docketNo.Replace("-" + Config.DocketNumHeader, "");
+            }
+
+            short docketNoAsShort = 0;
+
+            if (short.TryParse(docketNo, out docketNoAsShort))
+            {
+                snapshotNo = docketNoAsShort;
+            }
+        }
+
+        return snapshotNo;
     }
 }
