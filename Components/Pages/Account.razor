@@ -108,10 +108,10 @@
                                 <td>@contactName.Mobile</td>
 
                                 <td>
-                                @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.Tags.Tag tag in contactName.TagMemberships)
-                                {
-                                    <span class="badge rounded-pill bg-primary">@tag.Text</span>
-                                }
+                                    @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.Tags.Tag tag in contactName.TagMemberships)
+                                    {
+                                        <span class="badge rounded-pill bg-primary">@tag.Text</span>
+                                    }
                                 </td>
                                 @if (WebPortalUserSessionStateContainer?.WebPortalUserSession?.IsAdminRole == true)
                                 {
@@ -124,7 +124,7 @@
                                             </svg>
                                         </button>
                                     </td>
-                            
+
                                     <!-- <td><button @onclick="(() => DeleteContactName(contactName))" type="button" class="btn btn-danger">Delete</button></td>-->
                                     <td class="text-center">
                                         <button @onclick="_ => DeleteContactName(contactName)" class="btn" style="background-color:transparent">
@@ -192,7 +192,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Delivery Addresses</h5>
@@ -598,8 +598,33 @@
         {            
             case "InvRemitNo":
                 if (item.Description == "Sales Orders")
-                {
-                    content = @<td><a href="SalesOrder/@item.SourceID">@item.InvRemitNo</a></td>;
+                {                    
+                    short snapshotNo = 1;
+                    // parse the @item.InvRemitNo to try to obtain the snapshot number
+                    // Invoices appear in the InvRemitNo in the format {InvoiceNo}-{DocketNumHeader}{HistoryNo}
+                    // Eg: 110237-D01
+                    // The DocketNumHeader system setting is set in the CustomerWebPortalSettings when this web app first starts up.  It may be blank or null.
+                    // So we get everthing to the right of the last hyphen (-) and remove the DocketNumHeader if that was not null or blank and what is left
+                    // should be the snapshot number.
+                    int hyphenIndex = item.InvRemitNo.LastIndexOf('-');
+                    if (hyphenIndex != -1)
+                    {
+                        string docketNo = item.InvRemitNo.Substring(hyphenIndex);
+
+                        if (!string.IsNullOrWhiteSpace(Config.DocketNumHeader))
+                        {
+                            docketNo = docketNo.Replace("-" + Config.DocketNumHeader, "");
+                        }
+
+                        short docketNoAsShort = 0;
+
+                        if (short.TryParse(docketNo, out docketNoAsShort))
+                        {
+                            snapshotNo = docketNoAsShort;
+                        }                        
+                    }
+
+                    content = @<td><a href="SalesOrder/@item.SourceID.Trim()?SnapshotNo=@snapshotNo">@item.InvRemitNo</a></td>;
                 }
                 else
                 {
