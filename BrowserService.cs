@@ -35,7 +35,7 @@ namespace JiwaCustomerPortal
                 // whether the day is the first part of the string or not
                 string userdate = await DateToLocaleString(new DateTime(2024, 12, 30));
 
-                if (userdate.StartsWith("30"))
+                if (userdate.StartsWith("30") || userdate.StartsWith("31"))
                 {
                     DateFormat = "dd/MM/yyyy";
                 }
