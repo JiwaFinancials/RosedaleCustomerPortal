@@ -1,8 +1,10 @@
 # Jiwa Customer Portal
 
 ##### Table of Contents  
-[About](#About) 
+[About](#About)
+
 [Functions](#Functions)
+
 [Deployment](#Deployment)
 
 # About
