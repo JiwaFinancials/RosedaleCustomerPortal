@@ -54,7 +54,8 @@ The Jiwa customer portal can be deployed on Linux or Windows machines.  The foll
 
 ## Linux
 
-### Creating an Azure linux VM 
+### Create an Azure linux VM 
+In the Azure Portal, create a new VM with the following properties (mostly only those deviating from defaults are shown)
 
 | Poperty | Value |
 | ---  | --- |
@@ -68,7 +69,7 @@ The Jiwa customer portal can be deployed on Linux or Windows machines.  The foll
 | Authentication type | Password |
 | Username | Choose a username |
 | Password | Choose a password |
-| Inbound port rules | SSH (22), HTTP (80), HTTPS (443) |
+| Inbound port rules | SSH (22) |
 | OS disk size | default (30GB) |
 | OS disk type | Standard SSD |
 | Public IP | create new |
@@ -77,6 +78,22 @@ The Jiwa customer portal can be deployed on Linux or Windows machines.  The foll
 #### Network Settings
 After creating the VM, edit the Network settings to limit SSH to only your IP address, and add port 80 and 443 to be open to any address.
 80 is used by the Lets Encrypt certbot to validate domain ownership for the generation of SSL certificates, not for the portal itself - that requires port 443.
+
+##### SSH (22)
+Edit the following two properties, leave the rest as they were.
+Source : IP addesses
+Source IP addresses / CIDR Ranges: {Your IP}/32
+![image](https://github.com/user-attachments/assets/85f850bc-8972-4296-81fb-2373200daf73)
+
+##### HTTP (80) and HTTPS (443)
+Create an inbound port rule for port 80 (HTTP) by selecting the Service as HTTP
+![image](https://github.com/user-attachments/assets/5e0b0fbf-8f5f-4db9-a08d-959860b49458)
+
+And do the same for HTTPS
+![image](https://github.com/user-attachments/assets/c26a02b2-ed8f-4532-9c51-d1b716669985)
+
+The network settings should look like the following after adding the required rules
+![image](https://github.com/user-attachments/assets/8e2ab71c-a072-42d3-b5f9-a5f24ce02212)
 
 #### DNS
 Assign a DSN Name to the machine in the Overview tab, Essentials group of the VM.
