@@ -1,18 +1,18 @@
 # Jiwa Customer Portal
 
 ##### Table of Contents  
-[About](##about) 
-[Functions](##functions)
-[Deployment](##deployment)
+[About](#About) 
+[Functions](#Functions)
+[Deployment](#Deployment)
 
 <a name="about"/>
-## About
+# About
 A simple web portal which uses the Jiwa 8 REST API to provide basic account functions.
 
 The portal is built using ASP.NET 9, ServiceStack Client 8.4.4 and Bootstrap 5.3.3
 
 <a name="functions"/>
-## Functions
+# Functions
 
 * Add, Edit and Remove contacts
 * View Mailing and Delivery Addresses
@@ -48,13 +48,13 @@ Only users with the debtor contact name tag "Customer Web Portal - Admin" are ab
 
 ![image](https://github.com/user-attachments/assets/aa1d6822-bea7-49cc-944e-a3081d158102)
 
-## Deployment
+# Deployment
 
 The Jiwa customer portal can be deployed on Linux or Windows machines.  The following instructions are for a Linux machine.
 
-### Linux
+## Linux
 
-#### Creating an Azure linux VM 
+### Creating an Azure linux VM 
 
 | Poperty | Value |
 | ---  | --- |
@@ -74,10 +74,10 @@ The Jiwa customer portal can be deployed on Linux or Windows machines.  The foll
 | Public IP | create new |
 | Boot Diagnostics | Disable |
 
-##### Network Settings
+#### Network Settings
 After creating the VM, edit the Network settings to limit SSH to only your IP address, and add port 80 and 443 to be open to any address
 
-##### DNS
+#### DNS
 Assign a DSN Name to the machine in the Overview tab, Essentials group of the VM.
 ![image](https://github.com/user-attachments/assets/0031003e-aeae-4cb0-8455-19af473667d0)
 
@@ -87,12 +87,12 @@ Given the DNS name label a suitable value and save.
 Back on the Overview tab, essentials group you should see the DNS name now as customerportal.australiaeast.cloudapp.azure.com (or whatever you chose) - copy that into your clipboard
 ![image](https://github.com/user-attachments/assets/b97ad5c6-a6ea-4824-9843-4aa338300b1d)
 
-###### Public DNS
+##### Public DNS
 In your public DNS provider, add a CNAME entry to point portal.yourdomain.com to the DNS name created previously - customerportal.australiaeast.cloudapp.azure.com (or whatever you chose)
 For example, in the below we are using Cloudflare to create a CNAME record pointing portal.jiwa.com.au to customerportal.australiaeast.cloudapp.azure.com
 ![image](https://github.com/user-attachments/assets/3eeeea25-0825-4833-b8fd-2a088ea570d6)
 
-#### Jiwa REST API Firewall
+### Jiwa REST API Firewall
 Unless you have good reason, your Jiwa 8 REST API should only accept requests from the IP address of the provisioned customer portal machine.
 Assuming that the Jiwa 8 REST API is also running on an Azure VM, add an inbound security rule to allow access to the Jiwa 8 REST API on the port it is configured to use, to the IP Address of the custome portal machine.
 
