@@ -104,7 +104,7 @@ Open the Network Settings for the machine runing the Jiwa 8 REST API and create 
 
 #### Configuring the linux environment
 
-Use a terminal client such as PuTTy to connect via SSH
+Use a terminal client such as PuTTY to connect via SSH
 
 ![image](https://github.com/user-attachments/assets/5d2b577a-d59f-41e3-a139-189c72f13182)
 
