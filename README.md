@@ -104,6 +104,16 @@ Open the Network Settings for the machine runing the Jiwa 8 REST API and create 
 
 #### Configuring the linux environment
 
+Use a terminal client such as PuTTy to connect via SSH
+
+![image](https://github.com/user-attachments/assets/5d2b577a-d59f-41e3-a139-189c72f13182)
+
+When the shell appears, login as with the credentials used to create the VM - note that the password will not be echoed back to you.
+
+![image](https://github.com/user-attachments/assets/09bb47fb-7230-475a-8902-5503b32efa4b)
+
+![image](https://github.com/user-attachments/assets/d8f3d619-dbbd-479e-be5d-df3b1ef7a204)
+
 ##### Set the timezone 
 we need an accurate timezone set to ensure overdue invoices are displayed appropriately
 ```console
