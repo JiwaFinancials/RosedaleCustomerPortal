@@ -75,7 +75,8 @@ The Jiwa customer portal can be deployed on Linux or Windows machines.  The foll
 | Boot Diagnostics | Disable |
 
 #### Network Settings
-After creating the VM, edit the Network settings to limit SSH to only your IP address, and add port 80 and 443 to be open to any address
+After creating the VM, edit the Network settings to limit SSH to only your IP address, and add port 80 and 443 to be open to any address.
+80 is used by the Lets Encrypt certbot to validate domain ownership for the generation of SSL certificates, not for the portal itself - that requires port 443.
 
 #### DNS
 Assign a DSN Name to the machine in the Overview tab, Essentials group of the VM.
@@ -218,6 +219,7 @@ Set execute permissions on that shell script now:
 chmod +x startportal.sh
 ```
 Test the script:
+Note we need to use sudo to run any apps which attempt to use ports < 1000 - so when running the script to run the app, we must prefix sudo to each command
 ```console
 sudo ./startportal.sh
 ```
@@ -257,3 +259,6 @@ Add the following line (be sure to include the space after the first period (.))
 then CTRL-X and Y to save and exit.
 
 Reboot the machine and ensure that https://portal.domain.com is accessible.
+
+#### Secure the machine
+Remove the Azure firewall rule to allow access via port 22 for SSH.  Add the rule as needed for subsequent maintenance operations where you need to SSH back in.
