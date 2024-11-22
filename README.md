@@ -178,7 +178,10 @@ The username and password is the username and password provided in the Azure por
 
 ![image](https://github.com/user-attachments/assets/9471bd18-1f0e-4aba-b772-4b115206a143)
 
-When the transfers complete, rename the remote site folder "publish" to "customerportal"
+When the transfers complete, go back to the terminal (PuTTY or whatever you used) and rename the remote site folder "publish" to "customerportal"
+```console
+mv publish customerportal 
+```
 
 Set the folder contents to be executable
 ```console
