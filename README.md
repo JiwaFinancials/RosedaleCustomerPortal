@@ -1,5 +1,11 @@
 # Jiwa Customer Portal
 
+##### Table of Contents  
+[About](##About) 
+[Functions](##Functions)
+[Deployment](##Deployment)
+
+## About
 A simple web portal which uses the Jiwa 8 REST API to provide basic account functions.
 
 The portal is built using ASP.NET 9, ServiceStack 8.4.4 and Bootstrap 5.3.3
@@ -192,7 +198,7 @@ pico startportal.sh
 We want to add the following 3 lines:
 ```console
 screen -dmS customerportalscreen
-screen -S customerportalscreen -p 0 -X stuff 'cd /home/JiwaAdmin/customerportal\n'
+screen -S customerportalscreen -p 0 -X stuff 'cd /home/YourUsername/customerportal\n'
 screen -S customerportalscreen -p 0 -X stuff 'sudo ./JiwaCustomerPortal\n'
 ```
 Set execute permissions on that shell script now:
@@ -232,7 +238,7 @@ Then the crontab will be shown:
 
 Add the following line (be sure to include the space after the first period (.)):
 ```console
-@reboot . /home/JiwaAdmin/startportal.sh
+@reboot . /home/YourUsername/startportal.sh
 ```
 
 then CTRL-X and Y to save and exit.
