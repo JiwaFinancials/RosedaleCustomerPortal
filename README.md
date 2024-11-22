@@ -253,8 +253,8 @@ sudo screen -x customerportalscreen
 ```
 And it should show the output from that screen:
 ![image](https://github.com/user-attachments/assets/98683857-679e-403b-b9b3-5ccf0e061ac2)
-Press CTRL-AD to exit the screen and leave it running.
-If you wanted to stop the screen, press CTRL-C when connected and then type exit to end the screen session.
+Press CTRL-AD to exit the screen and leave the web app running.
+If you wanted to stop the screen and the web app, press CTRL-C when connected and then type exit to end the screen session.
 
 ##### Configure Crontab
 Now edit the crontab with the command:
@@ -273,7 +273,7 @@ Add the following line (be sure to include the space after the first period (.))
 @reboot . /home/YourUsername/startportal.sh
 ```
 
-then CTRL-X and Y to save and exit.
+then CTRL-X and then answer Y to save and exit.
 
 Reboot the machine and ensure that https://portal.domain.com is accessible.
 
