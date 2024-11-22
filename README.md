@@ -173,6 +173,10 @@ dotnet publish -c release -r linux-x64 --self-contained
 When finished, the published folder will be located in the \bin\Release\net9.0\linux-x64\publish relative to the project.
 
 SFTP the publish folder to the linux machine. We use Filezilla, but any FTP client capable of SFTP will do.
+Your hostname will be sftp:// and the name of the machine - eg: sftp://portal.domain.com
+The username and password is the username and password provided in the Azure portal when you created the virtual machine.
+
+![image](https://github.com/user-attachments/assets/9471bd18-1f0e-4aba-b772-4b115206a143)
 
 When the transfers complete, rename the remote site folder "publish" to "customerportal"
 
