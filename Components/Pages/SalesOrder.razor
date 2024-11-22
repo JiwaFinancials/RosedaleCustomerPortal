@@ -113,7 +113,9 @@
                             <th>Description</th>
                             <th>Unit</th>
                             <th class="text-end">Quantity Ordered</th>
-                            <th class="text-end">Quantity Shipped</th>
+                            <th class="text-end">Quantity Previously Shipped</th>
+                            <th class="text-end">Quantity This Shipment</th>
+                            <th class="text-end">Quantity Backordered</th>
                             <th class="text-end">Price Ex</th>
                             <th class="text-end">Total Ex</th>
                             <th class="text-end">Tax</th>
@@ -122,13 +124,13 @@
                     </thead>
 
                     <tbody>
-                        @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrderLine salesOrderLine in salesOrder.Lines)
+                        @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrderLine salesOrderLine in SelectedHistory.Lines)
                         {
                             <tr>
                                 @if (salesOrderLine.CommentLine.Value)
                                 {
                                     <td>@salesOrderLine.ItemNo</td>
-                                    <td colspan="9">@salesOrderLine.CommentText</td>
+                                    <td colspan="11">@salesOrderLine.CommentText</td>
                                 }
                                 else
                                 {
@@ -145,7 +147,9 @@
                                     }
 
                                     <td class="text-end">@Config.FormattedDecimals(@salesOrderLine.QuantityOrdered, salesOrderLine.QuantityDecimalPlaces)</td>
+                                    <td class="text-end">@Config.FormattedDecimals(@salesOrderLine.QuantityPreviousDelivery, salesOrderLine.QuantityDecimalPlaces)</td>
                                     <td class="text-end">@Config.FormattedDecimals(@salesOrderLine.QuantityThisDel, salesOrderLine.QuantityDecimalPlaces)</td>
+                                    <td class="text-end">@Config.FormattedDecimals(@salesOrderLine.QuantityBackOrd, salesOrderLine.QuantityDecimalPlaces)</td>
                                     <td class="text-end">@Config.FormattedCurrency(@salesOrderLine.FXDiscountedPrice, salesOrder.CurrencyID)</td>
                                     <td class="text-end">@Config.FormattedCurrency(@salesOrderLine.FXLineTotal - salesOrderLine.TaxToCharge, @salesOrder.CurrencyID)</td>
                                     <td class="text-end">@Config.FormattedCurrency(@salesOrderLine.FXTaxToCharge, salesOrder.CurrencyID)</td>
@@ -154,7 +158,7 @@
                             </tr>
                         }
                         <tr>
-                            <td colspan="7" class="text-end">Sub Total</td>
+                            <td colspan="9" class="text-end">Sub Total</td>
                             <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal - x.TaxToCharge), salesOrder.CurrencyID)</td>
                             <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.TaxToCharge), salesOrder.CurrencyID)</td>
                             <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal), salesOrder.CurrencyID)</td>
@@ -163,7 +167,7 @@
                         @if (salesOrder.Cartage1ExGst + salesOrder.Cartage1Gst != 0)
                         {
                             <tr>
-                                <td colspan="7" class="text-end">Freight</td>
+                                <td colspan="9" class="text-end">Freight</td>
                                 <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage1ExGst, salesOrder.CurrencyID)</td>
                                 <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage1Gst, salesOrder.CurrencyID)</td>
                                 <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage1ExGst + salesOrder.Cartage1Gst, salesOrder.CurrencyID)</td>
@@ -173,7 +177,7 @@
                         {
                             // even if Cartage1 is 0, display as blank to give a better visual appeal - space out the sub total and total
                             <tr>
-                                <td colspan="7" class="text-end">Freight</td>
+                                <td colspan="9" class="text-end">Freight</td>
                                 <td class="text-end"></td>
                                 <td class="text-end"></td>
                                 <td class="text-end"></td>
@@ -183,7 +187,7 @@
                         @if (salesOrder.Cartage2ExGst + salesOrder.Cartage2Gst != 0)
                         {
                             <tr>
-                                <td colspan="7" class="text-end">Freight</td>
+                                <td colspan="9" class="text-end">Freight</td>
                                 <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage2ExGst, salesOrder.CurrencyID)</td>
                                 <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage2Gst, salesOrder.CurrencyID)</td>
                                 <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage2ExGst + salesOrder.Cartage2Gst, salesOrder.CurrencyID)</td>
@@ -193,7 +197,7 @@
                         @if (salesOrder.Cartage3ExGst + salesOrder.Cartage3Gst != 0)
                         {
                             <tr>
-                                <td colspan="7" class="text-end">Freight</td>
+                                <td colspan="9" class="text-end">Freight</td>
                                 <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage3ExGst, salesOrder.CurrencyID)</td>
                                 <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage3Gst, salesOrder.CurrencyID)</td>
                                 <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage3ExGst + salesOrder.Cartage3Gst, salesOrder.CurrencyID)</td>
@@ -201,7 +205,7 @@
                         }
 
                         <tr>
-                            <td colspan="7" class="text-end">Total</td>
+                            <td colspan="9" class="text-end">Total</td>
                             <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal - x.TaxToCharge) + salesOrder.Cartage1ExGst + salesOrder.Cartage2ExGst + salesOrder.Cartage3ExGst, salesOrder.CurrencyID)</td>
                             <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.TaxToCharge) + salesOrder.Cartage1Gst + salesOrder.Cartage2Gst + salesOrder.Cartage3Gst, salesOrder.CurrencyID)</td>
                             <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal) + salesOrder.Cartage1ExGst + salesOrder.Cartage2ExGst + salesOrder.Cartage3ExGst + salesOrder.Cartage1Gst + salesOrder.Cartage2Gst + salesOrder.Cartage3Gst, salesOrder.CurrencyID)</td>

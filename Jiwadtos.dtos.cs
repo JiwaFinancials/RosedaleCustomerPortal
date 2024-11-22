@@ -1110,7 +1110,9 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders
         public virtual int? ItemNo { get; set; }
         public virtual bool? CommentLine { get; set; }
         public virtual decimal? QuantityOrdered { get; set; }
+        virtual public decimal? QuantityPreviousDemand { get; set; }
         public virtual decimal? QuantityDemand { get; set; }
+        virtual public decimal? QuantityPreviousDelivery { get; set; }
         public virtual decimal? QuantityThisDel { get; set; }
         public virtual decimal? QuantityBackOrd { get; set; }
         public virtual bool? Picked { get; set; }
@@ -1145,6 +1147,7 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders
         public virtual decimal? QuantityOriginalOrdered { get; set; }
         public virtual SalesOrderSerialStockSelectionTypesEnum? SalesOrderSerialStockSelectionTypes { get; set; }
         public virtual bool? NonInventory { get; set; }
+        virtual public string PreviousSnapInvoiceLineID { get; set; }
         public virtual string InvoiceLineID { get; set; }
         public virtual string InventoryID { get; set; }
         public virtual string PartNo { get; set; }
