@@ -5,11 +5,13 @@
 [Functions](##Functions)
 [Deployment](##Deployment)
 
+<a name="About"/>
 ## About
 A simple web portal which uses the Jiwa 8 REST API to provide basic account functions.
 
 The portal is built using ASP.NET 9, ServiceStack 8.4.4 and Bootstrap 5.3.3
 
+<a name="Functions"/>
 ## Functions
 
 * Add, Edit and Remove contacts
@@ -46,6 +48,7 @@ Only users with the debtor contact name tag "Customer Web Portal - Admin" are ab
 
 ![image](https://github.com/user-attachments/assets/aa1d6822-bea7-49cc-944e-a3081d158102)
 
+<a name="Deployment"/>
 ## Deployment
 
 The Jiwa customer portal can be deployed on Linux or Windows machines.  The following instructions are for a Linux machine.
