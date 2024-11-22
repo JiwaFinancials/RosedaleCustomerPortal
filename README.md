@@ -50,7 +50,7 @@ Only users with the debtor contact name tag "Customer Web Portal - Admin" are ab
 
 # Deployment
 
-The Jiwa customer portal can be deployed on Linux or Windows machines.  The following instructions are for a Linux machine.
+The Jiwa customer portal can be deployed on Linux or Windows machines.  The following instructions are for a Linux machine, created as a VM in the Azure platform.
 
 ## Linux
 
