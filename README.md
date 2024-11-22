@@ -157,7 +157,7 @@ sudo apt-get install certbot
 ```
 
 ###### Run certbot
-Issue the command to get a stand-alone SSL certificate - when asked, enter the DNS name of the machine - eg: portal.jiwa.com.au
+Issue the command to get a stand-alone SSL certificate - when asked, enter the DNS name matching that of the CNAME record created - eg: portal.jiwa.com.au.
 ```console
 sudo certbot certonly --standalone 
 ```
@@ -187,6 +187,7 @@ pico customerportal/appsettings.json
 ```
 
 You must set the JiwaAPIURL, JiwaAPIKey, AllowedHosts, Kestrel.Endpoints.MyHttpEndpoint.Url , Kestrel.Certificates.Default.Path and Kestrel.Certificates.Default.KeyPath.
+AllowedHosts and Kestrel.Endpoints.MyHttpEndpoint.Url must match the CNAME DNS record created earlier in the public DNS and what certbot was instructed to generate the SSL certificate for.
 
 ```json
 {
@@ -255,6 +256,8 @@ And it should show the output from that screen:
 ![image](https://github.com/user-attachments/assets/98683857-679e-403b-b9b3-5ccf0e061ac2)
 Press CTRL-AD to exit the screen and leave the web app running.
 If you wanted to stop the screen and the web app, press CTRL-C when connected and then type exit to end the screen session.
+
+Check using a browser that your portal is accessible by visting the configured url in the appsettings.json (eg: https://portal.jiwa.com.au)
 
 ##### Configure Crontab
 Now edit the crontab with the command:
