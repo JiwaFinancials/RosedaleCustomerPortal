@@ -85,7 +85,7 @@ For example, in the below we are using Cloudflare to create a CNAME record point
 ![image](https://github.com/user-attachments/assets/3eeeea25-0825-4833-b8fd-2a088ea570d6)
 
 #### Jiwa REST API Firewall
-Unless you have good reason, your Jiwa 8 REST API should only accept requests from the IP address of the provision customer portal machine.
+Unless you have good reason, your Jiwa 8 REST API should only accept requests from the IP address of the provisioned customer portal machine.
 Assuming that the Jiwa 8 REST API is also running on an Azure VM, add an inbound security rule to allow access to the Jiwa 8 REST API on the port it is configured to use, to the IP Address of the custome portal machine.
 
 Copy the IP address of the customer portal VM 
@@ -98,26 +98,42 @@ Open the Network Settings for the machine runing the Jiwa 8 REST API and create 
 
 ##### Set the timezone 
 we need an accurate timezone set to ensure overdue invoices are displayed appropriately
+```console
 timedatectl set-timezone Australia/Sydney
+```
 
 ##### Update the system
+```console
 sudo  apt-get update
+```
+
+##### Install Cron
+To run in a screen automatically on startup, we’ll use a crontab - used to run programs or scripts on a schedule - but can also be used to run scripts on startup - but first we need to install cron:
+```console
+sudo apt-get install cron
+```
 
 ##### SSL Certificate
 ###### Install certbot
 This generates an SSL certificate
+```console
 sudo apt-get install certbot
+```
 
 ###### Run certbot
 Issue the command to get a stand-alone SSL certificate - when asked, enter the DNS name of the machine - eg: portal.jiwa.com.au
+```console
 sudo certbot certonly --standalone 
+```
 
 ###### appsettings.json
 Edit appsettings.json and add the certificate section, and change the http endpoint to be https and port 443 instead of http and port 80
 
 #### Publish JiwaCustomerPortal project
 Publish the project by opening a Visual Studio 2022 command prompt and running the following command from the same folder as the project:
+```console
 dotnet publish -c release -r linux-x64 --self-contained
+```
 When finished, the published folder will be located in the \bin\Release\net9.0\linux-x64\publish relative to the project.
 
 SFTP the publish folder to the linux machine. We use Filezilla, but any FTP client capable of SFTP will do.
@@ -125,10 +141,16 @@ SFTP the publish folder to the linux machine. We use Filezilla, but any FTP clie
 When the transfers complete, rename the remote site folder "publish" to "customerportal"
 
 Set the folder contents to be executable
+```console
 chmod -R 777 customerportal
+```
 
-Use your editor of choice and edit the customerportal/appsettings.json 
+Use your editor of choice and edit the customerportal/appsettings.json
+```console
 pico customerportal/appsettings.json
+```
+
+You must set the JiwaAPIURL, JiwaAPIKey, AllowedHosts, Kestrel.Endpoints.MyHttpEndpoint.Url , Kestrel.Certificates.Default.Path and Kestrel.Certificates.Default.KeyPath.
 
 ```json
 {
@@ -140,19 +162,79 @@ pico customerportal/appsettings.json
       "Microsoft.AspNetCore": "Warning"
     }
   },
-  "AllowedHosts": "portal.domain.com.au",
+  "AllowedHosts": "portal.domain.com",
   "Kestrel": {
       "Endpoints": {
         "MyHttpEndpoint": {
-          "Url": "https://portal.domaincom.au:443"
+          "Url": "https://portal.domain.com:443"
         }
       },
     "Certificates": {
       "Default": {
-          "Path": "/etc/letsencrypt/live/portal.jiwa.com.au/fullchain.pem",
-          "KeyPath": "/etc/letsencrypt/live/portal.jiwa.com.au/privkey.pem"
+          "Path": "/etc/letsencrypt/live/portal.domain.com/fullchain.pem",
+          "KeyPath": "/etc/letsencrypt/live/portal.domain.com/privkey.pem"
         }
     }
   }
 }
 ```
+
+###### Create startup script
+We will create a script to run the customer portal in a screen, and we’ll get the crontab to execute that on reboot.
+change to the home folder of the current user
+```console
+cd $home
+```
+Then use pico to create and edit startportal.sh
+```console
+pico startportal.sh
+```
+We want to add the following 3 lines:
+```console
+screen -dmS customerportalscreen
+screen -S customerportalscreen -p 0 -X stuff 'cd /home/JiwaAdmin/customerportal\n'
+screen -S customerportalscreen -p 0 -X stuff 'sudo ./JiwaCustomerPortal\n'
+```
+Set execute permissions on that shell script now:
+```console
+chmod +x startportal.sh
+```
+Test the script:
+```console
+sudo ./startportal.sh
+```
+It should appear to have done nothing, but run the command to show all running screens:
+```console
+sudo screen -ls
+```
+and it should appear in the list of running screens:
+![image](https://github.com/user-attachments/assets/995b7f95-e2b8-44ad-93ac-0b54589061a2)
+Connect to the screen with the command:
+```console
+sudo screen -x customerportalscreen
+```
+And it should show the output from that screen:
+![image](https://github.com/user-attachments/assets/98683857-679e-403b-b9b3-5ccf0e061ac2)
+Press CTRL-AD to exit the screen and leave it running.
+If you wanted to stop the screen, press CTRL-C when connected and then type exit to end the screen session.
+
+##### Configure Crontab
+Now edit the crontab with the command:
+```console
+sudo crontab -e
+```
+
+If asked to choose an editor, do so - I use nano (aka pico):
+![image](https://github.com/user-attachments/assets/34eeff43-769a-47ef-aeda-f602853f36a1)
+
+Then the crontab will be shown:
+![image](https://github.com/user-attachments/assets/c395cbf1-e080-4239-a9cb-1fca29f27477)
+
+Add the following line (be sure to include the space after the first period (.)):
+```console
+@reboot . /home/JiwaAdmin/startportal.sh
+```
+
+then CTRL-X and Y to save and exit.
+
+Reboot the machine and ensure that https://portal.domain.com is accessible.
