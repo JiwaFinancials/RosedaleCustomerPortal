@@ -1,9 +1,9 @@
 # Jiwa Customer Portal
 
 ##### Table of Contents  
-[About](##About) 
-[Functions](##Functions)
-[Deployment](##Deployment)
+[About](##about) 
+[Functions](##functions)
+[Deployment](##deployment)
 
 ## About
 A simple web portal which uses the Jiwa 8 REST API to provide basic account functions.
