@@ -50,9 +50,31 @@ Only users with the debtor contact name tag "Customer Web Portal - Admin" are ab
 
 # Deployment
 
-The Jiwa customer portal can be deployed on Linux or Windows machines.  The following instructions are for a Linux machine, created as a VM in the Azure platform.
+## Jiwa REST API 
+The Jiwa 8 REST API must be configured and running.
+
+## Customer Web Portal plugin
+This standard plugin can be found in the /Plugins folder of your Jiwa installation - import it if it is not present in your database.
+Once imported, log out of Jiwa and back in and open the System Configuration form and set the valus on the _Customer Web Portal_ tab.
+
+![image](https://github.com/user-attachments/assets/c4807772-5943-41c2-bc3b-be46fff6e781)
+
+The _PasswordResetTokenExpiryDays_ setting is the number of days a password reset token is valid for.  Users can self-reset their passwords if they do not know or have forgotten their passwords, and this setting controls how long a reset token emailed to them remains valid.
+
+The _PasswordResetEmailTemplate_ setting is the email template to use for emailing password resets.  Jiwa will have a template already to use, _TCP001 - Customer Portal Reset Template #1_ - it is shown below
+![image](https://github.com/user-attachments/assets/abe46805-a76f-4854-9770-48ea92d3f184)
+
+It is not recommended to modify the standard template _TCP001 - Customer Portal Reset Template #1_, as it may change during future Jiwa upgrades automatically - instead copy this template, modify that copy and set the system setting _PasswordResetEmailTemplate_ to be your custom template.
+
+The _Sales Order Report_ setting is the Jiwa report to use to generate a PDF of a customer invoice.  It defaults to the standard Jiwa invoice report. Change this to your own invoice format if you have one.
+
+The _Debtor Statement Report_ setting is the Jiwa report to use to generate a PDF of a debtor statement.  It defaults to the standard Jiwa debtor statement report. Change this to your own statement format if you have one.
+
+The _Sales Quote Report_ setting is the Jiwa report to use to generate a PDF of a quote for a customer.  It defaults to the standard Jiwa quote report. Change this to your own quote format if you have one.
 
 ## Linux
+
+The Jiwa customer portal can be deployed on Linux or Windows machines.  The following instructions are for a Linux machine, created as a VM in the Azure platform.
 
 ### Create an Azure linux VM 
 In the Azure Portal, create a new VM with the following properties (mostly only those deviating from defaults are shown)
