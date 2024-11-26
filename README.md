@@ -72,6 +72,44 @@ The _Debtor Statement Report_ setting is the Jiwa report to use to generate a PD
 
 The _Sales Quote Report_ setting is the Jiwa report to use to generate a PDF of a quote for a customer.  It defaults to the standard Jiwa quote report. Change this to your own quote format if you have one.
 
+## User Group
+Create a new user group named Customer Web Portal.  Enable this user group.
+
+### Route permissions
+Grant the following REST API permissions to the Customer Web Portal User Group:
+GET /CustomerWebPortal/Role
+GET /CustomerWebPortal/Settings
+POST /Debtors/ContactNames/{ContactNameID}/PasswordReset
+POST /Debtors/ContactNames/{Token}/TokenisedPasswordChange
+GET /Sessions/Current
+GET /auth/logout
+GET /SalesOrders/{InvoiceHistoryID}/InvoiceSnapshotReport/{ReportID}
+GET /SalesQuotes/{QuoteID}/QuoteReport/{ReportID}
+GET /Debtors/{DebtorID}/StatementReport/{ReportID}/At/{AsAtDate}
+GET /Debtors
+GET /Debtors/{DebtorID}/ContactNames
+POST /Debtors/{DebtorID}/ContactNames
+PATCH /Debtors/{DebtorID}/ContactNames/{ContactNameID}
+DELETE /Debtors/{DebtorID}/ContactNames/{ContactNameID}
+GET /Debtors/ContactNamesTag
+PUT /Debtors/{DebtorID}/ContactNames/{ContactNameID}/TagMembership
+GET /Queries/SalesOrderList
+GET /Queries/SalesQuoteList
+GET /Queries/ContactNameMultiples
+GET /Queries/DebtorTransactionList
+GET /Debtors/{DebtorID}/Backorders
+GET /Queries/FX_Currency
+GET /SystemInfo
+GET /Queries/StartupLog
+GET /Queries/PluginExceptions
+GET /SalesOrders/{InvoiceID}
+
+## Create user Customer Web Portal
+Create a new Staff Member in the Staff Maintenance form with the name Web Portal.  Add this Staff member to the  Customer Web Portal User Group.
+
+### API Key
+Generate an API Key for the Staff member Web Portal.  There are only a handful of routes that that the customer web portal uses this API Key for.
+
 ## Linux
 
 The Jiwa customer portal can be deployed on Linux or Windows machines.  The following instructions are for a Linux machine, created as a VM in the Azure platform.
