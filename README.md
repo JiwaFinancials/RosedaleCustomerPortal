@@ -55,7 +55,7 @@ The Jiwa 8 REST API must be configured and running.
 
 ## Customer Web Portal plugin
 This standard plugin can be found in the /Plugins folder of your Jiwa installation - import it if it is not present in your database.
-Once imported, log out of Jiwa and back in and open the System Configuration form and set the valus on the _Customer Web Portal_ tab.
+Once imported, log out of Jiwa and back in and open the System Configuration form and set the values on the _Customer Web Portal_ tab.
 
 ![image](https://github.com/user-attachments/assets/c4807772-5943-41c2-bc3b-be46fff6e781)
 
