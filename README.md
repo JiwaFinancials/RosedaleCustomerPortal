@@ -73,7 +73,9 @@ The _Debtor Statement Report_ setting is the Jiwa report to use to generate a PD
 The _Sales Quote Report_ setting is the Jiwa report to use to generate a PDF of a quote for a customer.  It defaults to the standard Jiwa quote report. Change this to your own quote format if you have one.
 
 ## User Group
-Create a new user group named Customer Web Portal.  Enable this user group.
+A user group should be created to define the necessary REST API route permissions.
+
+Import the user group https://github.com/JiwaFinancials/JiwaCustomerPortal/blob/master/User%20Group%20Customer%20Web%20Portal.xml to create a user group named Customer Web Portal with all the required permisssions, or create and enable your own group.
 
 ### Route permissions
 Grant the following REST API permissions to the Customer Web Portal User Group:
@@ -107,21 +109,21 @@ Grant the following REST API permissions to the Customer Web Portal User Group:
 ![image](https://github.com/user-attachments/assets/1aad73eb-921b-47c1-b1ec-02393327af52)
 
 ## Create user Customer Web Portal
-Create a new Staff Member in the Staff Maintenance form with the name Web Portal.  Add this Staff member to the Customer Web Portal User Group.
+Create a new Staff Member in the Staff Maintenance form with the name Customer Web Portal.  Add this Staff member to the Customer Web Portal User Group.
 
 ### Emailing configuration
 In order for users of your portal to be able to request a password reset, the system must be configured to be able to send emails and the Web Portal staff member must have an email provider configured.
 
 Make sure at least one email provider plugin is enabled and configured which does not require interactive authentication (for example, the _Email - Microsoft 365 Username Password Credentials_ plugin).
 
-Also ensure the staff member Web Portal has this email provider selected, and the Email username and password set in the Email Settings section.
-![image](https://github.com/user-attachments/assets/0883659b-1dcc-4944-956d-3a4633e114e6)
+Also ensure the staff member Customer Web Portal has this email provider selected, and the Email username and password set in the Email Settings section.
+![image](https://github.com/user-attachments/assets/e2a2a6d8-447f-4a54-8ca2-0ba3659cd32d)
 
 ### API Key
 Generate an API Key for the Staff member Web Portal.  There are only a handful of routes that that the customer web portal uses this API Key for.
 
 ## Debtor Contacts
-The Customer Web portal will only allow login if the debtor contact has a valid email address and has one of two tags - Customer Web Portal - Admin or Customer Web Portal - User.
+The Customer Web Portal will only allow login if the debtor contact has a valid email address and has one of two tags - Customer Web Portal - Admin or Customer Web Portal - User.
 
 ### Debtor Contact Tags
 Create the tags Customer Web Portal - Admin and Customer Web Portal - User is they are not already present.
@@ -132,7 +134,7 @@ Add at least one of these tags to the users you wish to be able to login to the 
 
 ## REST API System Setting
 The CustomerWebPortalJiwaUser setting of the REST API tab of the System Configuration form should be set to the user created earlier.  You may need to restart the Jiwa REST API Self Hosted service after setting this value.
-![image](https://github.com/user-attachments/assets/529428c7-9d41-49ea-a6d9-58907dd88ea6)
+![image](https://github.com/user-attachments/assets/9be19ca9-3c15-4fc8-9fe8-4a16fd25149c)
 
 ## Linux VM
 
