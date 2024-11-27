@@ -102,6 +102,13 @@
       <AccessLevel>Allow</AccessLevel>
     </UserGroupRESTAPIPermission>
     <UserGroupRESTAPIPermission>
+      <RecID>903f6260-eaca-429f-8523-3941755367be</RecID>
+      <RESTPath>/Debtors/{DebtorID}/ContactNames/{ContactNameID}</RESTPath>
+      <Verb>DELETE</Verb>
+      <Summary />
+      <AccessLevel>Allow</AccessLevel>
+    </UserGroupRESTAPIPermission>
+    <UserGroupRESTAPIPermission>
       <RecID>066e9f7b-0026-43fe-9ace-a8a4e7d8f2b5</RecID>
       <RESTPath>/Debtors/ContactNamesTag</RESTPath>
       <Verb>GET</Verb>
