@@ -77,32 +77,32 @@ Create a new user group named Customer Web Portal.  Enable this user group.
 
 ### Route permissions
 Grant the following REST API permissions to the Customer Web Portal User Group:
-GET /CustomerWebPortal/Role
-GET /CustomerWebPortal/Settings
-POST /Debtors/ContactNames/{ContactNameID}/PasswordReset
-POST /Debtors/ContactNames/{Token}/TokenisedPasswordChange
-GET /Sessions/Current
-GET /auth/logout
-GET /SalesOrders/{InvoiceHistoryID}/InvoiceSnapshotReport/{ReportID}
-GET /SalesQuotes/{QuoteID}/QuoteReport/{ReportID}
-GET /Debtors/{DebtorID}/StatementReport/{ReportID}/At/{AsAtDate}
-GET /Debtors
-GET /Debtors/{DebtorID}/ContactNames
-POST /Debtors/{DebtorID}/ContactNames
-PATCH /Debtors/{DebtorID}/ContactNames/{ContactNameID}
-DELETE /Debtors/{DebtorID}/ContactNames/{ContactNameID}
-GET /Debtors/ContactNamesTag
-PUT /Debtors/{DebtorID}/ContactNames/{ContactNameID}/TagMembership
-GET /Queries/SalesOrderList
-GET /Queries/SalesQuoteList
-GET /Queries/ContactNameMultiples
-GET /Queries/DebtorTransactionList
-GET /Debtors/{DebtorID}/Backorders
-GET /Queries/FX_Currency
-GET /SystemInfo
-GET /Queries/StartupLog
-GET /Queries/PluginExceptions
-GET /SalesOrders/{InvoiceID}
+1. GET /CustomerWebPortal/Role
+2. GET /CustomerWebPortal/Settings
+3. POST /Debtors/ContactNames/{ContactNameID}/PasswordReset
+4. POST /Debtors/ContactNames/{Token}/TokenisedPasswordChange
+5. GET /Sessions/Current
+6. GET /auth/logout
+7. GET /SalesOrders/{InvoiceHistoryID}/InvoiceSnapshotReport/{ReportID}
+8. GET /SalesQuotes/{QuoteID}/QuoteReport/{ReportID}
+9. GET /Debtors/{DebtorID}/StatementReport/{ReportID}/At/{AsAtDate}
+10. GET /Debtors
+11. GET /Debtors/{DebtorID}/ContactNames
+12. POST /Debtors/{DebtorID}/ContactNames
+13. PATCH /Debtors/{DebtorID}/ContactNames/{ContactNameID}
+14. DELETE /Debtors/{DebtorID}/ContactNames/{ContactNameID}
+15. GET /Debtors/ContactNamesTag
+16. PUT /Debtors/{DebtorID}/ContactNames/{ContactNameID}/TagMembership
+17. GET /Queries/SalesOrderList
+18. GET /Queries/SalesQuoteList
+19. GET /Queries/ContactNameMultiples
+20. GET /Queries/DebtorTransactionList
+21. GET /Debtors/{DebtorID}/Backorders
+22. GET /Queries/FX_Currency
+23. GET /SystemInfo
+24. GET /Queries/StartupLog
+25. GET /Queries/PluginExceptions
+26. GET /SalesOrders/{InvoiceID}
 
 ## Create user Customer Web Portal
 Create a new Staff Member in the Staff Maintenance form with the name Web Portal.  Add this Staff member to the  Customer Web Portal User Group.
@@ -110,7 +110,7 @@ Create a new Staff Member in the Staff Maintenance form with the name Web Portal
 ### API Key
 Generate an API Key for the Staff member Web Portal.  There are only a handful of routes that that the customer web portal uses this API Key for.
 
-## Linux
+## Linux VM
 
 The Jiwa customer portal can be deployed on Linux or Windows machines.  The following instructions are for a Linux machine, created as a VM in the Azure platform.
 
