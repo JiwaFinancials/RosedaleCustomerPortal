@@ -104,6 +104,8 @@ Grant the following REST API permissions to the Customer Web Portal User Group:
 25. GET /Queries/PluginExceptions
 26. GET /SalesOrders/{InvoiceID}
 
+![image](https://github.com/user-attachments/assets/f34af9f1-1ed2-49a7-9e5b-ea10982bc97e)
+
 ## Create user Customer Web Portal
 Create a new Staff Member in the Staff Maintenance form with the name Web Portal.  Add this Staff member to the Customer Web Portal User Group.
 
