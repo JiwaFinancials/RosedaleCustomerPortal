@@ -120,8 +120,14 @@ Also ensure the staff member Customer Web Portal has this email provider selecte
 ![image](https://github.com/user-attachments/assets/e2a2a6d8-447f-4a54-8ca2-0ba3659cd32d)
 
 ### API Key
-Generate an API Key for the Staff member Customer Web Portal.  There are only a handful of routes that that the customer web portal uses this API Key for.
+Generate an API Key for the Staff member Customer Web Portal.
 ![image](https://github.com/user-attachments/assets/ddc6b89d-2acd-4b88-ba68-55977ff9b497)
+
+There are only a handful of routes that that the customer web portal uses this API Key for - specifically, they are:
+* GET /Queries/ContactNameMultiples
+* GET /SystemInfo
+* GET /CustomerWebPortal/Settings
+* GET /Queries/FX_Currency
 
 ## Debtor Contacts
 The Customer Web Portal will only allow login if the debtor contact has a valid email address and has one of two tags - Customer Web Portal - Admin or Customer Web Portal - User.
