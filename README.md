@@ -130,6 +130,8 @@ The Customer Web Portal will only allow login if the debtor contact has a valid 
 Create the tags Customer Web Portal - Admin and Customer Web Portal - User is they are not already present.
 ![image](https://github.com/user-attachments/assets/f4b8c365-2592-41e4-a13e-f65fa1e7eebc)
 
+Debtor contacts with the tag _Customer Portal - Admin_ will be able to add, edit and delete contacts themselves - this includes adding or removing contact name tags.
+
 Add at least one of these tags to the users you wish to be able to login to the portal, and ensure they have a valid email address.  You can set their password using the Customer Web Portal Password button, or they can self-reset via the portal themselves - as long as their email address is correct.
 ![image](https://github.com/user-attachments/assets/fa0a0b08-ae02-4eda-99d8-f337f9898f57)
 
