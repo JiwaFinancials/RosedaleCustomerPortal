@@ -120,7 +120,7 @@ Also ensure the staff member Customer Web Portal has this email provider selecte
 ![image](https://github.com/user-attachments/assets/e2a2a6d8-447f-4a54-8ca2-0ba3659cd32d)
 
 ### API Key
-Generate an API Key for the Staff member Web Portal.  There are only a handful of routes that that the customer web portal uses this API Key for.
+Generate an API Key for the Staff member Customer Web Portal.  There are only a handful of routes that that the customer web portal uses this API Key for.
 ![image](https://github.com/user-attachments/assets/ddc6b89d-2acd-4b88-ba68-55977ff9b497)
 
 ## Debtor Contacts
