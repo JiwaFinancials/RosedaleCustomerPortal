@@ -105,10 +105,32 @@ Grant the following REST API permissions to the Customer Web Portal User Group:
 26. GET /SalesOrders/{InvoiceID}
 
 ## Create user Customer Web Portal
-Create a new Staff Member in the Staff Maintenance form with the name Web Portal.  Add this Staff member to the  Customer Web Portal User Group.
+Create a new Staff Member in the Staff Maintenance form with the name Web Portal.  Add this Staff member to the Customer Web Portal User Group.
+
+### Emailing configuration
+In order for users of your portal to be able to request a password reset, the system must be configured to be able to send emails and the Web Portal staff member must have an email provider configured.
+
+Make sure at least one email provider plugin is enabled and configured which does not require interactive authentication (for example, the _Email - Microsoft 365 Username Password Credentials_ plugin).
+
+Also ensure the staff member Web Portal has this email provider selected, and the Email username and password set in the Email Settings section.
+![image](https://github.com/user-attachments/assets/0883659b-1dcc-4944-956d-3a4633e114e6)
 
 ### API Key
 Generate an API Key for the Staff member Web Portal.  There are only a handful of routes that that the customer web portal uses this API Key for.
+
+## Debtor Contacts
+The Customer Web portal will only allow login if the debtor contact has a valid email address and has one of two tags - Customer Web Portal - Admin or Customer Web Portal - User.
+
+### Debtor Contact Tags
+Create the tags Customer Web Portal - Admin and Customer Web Portal - User is they are not already present.
+![image](https://github.com/user-attachments/assets/f4b8c365-2592-41e4-a13e-f65fa1e7eebc)
+
+Add at least one of these tags to the users you wish to be able to login to the portal, and ensure they have a valid email address.  You can set their password using the Customer Web Portal Password button, or they can self-reset via the portal themselves - as long as their email address is correct.
+![image](https://github.com/user-attachments/assets/fa0a0b08-ae02-4eda-99d8-f337f9898f57)
+
+## REST API System Setting
+The CustomerWebPortalJiwaUser setting of the REST API tab of the System Configuration form should be set to the user created earlier.  You may need to restart the Jiwa REST API Self Hosted service after setting this value.
+![image](https://github.com/user-attachments/assets/529428c7-9d41-49ea-a6d9-58907dd88ea6)
 
 ## Linux VM
 
