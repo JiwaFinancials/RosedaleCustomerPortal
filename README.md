@@ -121,6 +121,7 @@ Also ensure the staff member Customer Web Portal has this email provider selecte
 
 ### API Key
 Generate an API Key for the Staff member Web Portal.  There are only a handful of routes that that the customer web portal uses this API Key for.
+![image](https://github.com/user-attachments/assets/ddc6b89d-2acd-4b88-ba68-55977ff9b497)
 
 ## Debtor Contacts
 The Customer Web Portal will only allow login if the debtor contact has a valid email address and has one of two tags - Customer Web Portal - Admin or Customer Web Portal - User.
