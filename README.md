@@ -112,6 +112,11 @@ Grant the following REST API permissions to the Customer Web Portal User Group:
 Create a new Staff Member in the Staff Maintenance form with the name Customer Web Portal.  Add this Staff member to the Customer Web Portal User Group.
 ![image](https://github.com/user-attachments/assets/3c3f2f78-0a96-4205-8215-904fd222d457)
 
+Set the password byt pressing the Set Password... buttong and then check the Set to No Password checkbox on the change password dialog.
+![image](https://github.com/user-attachments/assets/20b47920-3924-4f07-81e0-2767a404d388)
+
+This user should only authenticate via the API Key and should not be used to log in interactively, and setting the Set to No Password option enforces this.
+
 ### Emailing configuration
 In order for users of your portal to be able to request a password reset, the system must be configured to be able to send emails and the Web Portal staff member must have an email provider configured.
 
