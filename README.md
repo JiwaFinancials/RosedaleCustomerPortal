@@ -126,7 +126,7 @@ Also ensure the staff member Customer Web Portal has this email provider selecte
 ![image](https://github.com/user-attachments/assets/e2a2a6d8-447f-4a54-8ca2-0ba3659cd32d)
 
 ### API Key
-Generate an API Key for the Staff member Customer Web Portal.
+Generate an API Key for the Staff member Customer Web Portal.  You will need to enter this key into the appsettings.json of the customer portal app in a later step.
 ![image](https://github.com/user-attachments/assets/ddc6b89d-2acd-4b88-ba68-55977ff9b497)
 
 There are only a handful of routes that that the customer web portal uses this API Key for - specifically, they are:
