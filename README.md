@@ -139,7 +139,7 @@ There are only a handful of routes that that the customer web portal uses this A
 The Customer Web Portal will only allow login if the debtor contact has a valid email address and has one of two tags - Customer Web Portal - Admin or Customer Web Portal - User.
 
 ### Debtor Contact Tags
-Create the tags Customer Web Portal - Admin and Customer Web Portal - User is they are not already present.
+Create the tags Customer Web Portal - Admin and Customer Web Portal - User if they are not already present.
 ![image](https://github.com/user-attachments/assets/f4b8c365-2592-41e4-a13e-f65fa1e7eebc)
 
 Debtor contacts with the tag _Customer Portal - Admin_ will be able to add, edit and delete contacts themselves - this includes adding or removing contact name tags.
