@@ -263,9 +263,6 @@ Issue the command to get a stand-alone SSL certificate - when asked, enter the D
 sudo certbot certonly --standalone 
 ```
 
-###### appsettings.json
-Edit appsettings.json and add the certificate section, and change the http endpoint to be https and port 443 instead of http and port 80
-
 #### Publish JiwaCustomerPortal project
 Publish the project by opening a Visual Studio 2022 command prompt and running the following command from the same folder as the project:
 ```console
