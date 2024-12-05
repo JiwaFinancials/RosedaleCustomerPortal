@@ -117,6 +117,10 @@ Set the password by pressing the Set Password... button and then check the Set t
 
 This user should only authenticate via the API Key and should not be used to log in interactively, and setting the Set to No Password option enforces this.
 
+### Assign a licence
+Assign the user Customer Web Portal a licence for the Jiwa Application resource.
+![image](https://github.com/user-attachments/assets/00f09fa3-8486-457c-9ae5-2f0e8a3e04d3)
+
 ### Emailing configuration
 In order for users of your portal to be able to request a password reset, the system must be configured to be able to send emails and the Web Portal staff member must have an email provider configured.
 
@@ -262,9 +266,6 @@ Issue the command to get a stand-alone SSL certificate - when asked, enter the D
 ```console
 sudo certbot certonly --standalone 
 ```
-
-###### appsettings.json
-Edit appsettings.json and add the certificate section, and change the http endpoint to be https and port 443 instead of http and port 80
 
 #### Publish JiwaCustomerPortal project
 Publish the project by opening a Visual Studio 2022 command prompt and running the following command from the same folder as the project:
