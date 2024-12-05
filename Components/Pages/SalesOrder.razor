@@ -23,7 +23,7 @@
     </div>
 }
 
-<StatusMessage Message="@statusMessage"/>
+<StatusMessage Message="@statusMessage" />
 
 @if (salesOrder != null)
 {
@@ -78,7 +78,7 @@
 
     <label>
         Snapshot:
-        <select @onchange="SelectedHistoryChange" class="form-select form-select-lg mb-3">
+        <select @onchange="SelectedHistoryChange" class="form-select form-select-lg mb-3">            
             @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrderHistory history in salesOrder.Histories)
             {
                 if (history.InvoiceHistoryID == SelectedHistory?.InvoiceHistoryID)
@@ -88,10 +88,11 @@
                 else
                 {
                     <option value="@history.InvoiceHistoryID">@history.Ref</option>
-                }
+                }                
             }
         </select>
     </label>
+
 
     <ul class="nav nav-tabs" id="detailsTab" role="tablist">
         <li class="nav-item" role="presentation">
@@ -334,8 +335,8 @@
                 if (snapno <= salesOrder.Histories.Count)
                 {
                     SelectedHistory = salesOrder.Histories[snapno - 1];
-                }
-            }
+                }                
+            }            
         }
         catch (ServiceStack.WebServiceException webServiceException)
         {
