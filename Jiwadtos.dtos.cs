@@ -195,15 +195,15 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel
         public virtual bool AsAttachment { get; set; }
     }
 
-    [Route("/SalesQuotes/{QuoteID}/QuoteReport/{ReportID}", "GET")]
+    [Route("/SalesQuotes/{QuoteHistoryID}/QuoteSnapshotReport/{ReportID}", "GET")]
     [ApiResponse(Description = "Read OK", StatusCode = 200)]
     [ApiResponse(Description = "Not authenticated", StatusCode = 401)]
     [ApiResponse(Description = "Not authorised", StatusCode = 403)]
-    [ApiResponse(Description = "No Sales Quote with the QuoteID, or Report with the ReportID provided was found", StatusCode = 404)]
-    public partial class SalesQuoteReportGETRequest
+    [ApiResponse(Description = "No Sales Quote with the QuoteHistoryID, or Report with the ReportID provided was found", StatusCode = 404)]
+    public partial class SalesQuoteSnapshotReportGETRequest
         : IReturn<IHttpResult>
     {
-        public virtual string QuoteID { get; set; }
+        public virtual string QuoteHistoryID { get; set; }
         public virtual string ReportID { get; set; }
         public virtual bool AsAttachment { get; set; }
     }
@@ -329,7 +329,7 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel
     [ApiResponse(Description = "Not authorised", StatusCode = 403)]
     [ApiResponse(Description = "No Sales Quote with the QuoteID provided was found", StatusCode = 404)]
     public partial class SalesQuoteGETRequest
-        : IReturn<SalesQuote>
+        : IReturn<JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuote>
     {
         public virtual string QuoteID { get; set; }
     }
@@ -373,6 +373,7 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields
 }
 
 #endregion
+
 #region "Debtors"
 namespace JiwaFinancials.Jiwa.JiwaServiceModel.Debtors
 {
@@ -2246,6 +2247,7 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel.Tables
         [Required]
         public virtual string InvoiceNo { get; set; }
 
+        public virtual string InvoiceNoDashHistoryNo { get; set; }
         public virtual string OrderNo { get; set; }
         public virtual string QOReference { get; set; }
         [Required]
@@ -2287,6 +2289,9 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel.Tables
         public virtual string CashSaleCompany { get; set; }
         public virtual string CashSaleName { get; set; }
         public virtual string CashSalePhone { get; set; }
+        [Required]
+        public virtual string InvoiceHistoryID { get; set; }
+
         public virtual string DeliveryAddressContactName { get; set; }
         [Required]
         public virtual string DeliveryAddressee { get; set; }
@@ -2307,6 +2312,7 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel.Tables
         public virtual decimal? Cartage3TaxAmount { get; set; }
         public virtual string CourierDetails { get; set; }
         public virtual string Notes { get; set; }
+        public virtual string EmailAddress { get; set; }
         [Required]
         public virtual string StaffID { get; set; }
 
@@ -2346,6 +2352,13 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel.Tables
         public virtual string InvoiceNoLike { get; set; }
         public virtual string[] InvoiceNoBetween { get; set; }
         public virtual string[] InvoiceNoIn { get; set; }
+        public virtual string InvoiceNoDashHistoryNo { get; set; }
+        public virtual string InvoiceNoDashHistoryNoStartsWith { get; set; }
+        public virtual string InvoiceNoDashHistoryNoEndsWith { get; set; }
+        public virtual string InvoiceNoDashHistoryNoContains { get; set; }
+        public virtual string InvoiceNoDashHistoryNoLike { get; set; }
+        public virtual string[] InvoiceNoDashHistoryNoBetween { get; set; }
+        public virtual string[] InvoiceNoDashHistoryNoIn { get; set; }
         public virtual string OrderNo { get; set; }
         public virtual string OrderNoStartsWith { get; set; }
         public virtual string OrderNoEndsWith { get; set; }
@@ -2511,6 +2524,13 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel.Tables
         public virtual string CashSalePhoneLike { get; set; }
         public virtual string[] CashSalePhoneBetween { get; set; }
         public virtual string[] CashSalePhoneIn { get; set; }
+        public virtual string InvoiceHistoryID { get; set; }
+        public virtual string InvoiceHistoryIDStartsWith { get; set; }
+        public virtual string InvoiceHistoryIDEndsWith { get; set; }
+        public virtual string InvoiceHistoryIDContains { get; set; }
+        public virtual string InvoiceHistoryIDLike { get; set; }
+        public virtual string[] InvoiceHistoryIDBetween { get; set; }
+        public virtual string[] InvoiceHistoryIDIn { get; set; }
         public virtual string DeliveryAddressContactName { get; set; }
         public virtual string DeliveryAddressContactNameStartsWith { get; set; }
         public virtual string DeliveryAddressContactNameEndsWith { get; set; }
@@ -2629,6 +2649,13 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel.Tables
         public virtual string NotesLike { get; set; }
         public virtual string[] NotesBetween { get; set; }
         public virtual string[] NotesIn { get; set; }
+        public virtual string EmailAddress { get; set; }
+        public virtual string EmailAddressStartsWith { get; set; }
+        public virtual string EmailAddressEndsWith { get; set; }
+        public virtual string EmailAddressContains { get; set; }
+        public virtual string EmailAddressLike { get; set; }
+        public virtual string[] EmailAddressBetween { get; set; }
+        public virtual string[] EmailAddressIn { get; set; }
         public virtual string StaffID { get; set; }
         public virtual string StaffIDStartsWith { get; set; }
         public virtual string StaffIDEndsWith { get; set; }

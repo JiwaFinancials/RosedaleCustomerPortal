@@ -346,7 +346,8 @@
                 QueryType="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesQuote_ListQuery"
                 CaptionMaps=@(new Dictionary<string, string>
                               {
-                              ["InvoiceNo"] = "Quote No.",
+                              ["InvoiceNoDashHistoryNo"] = "Sales Quote No.",
+                              ["HistoryNo"] = "History No.",
                               ["InvoiceInitDate"] = "Date",
                               ["OrderNo"] = "Order No.",
                               ["QOReference"] = "Reference",
@@ -537,9 +538,9 @@
 
         SalesQuotesAutoQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesQuote_ListQuery()
             {
-                OrderByDesc = "InvoiceNo",
+                    OrderByDesc = "InvoiceNoDashHistoryNo",
                 InvoiceTotalNotEqualTo = 0,
-                Fields = "InvoiceID,InvoiceNo,InvoiceInitDate,Status,OrderNo,QOReference,CurrencyShortName,InvoiceTotal,CurrencyID",
+                    Fields = "InvoiceID,InvoiceNoDashHistoryNo,HistoryNo,InvoiceInitDate,Status,OrderNo,QOReference,CurrencyShortName,InvoiceTotal,CurrencyID",
                 Take = 10
             };
     }   
@@ -883,8 +884,8 @@
         RenderFragment content = null;
         switch (columnId)
         {
-            case "InvoiceNo":
-                content = @<td><a href="SalesQuotePDF/@item.InvoiceID" target="_blank" rel="noopener noreferrer">@item.InvoiceNo</a></td>;
+            case "InvoiceNoDashHistoryNo":
+                content = @<td><a href="SalesQuote/@item.InvoiceID.Trim()?SnapshotNo=@item.HistoryNo">@item.InvoiceNoDashHistoryNo</a></td>;
                 break;
             case "InvoiceTotal":
                 content = @<td class="text-end">@Config.FormattedCurrency(@item.InvoiceTotal, item.CurrencyID)</td>;
