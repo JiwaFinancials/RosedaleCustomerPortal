@@ -1,4 +1,4 @@
-﻿@page "/SalesOrder/{InvoiceId}"
+﻿@page "/SalesQuote/{QuoteId}"
 @attribute [type: RenderModeInteractiveServer]
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @using ServiceStack;
@@ -8,7 +8,7 @@
 @inject BrowserService BrowserService
 @using Microsoft.AspNetCore.WebUtilities
 
-<PageTitle>Sales Order</PageTitle>
+<PageTitle>Sales Quote</PageTitle>
 
 @if (APIRequestInPogress)
 {
@@ -25,19 +25,19 @@
 
 <StatusMessage Message="@statusMessage"/>
 
-@if (salesOrder != null)
+@if (salesQuote != null)
 {
     <div class="row">
         <div class="col-3">
-            <label for="InvoiceNo" class="form-label">Invoice No.</label>
-            <input type="text" class="form-control" id="InvoiceNo" readonly placeholder="@salesOrder.InvoiceNo">
+            <label for="QuoteNo" class="form-label">Quote No.</label>
+            <input type="text" class="form-control" id="QuoteNo" readonly placeholder="@salesQuote.QuoteNo">
         </div>
         <div class="col-6">
             <label for="Name" class="form-label">Name</label>
-            <input type="text" class="form-control" id="Name" readonly placeholder="@salesOrder.DebtorName">
+            <input type="text" class="form-control" id="Name" readonly placeholder="@salesQuote.DebtorName">
         </div>
         <div class="col-3 text-end">
-            <a href="/SalesOrderPDF/@SelectedHistory.InvoiceHistoryID" target="_blank" rel="noopener noreferrer">
+            <a href="/SalesQuotePDF/@SelectedHistory.QuoteHistoryID" target="_blank" rel="noopener noreferrer">
                 <button class="btn" style="background-color:transparent">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-printer" viewBox="0 0 16 16">
                         <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1" />
@@ -51,15 +51,15 @@
     <div class="row">
         <div class="col-3">
             <label for="Date" class="form-label">Date</label>
-            <input type="text" class="form-control" id="Date" readonly placeholder="@salesOrder.InvoiceInitDate.Value.ToString(@BrowserService.DateFormat)">
+            <input type="text" class="form-control" id="Date" readonly placeholder="@salesQuote.InvoiceInitDate.Value.ToString(@BrowserService.DateFormat)">
         </div>
         <div class="col-3">
             <label for="OrderNo" class="form-label">Order No.</label>
-            <input type="text" class="form-control" id="OrderNo" readonly placeholder="@salesOrder.OrderNo">
+            <input type="text" class="form-control" id="OrderNo" readonly placeholder="@salesQuote.OrderNo">
         </div>
         <div class="col-3">
             <label for="Reference" class="form-label">Reference</label>
-            <input type="text" class="form-control" id="Reference" readonly placeholder="@salesOrder.SOReference">
+            <input type="text" class="form-control" id="Reference" readonly placeholder="@salesQuote.SOReference">
         </div>
     </div>
 
@@ -70,8 +70,8 @@
 
     <div class="row">
         <div class="col-1">
-            <label for="Currency" class="form-label"><img src="data:image/png;base64,@Convert.ToBase64String(Config.Currencies[salesOrder.CurrencyID].Picture)" width="30" height="20"> @salesOrder.CurrencyShortName</label>
-        </div>
+            <label for="Currency" class="form-label"><img src="data:image/png;base64,@Convert.ToBase64String(Config.Currencies[salesQuote.CurrencyID].Picture)" width="30" height="20"> @salesQuote.CurrencyShortName</label>
+        </div>        
     </div>
 
     <br />
@@ -79,15 +79,15 @@
     <label>
         Snapshot:
         <select @onchange="SelectedHistoryChange" class="form-select form-select-lg mb-3">
-            @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrderHistory history in salesOrder.Histories)
+            @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuoteHistory history in salesQuote.Histories)
             {
-                if (history.InvoiceHistoryID == SelectedHistory?.InvoiceHistoryID)
+                if (history.QuoteHistoryID == SelectedHistory?.QuoteHistoryID)
                 {
-                    <option value="@history.InvoiceHistoryID" selected>@history.Ref</option>
+                    <option value="@history.QuoteHistoryID" selected>@history.Ref</option>
                 }
                 else
                 {
-                    <option value="@history.InvoiceHistoryID">@history.Ref</option>
+                    <option value="@history.QuoteHistoryID">@history.Ref</option>
                 }
             }
         </select>
@@ -99,7 +99,7 @@
         </li>
         <li class="nav-item" role="presentation">
             <a @onclick='(() => OnSelectTab("Shipping-tab"))' class=@String.Format("nav-link{0}", SelectedTabId=="Shipping-tab" ? " active": null) id="Shipping-tab" data-bs-toggle="tab" data-bs-target="#Shipping" type="button" role="tab" aria-controls="Shipping" aria-selected=@String.Format("nav-link{0}", SelectedTabId=="Shipping-tab" ? "true": "false")>Shipping</a>
-        </li>
+        </li>        
     </ul>
 
     <div class="tab-content">
@@ -109,13 +109,10 @@
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Part No.</th>
+                            <th>Part No.</th>                                        
                             <th>Description</th>
                             <th>Unit</th>
                             <th class="text-end">Quantity Ordered</th>
-                            <th class="text-end">Quantity Previously Shipped</th>
-                            <th class="text-end">Quantity This Shipment</th>
-                            <th class="text-end">Quantity Backordered</th>
                             <th class="text-end">Price Ex</th>
                             <th class="text-end">Total Ex</th>
                             <th class="text-end">Tax</th>
@@ -124,91 +121,88 @@
                     </thead>
 
                     <tbody>
-                        @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrderLine salesOrderLine in SelectedHistory.Lines)
+                        @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuoteLine salesQuoteLine in SelectedHistory.Lines)
                         {
                             <tr>
-                                @if (salesOrderLine.CommentLine.Value)
+                                @if (salesQuoteLine.CommentLine.Value)
                                 {
-                                    <td>@salesOrderLine.ItemNo</td>
-                                    <td colspan="11">@salesOrderLine.CommentText</td>
+                                    <td>@salesQuoteLine.ItemNo</td>
+                                    <td colspan="9">@salesQuoteLine.CommentText</td>
                                 }
                                 else
                                 {
-                                    <td>@salesOrderLine.ItemNo</td>
-                                    <td>@salesOrderLine.PartNo</td>
-                                    <td>@salesOrderLine.Description</td>
-                                    @if (@salesOrderLine.UnitOfMeasure != null)
+                                    <td>@salesQuoteLine.ItemNo</td>
+                                    <td>@salesQuoteLine.PartNo</td>
+                                    <td>@salesQuoteLine.Description</td>
+                                    @if (@salesQuoteLine.UnitOfMeasure != null)
                                     {
-                                        <td>@salesOrderLine.UnitOfMeasure.Name</td>
+                                        <td>@salesQuoteLine.UnitOfMeasure.Name</td>
                                     }
                                     else
                                     {
-                                        <td>@salesOrderLine.SKUUnitName</td>
+                                        <td>@salesQuoteLine.SKUUnitName</td>
                                     }
 
-                                    <td class="text-end">@Config.FormattedDecimals(@salesOrderLine.QuantityOrdered, salesOrderLine.QuantityDecimalPlaces)</td>
-                                    <td class="text-end">@Config.FormattedDecimals(@salesOrderLine.QuantityPreviousDelivery, salesOrderLine.QuantityDecimalPlaces)</td>
-                                    <td class="text-end">@Config.FormattedDecimals(@salesOrderLine.QuantityThisDel, salesOrderLine.QuantityDecimalPlaces)</td>
-                                    <td class="text-end">@Config.FormattedDecimals(@salesOrderLine.QuantityBackOrd, salesOrderLine.QuantityDecimalPlaces)</td>
-                                    <td class="text-end">@Config.FormattedCurrency(@salesOrderLine.FXDiscountedPrice, salesOrder.CurrencyID)</td>
-                                    <td class="text-end">@Config.FormattedCurrency(@salesOrderLine.FXLineTotal - salesOrderLine.TaxToCharge, @salesOrder.CurrencyID)</td>
-                                    <td class="text-end">@Config.FormattedCurrency(@salesOrderLine.FXTaxToCharge, salesOrder.CurrencyID)</td>
-                                    <td class="text-end">@Config.FormattedCurrency(@salesOrderLine.FXLineTotal, salesOrder.CurrencyID)</td>
+                                    <td class="text-end">@Config.FormattedDecimals(@salesQuoteLine.QuantityOrdered, salesQuoteLine.QuantityDecimalPlaces)</td>
+                                    <td class="text-end">@Config.FormattedCurrency(@salesQuoteLine.FXDiscountedPrice, salesQuote.CurrencyID)</td>
+                                    <td class="text-end">@Config.FormattedCurrency(@salesQuoteLine.FXLineTotal - salesQuoteLine.TaxToCharge, @salesQuote.CurrencyID)</td>
+                                    <td class="text-end">@Config.FormattedCurrency(@salesQuoteLine.FXTaxToCharge, salesQuote.CurrencyID)</td>
+                                    <td class="text-end">@Config.FormattedCurrency(@salesQuoteLine.FXLineTotal, salesQuote.CurrencyID)</td>
                                 }
                             </tr>
                         }
                         <tr>
-                            <td colspan="9" class="text-end">Sub Total</td>
-                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal - x.TaxToCharge), salesOrder.CurrencyID)</td>
-                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.TaxToCharge), salesOrder.CurrencyID)</td>
-                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal), salesOrder.CurrencyID)</td>
+                            <td colspan="6" class="text-end">Sub Total</td>
+                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal - x.TaxToCharge), salesQuote.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.TaxToCharge), salesQuote.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal), salesQuote.CurrencyID)</td>
                         </tr>
 
-                        @if (salesOrder.Cartage1ExGst + salesOrder.Cartage1Gst != 0)
+                        @if (salesQuote.Cartage1ExGst + salesQuote.Cartage1Gst != 0)
                         {
                             <tr>
-                                <td colspan="9" class="text-end">Freight</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage1ExGst, salesOrder.CurrencyID)</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage1Gst, salesOrder.CurrencyID)</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage1ExGst + salesOrder.Cartage1Gst, salesOrder.CurrencyID)</td>
+                                <td colspan="6" class="text-end">Freight</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesQuote.Cartage1ExGst, salesQuote.CurrencyID)</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesQuote.Cartage1Gst, salesQuote.CurrencyID)</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesQuote.Cartage1ExGst + salesQuote.Cartage1Gst, salesQuote.CurrencyID)</td>
                             </tr>
                         }
                         else
                         {
                             // even if Cartage1 is 0, display as blank to give a better visual appeal - space out the sub total and total
                             <tr>
-                                <td colspan="9" class="text-end">Freight</td>
+                                <td colspan="6" class="text-end">Freight</td>
                                 <td class="text-end"></td>
                                 <td class="text-end"></td>
                                 <td class="text-end"></td>
                             </tr>
                         }
 
-                        @if (salesOrder.Cartage2ExGst + salesOrder.Cartage2Gst != 0)
+                        @if (salesQuote.Cartage2ExGst + salesQuote.Cartage2Gst != 0)
                         {
                             <tr>
-                                <td colspan="9" class="text-end">Freight</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage2ExGst, salesOrder.CurrencyID)</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage2Gst, salesOrder.CurrencyID)</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage2ExGst + salesOrder.Cartage2Gst, salesOrder.CurrencyID)</td>
+                                <td colspan="6" class="text-end">Freight</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesQuote.Cartage2ExGst, salesQuote.CurrencyID)</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesQuote.Cartage2Gst, salesQuote.CurrencyID)</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesQuote.Cartage2ExGst + salesQuote.Cartage2Gst, salesQuote.CurrencyID)</td>
                             </tr>
                         }
 
-                        @if (salesOrder.Cartage3ExGst + salesOrder.Cartage3Gst != 0)
+                        @if (salesQuote.Cartage3ExGst + salesQuote.Cartage3Gst != 0)
                         {
                             <tr>
-                                <td colspan="9" class="text-end">Freight</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage3ExGst, salesOrder.CurrencyID)</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage3Gst, salesOrder.CurrencyID)</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage3ExGst + salesOrder.Cartage3Gst, salesOrder.CurrencyID)</td>
+                                <td colspan="6" class="text-end">Freight</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesQuote.Cartage3ExGst, salesQuote.CurrencyID)</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesQuote.Cartage3Gst, salesQuote.CurrencyID)</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesQuote.Cartage3ExGst + salesQuote.Cartage3Gst, salesQuote.CurrencyID)</td>
                             </tr>
                         }
 
                         <tr>
-                            <td colspan="9" class="text-end">Total</td>
-                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal - x.TaxToCharge) + salesOrder.Cartage1ExGst + salesOrder.Cartage2ExGst + salesOrder.Cartage3ExGst, salesOrder.CurrencyID)</td>
-                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.TaxToCharge) + salesOrder.Cartage1Gst + salesOrder.Cartage2Gst + salesOrder.Cartage3Gst, salesOrder.CurrencyID)</td>
-                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal) + salesOrder.Cartage1ExGst + salesOrder.Cartage2ExGst + salesOrder.Cartage3ExGst + salesOrder.Cartage1Gst + salesOrder.Cartage2Gst + salesOrder.Cartage3Gst, salesOrder.CurrencyID)</td>
+                            <td colspan="6" class="text-end">Total</td>
+                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal - x.TaxToCharge) + salesQuote.Cartage1ExGst + salesQuote.Cartage2ExGst + salesQuote.Cartage3ExGst, salesQuote.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.TaxToCharge) + salesQuote.Cartage1Gst + salesQuote.Cartage2Gst + salesQuote.Cartage3Gst, salesQuote.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal) + salesQuote.Cartage1ExGst + salesQuote.Cartage2ExGst + salesQuote.Cartage3ExGst + salesQuote.Cartage1Gst + salesQuote.Cartage2Gst + salesQuote.Cartage3Gst, salesQuote.CurrencyID)</td>
                         </tr>
                     </tbody>
                 </table>
@@ -225,74 +219,74 @@
                         <div class="row">
                             <div class="col-3">
                                 <label for="DeliveryAddressee" class="form-label">Addressee</label>
-                                <input type="text" class="form-control" id="DeliveryAddressee" readonly placeholder="@salesOrder.DeliveryAddressee">
+                                <input type="text" class="form-control" id="DeliveryAddressee" readonly placeholder="@salesQuote.DeliveryAddressee">
                             </div>
                             <div class="col-3">
                                 <label for="DeliveryAddressContactName" class="form-label">Contact Name</label>
-                                <input type="text" class="form-control" id="DeliveryAddressContactName" readonly placeholder="@salesOrder.DeliveryAddressContactName">
+                                <input type="text" class="form-control" id="DeliveryAddressContactName" readonly placeholder="@salesQuote.DeliveryAddressContactName">
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-3">
                                 <label for="DeliveryAddress1" class="form-label">Address 1</label>
-                                <input type="text" class="form-control" id="DeliveryAddress1" readonly placeholder="@salesOrder.DeliveryAddress1">
+                                <input type="text" class="form-control" id="DeliveryAddress1" readonly placeholder="@salesQuote.DeliveryAddress1">
                             </div>
                             <div class="col-3">
                                 <label for="DeliveryAddress2" class="form-label">Address 2</label>
-                                <input type="text" class="form-control" id="DeliveryAddress2" readonly placeholder="@salesOrder.DeliveryAddress2">
+                                <input type="text" class="form-control" id="DeliveryAddress2" readonly placeholder="@salesQuote.DeliveryAddress2">
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-3">
                                 <label for="DeliveryAddressState" class="form-label">State</label>
-                                <input type="text" class="form-control" id="DeliveryAddressState" readonly placeholder="@salesOrder.DeliveryAddressState">
+                                <input type="text" class="form-control" id="DeliveryAddressState" readonly placeholder="@salesQuote.DeliveryAddressState">
                             </div>
                             <div class="col-3">
                                 <label for="DeliveryAddressSuburb" class="form-label">Suburb</label>
-                                <input type="text" class="form-control" id="DeliveryAddressSuburb" readonly placeholder="@salesOrder.DeliveryAddressSuburb">
+                                <input type="text" class="form-control" id="DeliveryAddressSuburb" readonly placeholder="@salesQuote.DeliveryAddressSuburb">
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-3">
                                 <label for="DeliveryAddressPostcode" class="form-label">Postcode</label>
-                                <input type="text" class="form-control" id="DeliveryAddressPostcode" readonly placeholder="@salesOrder.DeliveryAddressPostcode">
+                                <input type="text" class="form-control" id="DeliveryAddressPostcode" readonly placeholder="@salesQuote.DeliveryAddressPostcode">
                             </div>
                             <div class="col-3">
                                 <label for="DeliveryAddressCountry" class="form-label">Country</label>
-                                <input type="text" class="form-control" id="DeliveryAddressCountry" readonly placeholder="@salesOrder.DeliveryAddressCountry">
+                                <input type="text" class="form-control" id="DeliveryAddressCountry" readonly placeholder="@salesQuote.DeliveryAddressCountry">
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-3">
                                 <label for="DeliveryAddressCourierDetails" class="form-label">Delivery Instructions</label>
-                                <input type="text" class="form-control" id="DeliveryAddressCourierDetails" readonly placeholder="@salesOrder.DeliveryAddressCourierDetails">
+                                <input type="text" class="form-control" id="DeliveryAddressCourierDetails" readonly placeholder="@salesQuote.DeliveryAddressCourierDetails">
                             </div>
                             <div class="col-3">
                                 <label for="DeliveryAddressNotes" class="form-label">Notes</label>
-                                <input type="text" class="form-control" id="DeliveryAddressNotes" readonly placeholder="@salesOrder.DeliveryAddressNotes">
+                                <input type="text" class="form-control" id="DeliveryAddressNotes" readonly placeholder="@salesQuote.DeliveryAddressNotes">
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>                
             </div>
-        </div>
-    </div>
+        </div>        
+    </div>    
 }
 @code {
     [Parameter]
-    public string InvoiceId { get; set; }
+    public string QuoteId { get; set; }
 
     public string SnapshotNo { get; set; }
 
     private bool APIRequestInPogress;
     private string? statusMessage;
-    private JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrder salesOrder { get; set; }
+    private JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuote salesQuote { get; set; }
     private string SelectedTabId { get; set; } = "Items-tab";
-    private JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrderHistory SelectedHistory { get; set; }
+    private JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuoteHistory SelectedHistory { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -318,22 +312,22 @@
             return;
         }
 
-        bool oldAPIRequestInPogress = APIRequestInPogress;
+        bool oldAPIRequestInPogress = APIRequestInPogress;        
         APIRequestInPogress = true;
 
-        JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderGETRequest salesOrderGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderGETRequest() { InvoiceID = InvoiceId };
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteGETRequest salesQuoteGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteGETRequest() { QuoteID = QuoteId };
         try
         {
-            salesOrder = await JiwaAPI.GetAsync(salesOrderGETRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
-            SelectedHistory = salesOrder.Histories[0];
+            salesQuote = await JiwaAPI.GetAsync(salesQuoteGETRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+            SelectedHistory = salesQuote.Histories[0];
 
             if (QueryHelpers.ParseQuery(NavigationManager.ToAbsoluteUri(NavigationManager.Uri).Query).TryGetValue("SnapshotNo", out var snapshotNoParam))
             {
                 short snapno = short.Parse(snapshotNoParam);
 
-                if (snapno <= salesOrder.Histories.Count)
+                if (snapno <= salesQuote.Histories.Count)
                 {
-                    SelectedHistory = salesOrder.Histories[snapno - 1];
+                    SelectedHistory = salesQuote.Histories[snapno - 1];
                 }
             }
         }
@@ -357,8 +351,8 @@
         finally
         {
             APIRequestInPogress = oldAPIRequestInPogress;
-        }
-    }
+        }        
+    }       
 
     private async Task OnSelectTab(string tabId)
     {
@@ -367,7 +361,7 @@
 
     private async Task SelectedHistoryChange(ChangeEventArgs e)
     {
-        SelectedHistory = salesOrder.Histories.FirstOrDefault(x => x.InvoiceHistoryID == e.Value.ToString());
+        SelectedHistory = salesQuote.Histories.FirstOrDefault(x => x.QuoteHistoryID == e.Value.ToString());
     }
 
     public void NoAuthenticationToken()
@@ -398,5 +392,5 @@
         {
             statusMessage = ex.Message;
         }
-    }
+    }    
 }

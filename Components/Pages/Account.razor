@@ -322,7 +322,8 @@
                 CaptionMaps=@(new Dictionary<string, string>
                                   {
                                       ["InvoiceNoDashHistoryNo"] = "Sales Order No.",
-                                      ["InvoiceInitDate"] = "Date",
+                                      ["HistoryNo"] = "History No.",
+                                      ["InvoiceInitDate"] = "Date",                              
                                       ["Status"] = "Status",
                                       ["OrderNo"] = "Order No.",
                                       ["SOReference"] = "Reference",
@@ -346,7 +347,8 @@
                 QueryType="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesQuote_ListQuery"
                 CaptionMaps=@(new Dictionary<string, string>
                               {
-                              ["InvoiceNo"] = "Quote No.",
+                              ["InvoiceNoDashHistoryNo"] = "Sales Quote No.",
+                              ["HistoryNo"] = "History No.",
                               ["InvoiceInitDate"] = "Date",
                               ["OrderNo"] = "Order No.",
                               ["QOReference"] = "Reference",
@@ -515,6 +517,38 @@
 
         }
 
+        switch(Debtor.PeriodType)
+        {
+            case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Weekly:
+                Period1Label = "Current";
+                Period2Label = "8-14 Days";
+                Period3Label = "15-21 Days";
+                Period4Label = "21+ Days";
+                break;
+                
+            case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Fortnightly:
+                Period1Label = "Current";
+                Period2Label = "15-28 Days";
+                Period3Label = "29-42 Days";
+                Period4Label = "42+ Days";
+                break;
+
+            case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Monthly:
+                Period1Label = "Current";
+                Period2Label = "31-60 Days";
+                Period3Label = "61-90 Days";
+                Period4Label = "90+ Days";
+                break;
+
+            case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Custom:
+                Period1Label = "Current";
+                Period2Label = "Period 1";
+                Period3Label = "Period 2";
+                Period4Label = "Period 3";
+                break;
+
+        }        
+        
         // AutoQueries need to be a property instantiated in the parent and not new'd in the razor defining component because we want to persist the AutoQuery properties between renders.
         // If we don't do this, what happens is the component does not render propertly - so, for example
         // Where the debtor transactions autoquery component returns multiple pages, selecting page 3 and then clicking on a 
@@ -523,7 +557,7 @@
         DebtorsTransactionsAutoQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_Debtor_Transactions_ListQuery()
             {
                 OrderByDesc = "TranDate",
-                    Fields = "InvRemitNo,TranDate,Description,DueDate,CurrencyShortName,Ref,Remark,Note,SourceID,DecimalPlaces,CurrencyID,DebitCredit,DebitAmountIncTax,CreditAmountIncTax,GSTAmount,AllocatedAmount,OutstandingAmount",
+                Fields = "InvRemitNo,TranDate,Description,DueDate,CurrencyShortName,Ref,Remark,Note,SourceID,DecimalPlaces,CurrencyID,DebitCredit,DebitAmountIncTax,CreditAmountIncTax,GSTAmount,AllocatedAmount,OutstandingAmount",
                 Take = 10
             };        
 
@@ -537,9 +571,9 @@
 
         SalesQuotesAutoQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesQuote_ListQuery()
             {
-                OrderByDesc = "InvoiceNo",
+                    OrderByDesc = "InvoiceNoDashHistoryNo",
                 InvoiceTotalNotEqualTo = 0,
-                Fields = "InvoiceID,InvoiceNo,InvoiceInitDate,Status,OrderNo,QOReference,CurrencyShortName,InvoiceTotal,CurrencyID",
+                    Fields = "InvoiceID,InvoiceNoDashHistoryNo,HistoryNo,InvoiceInitDate,Status,OrderNo,QOReference,CurrencyShortName,InvoiceTotal,CurrencyID",
                 Take = 10
             };
     }   
@@ -635,7 +669,7 @@
         {            
             case "InvRemitNo":
                 if (item.Description == "Sales Orders")
-                {                                       
+                {
                     content = @<td><a href="SalesOrder/@item.SourceID.Trim()?SnapshotNo=@GetSnapshotNoFromInvoiceNoDashDocketNumHeaderHistoryNo(item.InvRemitNo)">@item.InvRemitNo</a></td>;
                 }
                 else
@@ -798,7 +832,6 @@
                     // Entered - it's not an invoice yet, so display as pending
                     content = @<td><span class="badge rounded-pill bg-primary">Pending</span></td>;
                 }
-
                 break;
             case "InvoiceTotal":
                 if (item.CreditNote && item.InvoiceTotal != null)
@@ -903,8 +936,8 @@
         RenderFragment content = null;
         switch (columnId)
         {
-            case "InvoiceNo":
-                content = @<td><a href="SalesQuotePDF/@item.InvoiceID" target="_blank" rel="noopener noreferrer">@item.InvoiceNo</a></td>;
+            case "InvoiceNoDashHistoryNo":
+                content = @<td><a href="SalesQuote/@item.InvoiceID.Trim()?SnapshotNo=@item.HistoryNo">@item.InvoiceNoDashHistoryNo</a></td>;
                 break;
             case "InvoiceTotal":
                 content = @<td class="text-end">@Config.FormattedCurrency(@item.InvoiceTotal, item.CurrencyID)</td>;

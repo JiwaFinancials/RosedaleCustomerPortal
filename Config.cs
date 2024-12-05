@@ -125,7 +125,7 @@ namespace JiwaCustomerPortal
             JiwaFinancials.Jiwa.JiwaServiceModel.Tables.FX_Currency currency = _Currencies[CurrencyID];
 
             if (currency != null)
-            {
+            {                
                 string decimalsFormat = new string('0', (int)currency.DecimalPlaces);
                 string currencyFormat = $"###,###,###,###,###.{decimalsFormat}";
                 if (value < 0)
