@@ -29,9 +29,6 @@
     <_ContentIncludedByDefault Remove="Components\User\PasswordReset.razor" />
   </ItemGroup>
   <ItemGroup>
-    <Content Update="Components\Pages\SalesQuote.razor">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-    </Content>
     <Content Update="Components\Pages\SalesOrder.razor">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>

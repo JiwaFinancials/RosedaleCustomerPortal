@@ -1,5 +1,5 @@
 ﻿@attribute [type: RenderModeInteractiveServer]
-@page "/SalesQuotePDF/{QuoteHistoryId}"
+@page "/SalesQuotePDF/{QuoteId}"
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @inject ProtectedLocalStorage ProtectedLocalStore
 @inject WebPortalUserSessionStateContainer WebPortalUserSessionStateContainer
@@ -32,7 +32,7 @@ else
 
 @code {
     [Parameter]
-    public string QuoteHistoryId { get; set; }
+    public string QuoteId { get; set; }
 
     [CascadingParameter]
     public HttpContext? HttpContext { get; set; }
@@ -66,10 +66,10 @@ else
             return;
         }
 
-        JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteSnapshotReportGETRequest quoteSnapshotReportGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteSnapshotReportGETRequest() { QuoteHistoryID = QuoteHistoryId, ReportID = Config.SalesQuoteReport, AsAttachment = true };
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteReportGETRequest quoteReportRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteReportGETRequest() { QuoteID = QuoteId, ReportID = Config.SalesQuoteReport, AsAttachment = true };
         try
         {
-            PDFresponse = await JiwaAPI.GetAsync<byte[]>(quoteSnapshotReportGETRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+            PDFresponse = await JiwaAPI.GetAsync<byte[]>(quoteReportRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
             Base64EncodedPDF = Convert.ToBase64String(PDFresponse);
             PDFURL = $"data:application/pdf;base64,{Base64EncodedPDF}";
         }
