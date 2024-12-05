@@ -8,6 +8,7 @@ namespace JiwaCustomerPortal
 {
     public static class Config
     {
+        public static bool ShowDiagnostics { get; set; }
         // JiwaAPIURL is the URL of the remote Jiwa API.
         public static string JiwaAPIURL { get; set; }
         // JiwaAPIKey is the API Key to use to perform some requests (such as getting the list of debtor contacts for a given email address to disambiguate identities at login time)

@@ -71,7 +71,7 @@
     <div class="row">
         <div class="col-1">
             <label for="Currency" class="form-label"><img src="data:image/png;base64,@Convert.ToBase64String(Config.Currencies[salesOrder.CurrencyID].Picture)" width="30" height="20"> @salesOrder.CurrencyShortName</label>
-        </div>        
+        </div>
     </div>
 
     <br />
@@ -99,7 +99,7 @@
         </li>
         <li class="nav-item" role="presentation">
             <a @onclick='(() => OnSelectTab("Shipping-tab"))' class=@String.Format("nav-link{0}", SelectedTabId=="Shipping-tab" ? " active": null) id="Shipping-tab" data-bs-toggle="tab" data-bs-target="#Shipping" type="button" role="tab" aria-controls="Shipping" aria-selected=@String.Format("nav-link{0}", SelectedTabId=="Shipping-tab" ? "true": "false")>Shipping</a>
-        </li>        
+        </li>
     </ul>
 
     <div class="tab-content">
@@ -109,7 +109,7 @@
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Part No.</th>                                        
+                            <th>Part No.</th>
                             <th>Description</th>
                             <th>Unit</th>
                             <th class="text-end">Quantity Ordered</th>
@@ -277,10 +277,10 @@
                             </div>
                         </div>
                     </div>
-                </div>                
+                </div>
             </div>
-        </div>        
-    </div>    
+        </div>
+    </div>
 }
 @code {
     [Parameter]
@@ -318,7 +318,7 @@
             return;
         }
 
-        bool oldAPIRequestInPogress = APIRequestInPogress;        
+        bool oldAPIRequestInPogress = APIRequestInPogress;
         APIRequestInPogress = true;
 
         JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderGETRequest salesOrderGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderGETRequest() { InvoiceID = InvoiceId };
@@ -357,8 +357,8 @@
         finally
         {
             APIRequestInPogress = oldAPIRequestInPogress;
-        }        
-    }       
+        }
+    }
 
     private async Task OnSelectTab(string tabId)
     {
@@ -398,5 +398,5 @@
         {
             statusMessage = ex.Message;
         }
-    }    
+    }
 }

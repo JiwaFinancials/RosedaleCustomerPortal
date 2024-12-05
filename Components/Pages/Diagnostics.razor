@@ -168,7 +168,7 @@
         NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
     }
 
-    public async void APIException(Exception ex)
+    public async Task APIException(Exception ex)
     {
         // first we need to work out what type of exception this was.  If it as a 401 (Not Authenticated), then we just redirect to to the login page
         // Anything else, we set the errorMessage property so the component displays the error to the user.

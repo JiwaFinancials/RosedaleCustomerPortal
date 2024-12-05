@@ -324,6 +324,7 @@
                                       ["InvoiceNoDashHistoryNo"] = "Sales Order No.",
                                       ["HistoryNo"] = "History No.",
                                       ["InvoiceInitDate"] = "Date",                              
+                                      ["Status"] = "Status",
                                       ["OrderNo"] = "Order No.",
                                       ["SOReference"] = "Reference",
                                       ["InvoiceTotal"] = "Order Total",
@@ -332,7 +333,7 @@
                                       ["CurrencyShortName"] = "Currency",
                                       ["DueDate"] = "Pay By"
                                   } )
-                HiddenColumns=@(new List<string>() { "InvoiceID", "CurrencyID" })
+                HiddenColumns=@(new List<string>() { "InvoiceID", "CurrencyID", "HistoryNo" })
                 AutoQuery="@SalesOrdersAutoQuery"
                 NoAuthenticationTokenCallbackMethod="@NoAuthenticationToken"
                 APIExceptionCallbackMethod="@APIException"
@@ -482,7 +483,39 @@
         finally
         {
             APIRequestInPogress = oldAPIRequestInPogress;
-        }        
+        }    
+        
+        switch (Debtor.PeriodType)
+        {
+            case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Weekly:
+                Period1Label = "Current";
+                Period2Label = "8-14 Days";
+                Period3Label = "15-21 Days";
+                Period4Label = "21+ Days";
+                break;
+
+            case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Fortnightly:
+                Period1Label = "Current";
+                Period2Label = "15-28 Days";
+                Period3Label = "29-42 Days";
+                Period4Label = "42+ Days";
+                break;
+
+            case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Monthly:
+                Period1Label = "Current";
+                Period2Label = "31-60 Days";
+                Period3Label = "61-90 Days";
+                Period4Label = "90+ Days";
+                break;
+
+            case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Custom:
+                Period1Label = "Current";
+                Period2Label = "Period 1";
+                Period3Label = "Period 2";
+                Period4Label = "Period 3";
+                break;
+
+        }
 
         switch(Debtor.PeriodType)
         {
@@ -529,12 +562,12 @@
             };        
 
         SalesOrdersAutoQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesOrder_ListQuery()
-            {
-                OrderByDesc = "InvoiceNoDashHistoryNo",
-                InvoiceTotalNotEqualTo = 0,
-                    Fields = "InvoiceID,InvoiceNoDashHistoryNo,HistoryNo,InvoiceInitDate,OrderNo,SOReference,CurrencyShortName,InvoiceTotal,TotalAllocated,DueDate,CreditNote,CurrencyID",
-                Take = 10
-            };
+                    {
+                        OrderByDesc = "InvoiceNoDashHistoryNo",
+                        InvoiceTotalNotEqualTo = 0,
+                        Fields = "InvoiceID,InvoiceNoDashHistoryNo,HistoryNo,InvoiceInitDate,Status,OrderNo,SOReference,CurrencyShortName,InvoiceTotal,TotalAllocated,DueDate,CreditNote,CurrencyID",
+                        Take = 10
+                    };
 
         SalesQuotesAutoQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesQuote_ListQuery()
             {
@@ -603,7 +636,7 @@
         NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
     }
 
-    public async void APIException(Exception ex)
+    public async Task APIException(Exception ex)
     {
         // first we need to work out what type of exception this was.  If it as a 401 (Not Authenticated), then we just redirect to to the login page
         // Anything else, we set the errorMessage property so the component displays the error to the user.
@@ -755,7 +788,7 @@
                     else
                     {
                         // Display unallocated credits as a negative in the amount owing.
-                        if(@item.OutstandingAmount.Value == 0)
+                        if (@item.OutstandingAmount.Value == 0)
                         {
                             content = @<td class="text-end"></td>;
                         }
@@ -780,6 +813,25 @@
         {
             case "InvoiceNoDashHistoryNo":
                 content = @<td><a href="SalesOrder/@item.InvoiceID.Trim()?SnapshotNo=@item.HistoryNo">@item.InvoiceNoDashHistoryNo</a></td>;
+                break;
+            case "Status":
+                if (item.Status >= 1)
+                {
+                    // Processed or closed - if it's fully paid we display as closed, otherwise we display as entered
+                    if (item.TotalAllocated >= item.InvoiceTotal)
+                    {
+                        content =@<td><span class="badge rounded-pill bg-danger">Closed</span></td> ;
+                    }
+                    else
+                    {
+                        content =@<td><span class="badge rounded-pill bg-success">Processed</span></td>  ;
+                    }
+                }
+                else
+                {
+                    // Entered - it's not an invoice yet, so display as pending
+                    content = @<td><span class="badge rounded-pill bg-primary">Pending</span></td>;
+                }
                 break;
             case "InvoiceTotal":
                 if (item.CreditNote && item.InvoiceTotal != null)
@@ -902,7 +954,7 @@
                 {
                     content = @<td class="text-center"><span class="badge rounded-pill bg-danger">Closed</span></td>;
                 }
-                
+
                 break;
         }
 
@@ -935,7 +987,7 @@
         ContactNameToDelete = ContactName;
     }      
 
-    public async void CreateContactDialogClosed(JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactName)
+    public async Task CreateContactDialogClosed(JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactName)
     {
         if (ContactName != null)
         {
@@ -995,7 +1047,7 @@
         StateHasChanged();
     }
 
-    public async void EditContactDialogClosed(JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactName)
+    public async Task EditContactDialogClosed(JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactName)
     {
         if (ContactName != null)
         {
@@ -1063,7 +1115,7 @@
         StateHasChanged();
     }
 
-    public async void DeleteContactConfirmationDialogClosed(bool resultOK)
+    public async Task DeleteContactConfirmationDialogClosed(bool resultOK)
     {
         if (resultOK)
         {

@@ -1,0 +1,98 @@
+﻿@page "/Downloads"
+@attribute [type: RenderModeInteractiveServer]
+@using ServiceStack;
+@inject NavigationManager NavigationManager
+@inject BrowserService BrowserService
+
+<PageTitle>Downloads</PageTitle>
+@if (APIRequestInPogress)
+{
+    <div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0">
+                <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<StatusMessage Message="@statusMessage" />
+
+<ul class="nav nav-tabs" id="detailsTab" role="tablist">
+    @foreach (WebDownloadLink webDownloadLinkGroup in webDownloadLinks.DistinctBy(x => x.GroupDescription).OrderByDescending(x => x.GroupDisplayOrder))
+    {
+        <li class="nav-item" role="presentation">
+            <a @onclick='(() => OnSelectTab(webDownloadLinkGroup.GroupDescription))' class=@String.Format("nav-link{0}", SelectedTabId==@webDownloadLinkGroup.GroupDescription ? " active": null) id=@webDownloadLinkGroup.GroupDescription data-bs-toggle="tab" data-bs-target="#@webDownloadLinkGroup.GroupDescription" type="button" role="tab" aria-controls=@webDownloadLinkGroup.GroupDescription aria-selected=@String.Format("nav-link{0}", SelectedTabId==@webDownloadLinkGroup.GroupDescription ? "true": "false")>@webDownloadLinkGroup.GroupDescription</a>
+        </li>
+    }
+</ul>
+
+<div class="tab-content">
+    @foreach (WebDownloadLink webDownloadLinkGroup in webDownloadLinks.DistinctBy(x => x.GroupDescription).OrderByDescending(x => x.GroupDisplayOrder))
+    {
+        <div class=@String.Format("tab-pane{0}", SelectedTabId==@webDownloadLinkGroup.GroupDescription ? " active": null) id=@webDownloadLinkGroup.GroupDescription role="tabpanel" aria-labelledby=@webDownloadLinkGroup.GroupDescription>
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped small">
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th class="text-end">Size</th>
+                            <th class="text-end">Date</th>
+                            <th>Comment</th>                            
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (WebDownloadLink webDownloadLink in webDownloadLinks.Where(x => x.GroupDescription == webDownloadLinkGroup.GroupDescription).OrderByDescending(x => x.DisplayOrder))
+                        {
+                            <tr>
+                                <td class="align-middle"><a href="@webDownloadLink.URL">@webDownloadLink.DisplayText</a></td>
+                                <td class="text-end align-middle">@webDownloadLink.Size</td>
+                                <td class="text-end align-middle">@webDownloadLink.PublishDate.ToString("dd MMM yyyy")</td>
+                                <td class="align-middle">@((MarkupString)@webDownloadLink.Comment)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code{
+    private string SelectedTabId { get; set; }
+    private bool APIRequestInPogress;
+    private string? statusMessage;
+    private List<WebDownloadLink> webDownloadLinks { get; set; } = new List<WebDownloadLink>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();        
+
+        WebDownloadLinksGETRequest webDownloadLinksGETRequest = new WebDownloadLinksGETRequest();
+
+        bool oldAPIRequestInPogress = APIRequestInPogress;
+        try
+        {
+            webDownloadLinks = await JiwaAPI.GetAsync(webDownloadLinksGETRequest, null, Config.JiwaAPIKey);
+            if (webDownloadLinks != null && webDownloadLinks.Count > 0)
+            {
+                SelectedTabId = webDownloadLinks[0].GroupDescription;
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+        finally
+        {
+            APIRequestInPogress = oldAPIRequestInPogress;
+        }
+    }       
+    
+    private async Task OnSelectTab(string tabId)
+    {
+        SelectedTabId = tabId;        
+    }
+}

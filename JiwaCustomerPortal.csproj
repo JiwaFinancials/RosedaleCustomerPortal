@@ -38,6 +38,9 @@
     <Content Update="Components\Pages\Diagnostics.razor">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
+    <Content Update="Components\Pages\Downloads.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
     <Content Update="Components\Pages\StatementPDF.razor">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
