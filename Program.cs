@@ -35,6 +35,9 @@ namespace JiwaCustomerPortal
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
 
+            // only used for the /downloadlicences route
+            builder.Services.AddControllers();
+
             // ColourModeServices is used to store the colour mode and it's a singleton so it can be referenced everywhere
             builder.Services.AddSingleton<IColourModeServices, ColourModeServices>();
             // BrowserService is what we use to look at what the preferred browser dark mode is - we'll fall back to that
@@ -57,6 +60,9 @@ namespace JiwaCustomerPortal
 
             app.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode();
+
+            // only used for the /downloadlicences route
+            app.MapControllers();
 
             app.Run();
         }

@@ -81,6 +81,15 @@ public class LicenceGETRequest : IReturn<ServiceStack.Web.IHttpResult>
     public bool AsAttachment { get; set; }
 }
 
+[ApiResponse(Description = "OK", StatusCode = 200)]
+[ApiResponse(Description = "Not authenticated", StatusCode = 401)]
+[ApiResponse(Description = "Not authorised", StatusCode = 403)]
+public class LicenceRenewGETRequest : IReturn<List<JiwaFinancials.Jiwa.JiwaServiceModel.Licencing.Licence>>
+{
+    public string CompanyName { get; set; }
+    public string Version { get; set; }
+}
+
 public class WebDownloadLink
 {
     public string GroupDescription { get; set; }
@@ -747,6 +756,31 @@ public partial class InventoryUnitOfMeasure
     public virtual decimal? Weight { get; set; }
     public virtual List<CustomFieldValue> CustomFieldValues { get; set; }
     public virtual bool? IsEnabled { get; set; }
+}
+#endregion
+
+#region "Licencing"
+namespace JiwaFinancials.Jiwa.JiwaServiceModel.Licencing
+{
+    public partial class Licence
+    {
+        public virtual string LicenceID { get; set; }
+        public virtual string ResourceID { get; set; }
+        public virtual string ResourceName { get; set; }
+        public virtual DateTime CommenceDate { get; set; }
+        public virtual DateTime ExpiryDate { get; set; }
+        public virtual string LicenceType { get; set; }
+        public virtual bool NonInteractive { get; set; }
+        public virtual string Username { get; set; }
+        public virtual int CALs { get; set; }
+        public virtual string Version { get; set; }
+        public virtual DateTime IssueDate { get; set; }
+        public virtual string CompanyName { get; set; }
+        public virtual string Note { get; set; }
+        public virtual string Scope { get; set; }
+        public virtual string Signature { get; set; }
+        public virtual DateTimeOffset? LastSavedDateTime { get; set; }
+    }
 }
 #endregion
 
