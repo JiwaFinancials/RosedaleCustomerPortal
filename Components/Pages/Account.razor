@@ -484,7 +484,7 @@
         {
             APIRequestInPogress = oldAPIRequestInPogress;
         }    
-        
+
         switch (Debtor.PeriodType)
         {
             case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Weekly:
@@ -517,38 +517,40 @@
 
         }
 
-        switch(Debtor.PeriodType)
+        if (Debtor != null)
         {
-            case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Weekly:
-                Period1Label = "Current";
-                Period2Label = "8-14 Days";
-                Period3Label = "15-21 Days";
-                Period4Label = "21+ Days";
-                break;
-                
-            case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Fortnightly:
-                Period1Label = "Current";
-                Period2Label = "15-28 Days";
-                Period3Label = "29-42 Days";
-                Period4Label = "42+ Days";
-                break;
+            switch (Debtor.PeriodType)
+            {
+                case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Weekly:
+                    Period1Label = "Current";
+                    Period2Label = "8-14 Days";
+                    Period3Label = "15-21 Days";
+                    Period4Label = "21+ Days";
+                    break;
 
-            case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Monthly:
-                Period1Label = "Current";
-                Period2Label = "31-60 Days";
-                Period3Label = "61-90 Days";
-                Period4Label = "90+ Days";
-                break;
+                case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Fortnightly:
+                    Period1Label = "Current";
+                    Period2Label = "15-28 Days";
+                    Period3Label = "29-42 Days";
+                    Period4Label = "42+ Days";
+                    break;
 
-            case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Custom:
-                Period1Label = "Current";
-                Period2Label = "Period 1";
-                Period3Label = "Period 2";
-                Period4Label = "Period 3";
-                break;
+                case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Monthly:
+                    Period1Label = "Current";
+                    Period2Label = "31-60 Days";
+                    Period3Label = "61-90 Days";
+                    Period4Label = "90+ Days";
+                    break;
 
-        }        
-        
+                case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Custom:
+                    Period1Label = "Current";
+                    Period2Label = "Period 1";
+                    Period3Label = "Period 2";
+                    Period4Label = "Period 3";
+                    break;
+            }
+        }
+
         // AutoQueries need to be a property instantiated in the parent and not new'd in the razor defining component because we want to persist the AutoQuery properties between renders.
         // If we don't do this, what happens is the component does not render propertly - so, for example
         // Where the debtor transactions autoquery component returns multiple pages, selecting page 3 and then clicking on a 
@@ -571,7 +573,7 @@
 
         SalesQuotesAutoQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesQuote_ListQuery()
             {
-                    OrderByDesc = "InvoiceNoDashHistoryNo",
+                OrderByDesc = "InvoiceNoDashHistoryNo",
                 InvoiceTotalNotEqualTo = 0,
                     Fields = "InvoiceID,InvoiceNoDashHistoryNo,HistoryNo,InvoiceInitDate,Status,OrderNo,QOReference,CurrencyShortName,InvoiceTotal,CurrencyID",
                 Take = 10
