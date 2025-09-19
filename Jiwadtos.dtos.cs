@@ -100,6 +100,7 @@ public class WebDownloadLink
     public string URL { get; set; }
     public string Comment { get; set; }
     public DateTime PublishDate { get; set; }
+    public bool GroupExpanded { get; set; } // Added property only used for rendering downloads page
 }
 
 [Route("/Downloads", "GET")]
