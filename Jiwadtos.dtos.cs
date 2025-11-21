@@ -87,7 +87,7 @@ public class LicenceGETRequest : IReturn<ServiceStack.Web.IHttpResult>
 public class LicenceRenewGETRequest : IReturn<List<JiwaFinancials.Jiwa.JiwaServiceModel.Licencing.Licence>>
 {
     public string CompanyName { get; set; }
-    public string Version { get; set; }
+    public string? Version { get; set; }
 }
 
 public class WebDownloadLink

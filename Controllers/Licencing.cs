@@ -12,7 +12,7 @@ namespace JiwaCustomerPortal.Controllers
     public class Licencing : ControllerBase
     {
         [HttpGet]
-        public async Task<IActionResult> Getdownloadlicences(string CompanyName, string Version)
+        public async Task<IActionResult> Getdownloadlicences(string CompanyName, string? Version = null)
         {
             LicenceRenewGETRequest licenceRenewGETRequest = new LicenceRenewGETRequest() { CompanyName = CompanyName, Version = Version };
             List<JiwaFinancials.Jiwa.JiwaServiceModel.Licencing.Licence> licences = await JiwaAPI.GetAsync(licenceRenewGETRequest, jiwaAPIKey: Config.JiwaAPIKey);
