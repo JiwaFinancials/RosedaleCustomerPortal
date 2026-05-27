@@ -574,6 +574,8 @@
             return;
         }
 
+        LazyLoadTabIds.Clear();
+
         JiwaFinancials.Jiwa.JiwaServiceModel.DebtorGETRequest debtorGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.DebtorGETRequest();
         debtorGETRequest.DebtorID = item.DebtorID;
         Debtor = await SendToAPI<JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor>(debtorGETRequest);      

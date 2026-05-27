@@ -13,6 +13,7 @@ namespace JiwaCustomerPortal
             builder.Host.UseWindowsService();
 
             ConfigurationManager configuration = builder.Configuration;
+            Config.ShowDiagnostics = configuration.GetValue<bool>("ShowDiagnostics");
             Config.JiwaAPIURL = configuration.GetValue<string>("JiwaAPIURL");
             Config.JiwaAPIKey = configuration.GetValue<string>("JiwaAPIKey");
             Config.AllowCustomerLogin = configuration.GetValue<bool>("AllowCustomerLogin");
