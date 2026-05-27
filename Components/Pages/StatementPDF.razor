@@ -1,5 +1,5 @@
 ﻿@attribute [type: RenderModeInteractiveServer]
-@page "/StatementPDF/{AsAtDate}"
+@page "/StatementPDF/{AsAtDate}/{DebtorId?}"
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @inject ProtectedLocalStorage ProtectedLocalStore
 @inject WebPortalUserSessionStateContainer WebPortalUserSessionStateContainer
@@ -37,6 +37,9 @@ else
     [CascadingParameter]
     public HttpContext? HttpContext { get; set; }
 
+    [Parameter]
+    public string DebtorId { get; set; }
+
     private string? statusMessage;
     private byte[] PDFresponse;
     private string Base64EncodedPDF;
@@ -66,7 +69,13 @@ else
             return;
         }
 
-        JiwaFinancials.Jiwa.JiwaServiceModel.DebtorStatementReportGETRequest statementReportRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.DebtorStatementReportGETRequest() { DebtorID = WebPortalUserSessionStateContainer.WebPortalUserSession.DebtorID, AsAtDate = DateTime.Parse(AsAtDate), ReportID = Config.DebtorStatementReport, AsAttachment = true };
+        JiwaFinancials.Jiwa.JiwaServiceModel.DebtorStatementReportGETRequest statementReportRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.DebtorStatementReportGETRequest() 
+        { 
+            DebtorID = (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider == "credentials") ? DebtorId : WebPortalUserSessionStateContainer.WebPortalUserSession.DebtorID,
+            AsAtDate = DateTime.Parse(AsAtDate), 
+            ReportID = Config.DebtorStatementReport, AsAttachment = true 
+        };
+
         try
         {
             PDFresponse = await JiwaAPI.GetAsync<byte[]>(statementReportRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);

@@ -10,7 +10,7 @@
 
 <PageTitle>Sales Order</PageTitle>
 
-@if (APIRequestInPogress)
+@if (APIRequestInProgress)
 {
     <div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">
         <div class="modal-dialog modal-dialog-centered">
@@ -24,6 +24,20 @@
 }
 
 <StatusMessage Message="@statusMessage"/>
+
+@if (AddingItem)
+{
+    <div class="relative">
+        <JiwaInventoryAutoQueryModalSelectionDialog Title="Select Item" OnClose="@AddItemDialogClosed" />
+    </div>
+}
+
+@if (EditingFreight)
+{
+    <div class="relative">
+        <EditSalesOrderFreightModalDialog Title="Edit Freight" salesOrder="@salesOrder" SelectedHistory="@SelectedHistory" OnClose="@EditFreightDialogClosed" />
+    </div>
+}
 
 @if (salesOrder != null)
 {
@@ -51,15 +65,48 @@
     <div class="row">
         <div class="col-3">
             <label for="Date" class="form-label">Date</label>
-            <input type="text" class="form-control" id="Date" readonly placeholder="@salesOrder.InvoiceInitDate.Value.ToString(@BrowserService.DateFormat)">
+            @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+            {
+                <input type="text" class="form-control" id="Date" readonly placeholder="@salesOrder.InvoiceInitDate.Value.ToString(@BrowserService.DateFormat)">
+            }
+            else
+            {
+                <input type="date" class="form-control" id="Date" value="@salesOrder.InvoiceInitDate.Value.ToString("yyyy-MM-dd")" @onchange="@(async (e) =>
+                                                                                     {
+                                                                                         await SalesOrderChanged(e, (q) =>
+                                                                         {
+                                                                                                                    q.InvoiceInitDate = DateTime.ParseExact(e.Value.ToString(), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+                                                                                                                });
+                                                                                     })">
+            }
         </div>
         <div class="col-3">
             <label for="OrderNo" class="form-label">Order No.</label>
-            <input type="text" class="form-control" id="OrderNo" readonly placeholder="@salesOrder.OrderNo">
+            @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+            {
+                <input type="text" class="form-control" id="OrderNo" readonly placeholder="@salesOrder.OrderNo">
+            }
+            else
+            {
+                <input type="text" class="form-control" id="OrderNo" value="@salesOrder.OrderNo" @onchange="async (e) =>
+                                                              {
+                                                                  await SalesOrderChanged(e, (q) => { q.OrderNo = e.Value.ToString(); });
+                                                              }">
+            }
         </div>
         <div class="col-3">
             <label for="Reference" class="form-label">Reference</label>
-            <input type="text" class="form-control" id="Reference" readonly placeholder="@salesOrder.SOReference">
+            @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+            {
+                <input type="text" class="form-control" id="Reference" readonly placeholder="@salesOrder.SOReference">
+            }
+            else
+            {
+                <input type="text" class="form-control" id="Reference" value="@salesOrder.SOReference" @onchange="async (e) =>
+                                       {
+                                           await SalesOrderChanged(e, (q) => { q.SOReference = e.Value.ToString(); });
+                                       }">
+            }
         </div>
     </div>
 
@@ -70,8 +117,11 @@
 
     <div class="row">
         <div class="col-1">
-            <label for="Currency" class="form-label"><img src="data:image/png;base64,@Convert.ToBase64String(Config.Currencies[salesOrder.CurrencyID].Picture)" width="30" height="20"> @salesOrder.CurrencyShortName</label>
-        </div>
+            <label for="Currency" class="form-label">
+                <img src="data:image/png;base64,@Convert.ToBase64String(Config.Currencies[salesOrder.CurrencyID].Picture)" width="30" height="20">
+                @salesOrder.CurrencyShortName
+            </label>
+        </div>        
     </div>
 
     <br />
@@ -99,7 +149,7 @@
         </li>
         <li class="nav-item" role="presentation">
             <a @onclick='(() => OnSelectTab("Shipping-tab"))' class=@String.Format("nav-link{0}", SelectedTabId=="Shipping-tab" ? " active": null) id="Shipping-tab" data-bs-toggle="tab" data-bs-target="#Shipping" type="button" role="tab" aria-controls="Shipping" aria-selected=@String.Format("nav-link{0}", SelectedTabId=="Shipping-tab" ? "true": "false")>Shipping</a>
-        </li>
+        </li>        
     </ul>
 
     <div class="tab-content">
@@ -109,24 +159,42 @@
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Part No.</th>
+                            <th>Part No.</th>                                        
                             <th>Description</th>
                             <th>Unit</th>
-                            <th class="text-end">Quantity Ordered</th>
-                            <th class="text-end">Quantity Previously Shipped</th>
-                            <th class="text-end">Quantity This Shipment</th>
-                            <th class="text-end">Quantity Backordered</th>
-                            <th class="text-end">Price Ex</th>
+                            <th class="text-end" width="160px">Quantity Ordered</th>
+                            <th class="text-end" width="160px">Quantity Previously Shipped</th>
+                            <th class="text-end" width="160px">Quantity This Shipment</th>
+                            <th class="text-end" width="160px">Quantity Backordered</th>
+                            <th class="text-end" width="160px">Price Ex</th>                            
+                            <th class="text-center" colspan="3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="TotalsTypeToggle" @bind="TotalsTypeIsOrdered">
+                                    @if (TotalsTypeIsOrdered)
+                                    {
+                                        <label>Ordered</label>
+                                    }
+                                    else
+                                    {
+                                        <label>This Delivery</label>
+                                    }
+                                </div>
+                            </th>
+                            <th class="text-center" width="50px"></th>
+                        </tr>
+                        <tr>
+                            <th class="text-center" colspan="9"></th>                            
                             <th class="text-end">Total Ex</th>
                             <th class="text-end">Tax</th>
                             <th class="text-end">Total Inc.</th>
+                            <th class="text-center" width="50px"></th>
                         </tr>
                     </thead>
 
                     <tbody>
                         @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrderLine salesOrderLine in SelectedHistory.Lines)
                         {
-                            <tr>
+                            <tr class="align-middle">
                                 @if (salesOrderLine.CommentLine.Value)
                                 {
                                     <td>@salesOrderLine.ItemNo</td>
@@ -146,72 +214,131 @@
                                         <td>@salesOrderLine.SKUUnitName</td>
                                     }
 
-                                    <td class="text-end">@Config.FormattedDecimals(@salesOrderLine.QuantityOrdered, salesOrderLine.QuantityDecimalPlaces)</td>
-                                    <td class="text-end">@Config.FormattedDecimals(@salesOrderLine.QuantityPreviousDelivery, salesOrderLine.QuantityDecimalPlaces)</td>
-                                    <td class="text-end">@Config.FormattedDecimals(@salesOrderLine.QuantityThisDel, salesOrderLine.QuantityDecimalPlaces)</td>
-                                    <td class="text-end">@Config.FormattedDecimals(@salesOrderLine.QuantityBackOrd, salesOrderLine.QuantityDecimalPlaces)</td>
-                                    <td class="text-end">@Config.FormattedCurrency(@salesOrderLine.FXDiscountedPrice, salesOrder.CurrencyID)</td>
-                                    <td class="text-end">@Config.FormattedCurrency(@salesOrderLine.FXLineTotal - salesOrderLine.TaxToCharge, @salesOrder.CurrencyID)</td>
-                                    <td class="text-end">@Config.FormattedCurrency(@salesOrderLine.FXTaxToCharge, salesOrder.CurrencyID)</td>
-                                    <td class="text-end">@Config.FormattedCurrency(@salesOrderLine.FXLineTotal, salesOrder.CurrencyID)</td>
+                                    @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                    {
+                                        <td class="text-end">@Config.FormattedDecimals(@salesOrderLine.QuantityOrdered, salesOrderLine.QuantityDecimalPlaces)</td>
+                                    }
+                                    else
+                                    {
+                                        <td width="160px">
+                                            <input type="number" class="form-control" id="QuantityOrdered"
+                                                   style="text-align: right;"
+                                                   value="@Config.FormattedDecimals(@salesOrderLine.QuantityOrdered, salesOrderLine.QuantityDecimalPlaces)"
+                                                   step="@(Math.Pow(10, (double)-salesOrderLine.QuantityDecimalPlaces))"
+                                                   min="0"
+                                                   @onchange="async (e) =>
+                                                    {
+                                                        await SalesOrderLineChanged(e, salesOrderLine.InvoiceLineID, (q) =>
+                                                        {
+                                                            decimal value = 0;
+                                                            decimal.TryParse(e.Value.ToString(), out value);
+                                                            // We don't test the result of the decimal.TryPase - anything invalid is 0
+                                                            q.QuantityOrdered = value;
+                                                        });
+                                                    }">
+                                        </td>
+                                    }
+                                    <td class="text-end" width="160px">@Config.FormattedDecimals(@salesOrderLine.QuantityPreviousDelivery, salesOrderLine.QuantityDecimalPlaces)</td>
+                                    <td class="text-end" width="160px">@Config.FormattedDecimals(@salesOrderLine.QuantityThisDel, salesOrderLine.QuantityDecimalPlaces)</td>
+                                    <td class="text-end" width="160px">@Config.FormattedDecimals(@salesOrderLine.QuantityBackOrd, salesOrderLine.QuantityDecimalPlaces)</td>
+
+                                    @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                    {
+                                        <td class="text-end">@Config.FormattedCurrency(@salesOrderLine.FXDiscountedPrice, salesOrder.CurrencyID)</td>
+                                    }
+                                    else
+                                    {
+                                        <td width="160px">
+                                            <input type="number" class="form-control" id="FXDiscountedPrice"
+                                                   value="@Config.FormattedDecimals(@salesOrderLine.FXDiscountedPrice, Config.CurrencyDecimals(salesOrder.CurrencyID), false)"
+                                                   style="text-align: right;"
+                                                   step="@(Math.Pow(10, (double)-Config.CurrencyDecimals(salesOrder.CurrencyID)))"
+                                                   min="0"
+                                                   @onchange="async (e) =>
+                                                    {
+                                                            await SalesOrderLineChanged(e, salesOrderLine.InvoiceLineID, (q) =>
+                                                            {
+                                                                decimal value = 0;
+                                                                decimal.TryParse(e.Value.ToString(), out value);
+                                                                // We don't test the result of the decimal.TryPase - anything invalid is 0
+                                                                q.FXDiscountedPrice = value;
+                                                            });
+                                                    }">
+                                        </td>
+                                    }
+
+                                    <td class="text-end">@Config.FormattedCurrency((TotalsTypeIsOrdered) ? salesOrderLine.FXOrderedExGSTTotal : salesOrderLine.FXLineTotal - salesOrderLine.FXTaxToCharge, @salesOrder.CurrencyID)</td>
+                                    <td class="text-end">@Config.FormattedCurrency((TotalsTypeIsOrdered) ? salesOrderLine.FXOrderedGSTTotal : salesOrderLine.FXTaxToCharge, salesOrder.CurrencyID)</td>
+                                    <td class="text-end">@Config.FormattedCurrency((TotalsTypeIsOrdered) ? salesOrderLine.FXOrderedIncGSTTotal : salesOrderLine.FXLineTotal, salesOrder.CurrencyID)</td>
+                                    <td class="text-center">
+                                        <button @onclick="_ => DeleteSalesOrderLine(salesOrderLine)" class="btn" style="background-color:transparent">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="red" class="bi bi-x-circle" viewBox="0 0 20 20">
+                                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+                                                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
+                                            </svg>
+                                        </button>
+                                    </td>
                                 }
                             </tr>
                         }
-                        <tr>
+                        <tr class="align-middle">
                             <td colspan="9" class="text-end">Sub Total</td>
-                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal - x.TaxToCharge), salesOrder.CurrencyID)</td>
-                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.TaxToCharge), salesOrder.CurrencyID)</td>
-                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal), salesOrder.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency((TotalsTypeIsOrdered) ? salesOrder.LinesFXOrderedExGSTTotal : SelectedHistory.LinesFXExGSTTotal, salesOrder.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency((TotalsTypeIsOrdered) ? salesOrder.LinesFXOrderedGSTTotal : SelectedHistory.LinesFXGSTTotal, salesOrder.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency((TotalsTypeIsOrdered) ? salesOrder.LinesFXOrderedIncGSTTotal : SelectedHistory.LinesFXIncGSTTotal, salesOrder.CurrencyID)</td>
+                            <td class="text-end"></td>
                         </tr>
 
-                        @if (salesOrder.Cartage1ExGst + salesOrder.Cartage1Gst != 0)
-                        {
-                            <tr>
-                                <td colspan="9" class="text-end">Freight</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage1ExGst, salesOrder.CurrencyID)</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage1Gst, salesOrder.CurrencyID)</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage1ExGst + salesOrder.Cartage1Gst, salesOrder.CurrencyID)</td>
-                            </tr>
+                        <tr class="align-middle">
+                        @if (salesOrder.FXCartage1ExGst != 0 || salesOrder.FXCartage1Gst != 0 || salesOrder.FXCartage2ExGst != 0 || salesOrder.FXCartage2Gst != 0 || salesOrder.FXCartage3ExGst != 0 || salesOrder.FXCartage3Gst != 0)
+                        {                            
+                            <td colspan="9" class="text-end">Freight</td>
+                            <td class="text-end">@Config.FormattedCurrency(salesOrder.FXCartage1ExGst + salesOrder.FXCartage2ExGst + salesOrder.FXCartage3ExGst, salesOrder.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency(salesOrder.FXCartage1Gst + salesOrder.FXCartage2Gst + salesOrder.FXCartage3Gst, salesOrder.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency(salesOrder.FXCartage1ExGst + salesOrder.FXCartage1Gst + salesOrder.FXCartage2ExGst + salesOrder.FXCartage2Gst + salesOrder.FXCartage3ExGst + salesOrder.FXCartage3Gst, salesOrder.CurrencyID)</td>                                                     
                         }
                         else
                         {
-                            // even if Cartage1 is 0, display as blank to give a better visual appeal - space out the sub total and total
-                            <tr>
-                                <td colspan="9" class="text-end">Freight</td>
-                                <td class="text-end"></td>
-                                <td class="text-end"></td>
-                                <td class="text-end"></td>
-                            </tr>
+                            // even if there is no cartage, display as blank to give a better visual appeal - space out the sub total and total                            
+                            <td colspan="9" class="text-end">Freight</td>
+                            <td class="text-end"></td>
+                            <td class="text-end"></td>
+                            <td class="text-end"></td>                            
+                            
                         }
+                            <td class="text-center">
+                                <button @onclick="_ => EditFreight()" class="btn" style="background-color:transparent">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 20 20">
+                                        <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
+                                        <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z" />
+                                    </svg>
+                                </button>
+                            </td>   
+                        </tr>
 
-                        @if (salesOrder.Cartage2ExGst + salesOrder.Cartage2Gst != 0)
-                        {
-                            <tr>
-                                <td colspan="9" class="text-end">Freight</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage2ExGst, salesOrder.CurrencyID)</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage2Gst, salesOrder.CurrencyID)</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage2ExGst + salesOrder.Cartage2Gst, salesOrder.CurrencyID)</td>
-                            </tr>
-                        }
-
-                        @if (salesOrder.Cartage3ExGst + salesOrder.Cartage3Gst != 0)
-                        {
-                            <tr>
-                                <td colspan="9" class="text-end">Freight</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage3ExGst, salesOrder.CurrencyID)</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage3Gst, salesOrder.CurrencyID)</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesOrder.Cartage3ExGst + salesOrder.Cartage3Gst, salesOrder.CurrencyID)</td>
-                            </tr>
-                        }
-
-                        <tr>
-                            <td colspan="9" class="text-end">Total</td>
-                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal - x.TaxToCharge) + salesOrder.Cartage1ExGst + salesOrder.Cartage2ExGst + salesOrder.Cartage3ExGst, salesOrder.CurrencyID)</td>
-                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.TaxToCharge) + salesOrder.Cartage1Gst + salesOrder.Cartage2Gst + salesOrder.Cartage3Gst, salesOrder.CurrencyID)</td>
-                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal) + salesOrder.Cartage1ExGst + salesOrder.Cartage2ExGst + salesOrder.Cartage3ExGst + salesOrder.Cartage1Gst + salesOrder.Cartage2Gst + salesOrder.Cartage3Gst, salesOrder.CurrencyID)</td>
+                        <tr class="align-middle">
+                            <td colspan="9" class="text-end">
+                                <label for="CurrencyTotal" class="form-label">
+                                    <img src="data:image/png;base64,@Convert.ToBase64String(Config.Currencies[salesOrder.CurrencyID].Picture)" width="30" height="20">
+                                    @salesOrder.CurrencyShortName
+                                </label>
+                                Total
+                            </td>
+                            <td class="text-end">@Config.FormattedCurrency((TotalsTypeIsOrdered) ? salesOrder.FXOrderedExGSTTotal : SelectedHistory.FXExGSTTotal, salesOrder.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency((TotalsTypeIsOrdered) ? salesOrder.FXOrderedGSTTotal : SelectedHistory.FXGSTTotal, salesOrder.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency((TotalsTypeIsOrdered) ? salesOrder.FXOrderedIncGSTTotal : SelectedHistory.FXIncGSTTotal, salesOrder.CurrencyID)</td>
+                            <td class="text-end"></td>
                         </tr>
                     </tbody>
                 </table>
+                <button @onclick="(() => AddSalesOrderLine())" type="button" class="btn btn-success">
+                    Add Item
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="-6 -6 48 48">
+                        <circle cx="16" cy="16" r="14" style="stroke: white;stroke-width:2" fill="transparent" />
+                        <line x1="16" y1="6" x2="16" y2="26" style="stroke: white;stroke-width:2" />
+                        <line x1="6" y1="16" x2="26" y2="16" style="stroke: white;stroke-width:2" />
+                    </svg>
+                </button>
             </div>
         </div>
 
@@ -225,74 +352,183 @@
                         <div class="row">
                             <div class="col-3">
                                 <label for="DeliveryAddressee" class="form-label">Addressee</label>
-                                <input type="text" class="form-control" id="DeliveryAddressee" readonly placeholder="@salesOrder.DeliveryAddressee">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressee" readonly placeholder="@salesOrder.DeliveryAddressee">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressee" value="@salesOrder.DeliveryAddressee" @onchange="async (e) =>
+                                        {
+                                            await SalesOrderChanged(e, (q) => { q.DeliveryAddressee = e.Value.ToString(); });
+                                        }">
+                                }
                             </div>
                             <div class="col-3">
                                 <label for="DeliveryAddressContactName" class="form-label">Contact Name</label>
-                                <input type="text" class="form-control" id="DeliveryAddressContactName" readonly placeholder="@salesOrder.DeliveryAddressContactName">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressContactName" readonly placeholder="@salesOrder.DeliveryAddressContactName">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressContactName" value="@salesOrder.DeliveryAddressContactName" @onchange="async (e) =>
+                                        {
+                                            await SalesOrderChanged(e, (q) => { q.DeliveryAddressContactName = e.Value.ToString(); });
+                                        }">
+                                }
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-3">
                                 <label for="DeliveryAddress1" class="form-label">Address 1</label>
-                                <input type="text" class="form-control" id="DeliveryAddress1" readonly placeholder="@salesOrder.DeliveryAddress1">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddress1" readonly placeholder="@salesOrder.DeliveryAddress1">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddress1" value="@salesOrder.DeliveryAddress1" @onchange="async (e) =>
+                                        {
+                                            await SalesOrderChanged(e, (q) => { q.DeliveryAddress1 = e.Value.ToString(); });
+                                        }">
+                                }
                             </div>
                             <div class="col-3">
                                 <label for="DeliveryAddress2" class="form-label">Address 2</label>
-                                <input type="text" class="form-control" id="DeliveryAddress2" readonly placeholder="@salesOrder.DeliveryAddress2">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddress2" readonly placeholder="@salesOrder.DeliveryAddress2">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddress2" value="@salesOrder.DeliveryAddress2" @onchange="async (e) =>
+                                        {
+                                            await SalesOrderChanged(e, (q) => { q.DeliveryAddress2 = e.Value.ToString(); });
+                                        }">
+                                }
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-3">
                                 <label for="DeliveryAddressState" class="form-label">State</label>
-                                <input type="text" class="form-control" id="DeliveryAddressState" readonly placeholder="@salesOrder.DeliveryAddressState">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressState" readonly placeholder="@salesOrder.DeliveryAddressState">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressState" value="@salesOrder.DeliveryAddressState" @onchange="async (e) =>
+                                        {
+                                            await SalesOrderChanged(e, (q) => { q.DeliveryAddressState = e.Value.ToString(); });
+                                        }">
+                                }
                             </div>
                             <div class="col-3">
                                 <label for="DeliveryAddressSuburb" class="form-label">Suburb</label>
-                                <input type="text" class="form-control" id="DeliveryAddressSuburb" readonly placeholder="@salesOrder.DeliveryAddressSuburb">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressSuburb" readonly placeholder="@salesOrder.DeliveryAddressSuburb">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressSuburb" value="@salesOrder.DeliveryAddressSuburb" @onchange="async (e) =>
+                                            {
+                                                await SalesOrderChanged(e, (q) => { q.DeliveryAddressSuburb = e.Value.ToString(); });
+                                            }">
+                                }
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-3">
                                 <label for="DeliveryAddressPostcode" class="form-label">Postcode</label>
-                                <input type="text" class="form-control" id="DeliveryAddressPostcode" readonly placeholder="@salesOrder.DeliveryAddressPostcode">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressPostcode" readonly placeholder="@salesOrder.DeliveryAddressPostcode">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressPostcode" value="@salesOrder.DeliveryAddressPostcode" @onchange="async (e) =>
+                                        {
+                                            await SalesOrderChanged(e, (q) => { q.DeliveryAddressPostcode = e.Value.ToString(); });
+                                        }">
+                                }
                             </div>
                             <div class="col-3">
                                 <label for="DeliveryAddressCountry" class="form-label">Country</label>
-                                <input type="text" class="form-control" id="DeliveryAddressCountry" readonly placeholder="@salesOrder.DeliveryAddressCountry">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressCountry" readonly placeholder="@salesOrder.DeliveryAddressCountry">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressCountry" value="@salesOrder.DeliveryAddressCountry" @onchange="async (e) =>
+                                        {
+                                            await SalesOrderChanged(e, (q) => { q.DeliveryAddressCountry = e.Value.ToString(); });
+                                        }">
+                                }
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-3">
                                 <label for="DeliveryAddressCourierDetails" class="form-label">Delivery Instructions</label>
-                                <input type="text" class="form-control" id="DeliveryAddressCourierDetails" readonly placeholder="@salesOrder.DeliveryAddressCourierDetails">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <textarea rows="3" class="form-control" id="DeliveryAddressCourierDetails" readonly placeholder="@salesOrder.DeliveryAddressCourierDetails"></textarea>
+                                }
+                                else
+                                {
+                                    <textarea rows="3" class="form-control" id="DeliveryAddressCourierDetails" value="@salesOrder.DeliveryAddressCourierDetails" @onchange="async (e) =>
+                                        {
+                                            await SalesOrderChanged(e, (q) => { q.DeliveryAddressCourierDetails = e.Value.ToString(); });
+                                                                                      }"></textarea>
+                                }
                             </div>
                             <div class="col-3">
                                 <label for="DeliveryAddressNotes" class="form-label">Notes</label>
-                                <input type="text" class="form-control" id="DeliveryAddressNotes" readonly placeholder="@salesOrder.DeliveryAddressNotes">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <textarea rows="3" class="form-control" id="DeliveryAddressNotes" readonly placeholder="@salesOrder.DeliveryAddressNotes"></textarea>
+                                }
+                                else
+                                {
+                                    <textarea rows="3" class="form-control" id="DeliveryAddressNotes" value="@salesOrder.DeliveryAddressNotes" @onchange="async (e) =>
+                                        {
+                                            await SalesOrderChanged(e, (q) => { q.DeliveryAddressNotes = e.Value.ToString(); });
+                                                                                      }"></textarea>
+                                }
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>                
             </div>
-        </div>
-    </div>
+        </div>        
+    </div>    
 }
 @code {
     [Parameter]
     public string InvoiceId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "CreateForDebtorID")]
+    public string CreateForDebtorID { get; set; }
+
     public string SnapshotNo { get; set; }
 
-    private bool APIRequestInPogress;
+    // APIRequestInProgress cannot be simply set to true and restored to original state, due to race conditions arising from asynchronous
+    // calls - so we use a counter instead, and increment or decrement that - and we look at the APIRequestInProgressCount to determine if a request is currently in progress or not.
+    private int APIRequestInProgressCount = 0;
+    public bool APIRequestInProgress => APIRequestInProgressCount > 0;
     private string? statusMessage;
     private JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrder salesOrder { get; set; }
     private string SelectedTabId { get; set; } = "Items-tab";
     private JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrderHistory SelectedHistory { get; set; }
+    private bool AddingItem { get; set; }
+    private bool EditingFreight { get; set; }
+    private bool _TotalsTypeIsOrdered = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -318,13 +554,20 @@
             return;
         }
 
-        bool oldAPIRequestInPogress = APIRequestInPogress;
-        APIRequestInPogress = true;
-
-        JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderGETRequest salesOrderGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderGETRequest() { InvoiceID = InvoiceId };
-        try
+        if (CreateForDebtorID != null)
         {
-            salesOrder = await JiwaAPI.GetAsync(salesOrderGETRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+            // create a new Order, and then proceed to show that Order
+            JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderPOSTRequest salesOrderPOSTRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderPOSTRequest() { DebtorID = CreateForDebtorID };
+            salesOrder = await SendToAPI<JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrder>(salesOrderPOSTRequest);
+        }
+        else if (InvoiceId != null)
+        {
+            JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderGETRequest salesOrderGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderGETRequest() { InvoiceID = InvoiceId };
+            salesOrder = await SendToAPI<JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrder>(salesOrderGETRequest);
+        }
+
+        if (salesOrder != null)
+        {
             SelectedHistory = salesOrder.Histories[0];
 
             if (QueryHelpers.ParseQuery(NavigationManager.ToAbsoluteUri(NavigationManager.Uri).Query).TryGetValue("SnapshotNo", out var snapshotNoParam))
@@ -337,26 +580,17 @@
                 }
             }
         }
-        catch (ServiceStack.WebServiceException webServiceException)
+    }      
+
+    public bool TotalsTypeIsOrdered
+    {
+        get
         {
-            if (webServiceException.StatusCode == 401)
-            {
-                // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
-                WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
-                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
-            }
-            else
-            {
-                statusMessage = webServiceException.ErrorMessage;
-            }
+            return _TotalsTypeIsOrdered;
         }
-        catch (Exception ex)
+        set
         {
-            statusMessage = ex.Message;
-        }
-        finally
-        {
-            APIRequestInPogress = oldAPIRequestInPogress;
+            _TotalsTypeIsOrdered = value;            
         }
     }
 
@@ -398,5 +632,175 @@
         {
             statusMessage = ex.Message;
         }
+    }    
+
+    private async Task SalesOrderChanged(ChangeEventArgs e, Action<JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderPATCHRequest> patchDTOAction)
+    {
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderPATCHRequest salesOrderPATCHRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderPATCHRequest();
+        salesOrderPATCHRequest.InvoiceID = salesOrder.InvoiceID;
+        patchDTOAction.Invoke(salesOrderPATCHRequest);
+
+        int? currentSnap = SelectedHistory.HistoryNo;
+
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrder response = await SendToAPI<JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrder>(salesOrderPATCHRequest);
+        if (response != null)
+        {
+            salesOrder = response;
+            SelectedHistory = salesOrder.Histories[currentSnap.Value - 1];
+        }
+    }
+
+    private async Task SalesOrderLineChanged(ChangeEventArgs e, string InvoiceLineID, Action<JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrderLine> patchDTOAction)
+    {
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderPATCHRequest salesOrderPATCHRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderPATCHRequest();
+        salesOrderPATCHRequest.InvoiceID = salesOrder.InvoiceID;
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrderLine OrderLine = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrderLine();
+        OrderLine.InvoiceLineID = InvoiceLineID;
+        patchDTOAction.Invoke(OrderLine);
+        salesOrderPATCHRequest.Lines = new List<JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrderLine>();
+        salesOrderPATCHRequest.Lines.Add(OrderLine);
+
+        int? currentSnap = SelectedHistory.HistoryNo;
+
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrder response = await SendToAPI<JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrder>(salesOrderPATCHRequest);
+        if (response != null)
+        {
+            salesOrder = response;
+            SelectedHistory = salesOrder.Histories[currentSnap.Value - 1];
+        }
+    }
+
+    private async Task DeleteSalesOrderLine(JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrderLine salesOrderLine)
+    {
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderLineDELETERequest salesOrderLineDELETERequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderLineDELETERequest();
+        salesOrderLineDELETERequest.InvoiceID = salesOrder.InvoiceID;
+        salesOrderLineDELETERequest.InvoiceHistoryID = SelectedHistory.InvoiceHistoryID;
+        salesOrderLineDELETERequest.InvoiceLineID = salesOrderLine.InvoiceLineID;
+        await DeleteFromAPI(salesOrderLineDELETERequest);
+
+        // re-read the Order
+        int? currentSnap = SelectedHistory.HistoryNo;
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderGETRequest salesOrderGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderGETRequest() { InvoiceID = salesOrder.InvoiceID };
+        salesOrder = await SendToAPI<JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrder>(salesOrderGETRequest);
+
+        if (salesOrder != null)
+        {
+            SelectedHistory = salesOrder.Histories[currentSnap.Value - 1];
+        }
+    }
+
+    private async Task AddSalesOrderLine()
+    {
+        AddingItem = true;
+    }
+
+    public async void AddItemDialogClosed(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR InventoryItem)
+    {
+        AddingItem = false;
+
+        if (InventoryItem != null)
+        {
+            JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderPATCHRequest salesOrderPATCHRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderPATCHRequest();
+            salesOrderPATCHRequest.InvoiceID = salesOrder.InvoiceID;
+            JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrderLine OrderLine = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrderLine();
+            OrderLine.InventoryID = InventoryItem.InventoryID;
+            salesOrderPATCHRequest.Lines = new List<JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrderLine>();
+            salesOrderPATCHRequest.Lines.Add(OrderLine);
+
+            int? currentSnap = SelectedHistory.HistoryNo;
+
+            JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrder response = await SendToAPI<JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrder>(salesOrderPATCHRequest);
+            if (response != null)
+            {
+                salesOrder = response;
+                SelectedHistory = salesOrder.Histories[currentSnap.Value - 1];
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    private async Task EditFreight()
+    {
+        EditingFreight = true;
+    }
+
+    public async void EditFreightDialogClosed(JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrder FreightDTO)
+    {
+        EditingFreight = false;
+
+        // re-read the Order
+        int? currentSnap = SelectedHistory.HistoryNo;
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderGETRequest salesOrderGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrderGETRequest() { InvoiceID = salesOrder.InvoiceID };
+        salesOrder = await SendToAPI<JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrder>(salesOrderGETRequest);
+
+        if (salesOrder != null)
+        {
+            SelectedHistory = salesOrder.Histories[currentSnap.Value - 1];
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task DeleteFromAPI(IReturnVoid requestDTO)
+    {
+        APIRequestInProgressCount++;
+
+        try
+        {
+            await JiwaAPI.DeleteAsync<ServiceStack.IReturnVoid>(requestDTO, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+        }
+        catch (ServiceStack.WebServiceException webServiceException)
+        {
+            if (webServiceException.StatusCode == 401)
+            {
+                // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            }
+            else
+            {
+                statusMessage = webServiceException.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+        finally
+        {
+            APIRequestInProgressCount--;
+        }
+    }
+
+    private async Task<TResponse> SendToAPI<TResponse>(IReturn<TResponse> requestDTO)
+    {
+        APIRequestInProgressCount++;
+
+        try
+        {
+            return await JiwaAPI.SendAsync(requestDTO, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+        }
+        catch (ServiceStack.WebServiceException webServiceException)
+        {
+            if (webServiceException.StatusCode == 401)
+            {
+                // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            }
+            else
+            {
+                statusMessage = webServiceException.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+        finally
+        {
+            APIRequestInProgressCount--;
+        }
+
+        return default(TResponse);
     }
 }

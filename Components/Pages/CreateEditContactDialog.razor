@@ -146,12 +146,12 @@
         }
     }
 
-    private async Task SelectedTagChange(ChangeEventArgs e)
+    private async void SelectedTagChange(ChangeEventArgs e)
     {
         SelectedTag = Tags.FirstOrDefault(x => x.RecID == e.Value.ToString());
     }
 
-    private async Task AddSelectedTag()
+    private async void AddSelectedTag()
     {        
         if (SelectedTag != null)
         {
@@ -165,7 +165,7 @@
         }
     }
 
-    private async Task RemoveTag(JiwaFinancials.Jiwa.JiwaServiceModel.Tags.Tag tag)
+    private async void RemoveTag(JiwaFinancials.Jiwa.JiwaServiceModel.Tags.Tag tag)
     {
         ContactName.TagMemberships.Remove(tag);
     }

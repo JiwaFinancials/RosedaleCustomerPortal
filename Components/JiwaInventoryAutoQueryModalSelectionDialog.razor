@@ -1,0 +1,210 @@
+﻿@attribute [type: RenderModeInteractiveServer]
+
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using ServiceStack;
+@inject ProtectedLocalStorage ProtectedLocalStore
+@inject NavigationManager NavigationManager
+@inject WebPortalUserSessionStateContainer WebPortalUserSessionStateContainer
+@inject BrowserService BrowserService
+@using Microsoft.AspNetCore.WebUtilities
+
+<div class="modal fade show modal-lg" id="myModal" style="display:block; background-color: rgba(10,10,10,.8);" draggable="true"
+     aria-modal="true" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            @if (InventoryItemsListGrid != null && InventoryItemsListGrid.APIRequestInProgress)
+            {
+                <div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0">
+                            <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <StatusMessage Message="@statusMessage" />
+
+            <div class="modal-header">
+                <h4 class="modal-title">@Title</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @onclick="@ModalCancel"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <label for="SearchText" class="form-label">Search</label>
+                <input type="text" class="form-control" id="SearchText" @bind="@SearchText" @oninput="@(async x => { await SearchTextChanged((string)x.Value); })" />
+
+                <p>@Text</p>
+
+                <JiwaAPIAutoQueryGrid @ref="InventoryItemsListGrid" Model="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR"
+                                      QueryType="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery"
+                                      AutoQuery="@v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery"
+                                      UseFilters="false"
+                                      CaptionMaps=@(new Dictionary<string, string>
+                                      {
+                                          ["PartNo"] = "Part No.",
+                                          ["Price"] = "Price",
+                                          ["AvailableStock"] = "Available Stock"                               
+                                      } )
+                                      HiddenColumns=@(new List<string>() { "InventoryID" })                                      
+                                      NoAuthenticationTokenCallbackMethod="@NoAuthenticationToken"
+                                      AuthType="AuthTypes.JiwaAPISessionId"
+                                      APIExceptionCallbackMethod="@APIException"
+                                      DataCellRenderFragmentCallbackMethod="@InventoryItemsListGridDataCellRenderFragment">
+                                  </JiwaAPIAutoQueryGrid>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" @onclick=@ModalCancel>Cancel</button>
+                <button type="button" class="btn btn-success" @onclick=@ModalOk>OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; }
+    [Parameter]
+    public string Text { get; set; }
+
+    [Parameter]
+    public EventCallback<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR> OnClose { get; set; }
+
+    private JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery { get; set; }
+    private JiwaAPIAutoQueryGrid<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR, JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery>? InventoryItemsListGrid { get; set; }        
+    private string? statusMessage;
+
+    private string? SearchText;    
+    private CancellationTokenSource? CancellationTokenSource { get; set; } = new CancellationTokenSource();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if (WebPortalUserSessionStateContainer.ProtectedLocalStore == null)
+        {
+            try
+            {
+                await WebPortalUserSessionStateContainer.SetProtectedLocalStore(ProtectedLocalStore);
+            }
+            catch (Exception ex)
+            {
+                statusMessage = ex.Message;
+                return;
+            }
+        }
+
+        if (WebPortalUserSessionStateContainer.WebPortalUserSession == null)
+        {
+            // not authenticated
+            NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            return;
+        }
+        else
+        {
+            if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+            {
+                // Should not be here unless you're a staff member, so redirect to logon
+                // TODO: Give user a message that they need to log on with a staff member account to access this page, as opposed to just redirecting them to the login page with no explanation.
+                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+                return;
+            }
+        }
+
+        // AutoQueries need to be a property instantiated in the parent and not new'd in the razor defining component because we want to persist the AutoQuery properties between renders.
+        // If we don't do this, what happens is the component does not render propertly - so, for example
+        // Where the debtor transactions autoquery component returns multiple pages, selecting page 3 and then clicking on a
+        // different tab and then back to the debtor transactions tab it will still show the transactions last displayed, but the page number will be back to page 1
+        // So we instantiate the auto queries here, and in the component razor instantiation we set the AutoQuery parameter of the component to be our local declared instance here.
+        v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery()
+        {
+            OrderBy = "PartNo",
+            Fields = "InventoryID,PartNo,Description,AvailableStock,SellPrice",
+            Take = 12,            
+            Immutable_IN_LogicalID=Config.IN_LogicalID
+        };        
+    }
+
+    private Task ModalCancel()
+    {
+        return OnClose.InvokeAsync(null);
+    }
+
+    private Task ModalOk()
+    {
+        return OnClose.InvokeAsync(InventoryItemsListGrid.SelectedItem);
+    }
+
+    private async Task SearchTextChanged(string NewValue)
+    {
+        try
+        {
+            CancellationTokenSource?.Cancel();
+            CancellationTokenSource?.Dispose();
+        }
+        catch (ObjectDisposedException)
+        {
+            // swallow if already disposed - we don't care
+        }
+
+        CancellationTokenSource = new CancellationTokenSource();
+
+        SearchText = NewValue;
+        v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery.PartNoContains = SearchText;
+        v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery.DescriptionContains = SearchText;
+
+        await InventoryItemsListGrid.ExecuteAutoQuery(CancellationTokenSource.Token);
+    }
+
+    public void NoAuthenticationToken()
+    {
+        // user had no auth token to provide - redirect to logon
+        NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+    }
+
+    public async void APIException(Exception ex)
+    {
+        // first we need to work out what type of exception this was.  If it as a 401 (Not Authenticated), then we just redirect to to the login page
+        // Anything else, we set the errorMessage property so the component displays the error to the user.
+        if (ex is ServiceStack.WebServiceException)
+        {
+            ServiceStack.WebServiceException webServiceException = (ServiceStack.WebServiceException)ex;
+            if (webServiceException.StatusCode == 401)
+            {
+                // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            }
+            else
+            {
+                statusMessage = webServiceException.ErrorMessage;
+            }
+        }
+        else
+        {
+            statusMessage = ex.Message;
+        }
+    }
+
+    public RenderFragment InventoryItemsListGridDataCellRenderFragment(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR item, string columnId)
+    {
+        // Returns a render cell fragment for the cell contents of data cells of the debtor transactions grid where we don't want the default styling to be used.
+
+        RenderFragment content = null;
+        switch (columnId)
+        {
+            case "AvailableStock":
+                content = @<td class="text-end">@Config.FormattedDecimals(item.AvailableStock, item.QuantityDecimalPlaces, true)</td>;
+                break;
+            case "SellPrice":
+                content = @<td class="text-end">@Config.FormattedCurrency(item.SellPrice, Config.LocalCurrency.RecID)</td>;
+                break;
+        }
+
+        return content;
+    }
+}

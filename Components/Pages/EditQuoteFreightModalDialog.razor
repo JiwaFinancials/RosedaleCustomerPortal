@@ -1,0 +1,207 @@
+﻿@attribute [type: RenderModeInteractiveServer]
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using JiwaCustomerPortal.Components
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using ServiceStack;
+@inject NavigationManager NavigationManager
+@inject ProtectedLocalStorage ProtectedLocalStore
+@inject WebPortalUserSessionStateContainer WebPortalUserSessionStateContainer
+
+<div class="modal fade show" id="myModal" style="display:block; background-color: rgba(10,10,10,.8);"
+     aria-modal="true" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">                        
+                <h4 class="modal-title">@Title</h4>                
+            </div>            
+
+            <div class="modal-body">     
+                
+                @if (APIRequestInProgress)
+                {
+                    <div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0">
+                                <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped small">
+                        <thead>
+                            <tr>
+                                <th class="text-start">#</th>
+                                <th>Ex Tax</th>                                        
+                                <th>Tax</th>
+                                <th>Inc Tax</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <tr>
+                                <td class="text-start">Cartage 1</td>
+                                <td class="text-end" width="160px">
+                                    <input type="number" class="form-control" id="FXCartage1ExGst"                                       
+                                           style="text-align: right;"
+                                           value="@Config.FormattedDecimals(@salesQuote.FXCartage1ExGst, Config.CurrencyDecimals(salesQuote.CurrencyID), false)"
+                                           step="@(Math.Pow(10, (double)-Config.CurrencyDecimals(salesQuote.CurrencyID)))"
+                                           min="0"
+                                           @onchange="async (e) =>
+                                            {
+                                                await QuoteChanged(e, (q) =>
+                                                    {
+                                                        decimal value = 0;
+                                                        decimal.TryParse(e.Value.ToString(), out value);
+                                                        // We don't test the result of the decimal.TryPase - anything invalid is 0
+                                                        q.Cartage1ExGst = value;
+                                                    });
+                                            }">
+                                </td>
+                                <td class="text-end">@Config.FormattedCurrency(salesQuote.FXCartage1Gst, salesQuote.CurrencyID)</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesQuote.FXCartage1ExGst + salesQuote.FXCartage1Gst, salesQuote.CurrencyID)</td>                            
+                            </tr>
+
+                            <tr>
+                                <td class="text-start">Cartage 2</td>
+                                <td class="text-end" width="160px">
+                                    <input type="number" class="form-control" id="FXCartage2ExGst"
+                                           style="text-align: right;"
+                                           value="@Config.FormattedDecimals(@salesQuote.FXCartage2ExGst, Config.CurrencyDecimals(salesQuote.CurrencyID), false)"
+                                           step="@(Math.Pow(10, (double)-Config.CurrencyDecimals(salesQuote.CurrencyID)))"
+                                           min="0"
+                                           @onchange="async (e) =>
+                                            {
+                                                await QuoteChanged(e, (q) => 
+                                                    { 
+                                                        decimal value = 0;
+                                                        decimal.TryParse(e.Value.ToString(), out value);
+                                                        // We don't test the result of the decimal.TryPase - anything invalid is 0
+                                                        q.Cartage2ExGst = value; 
+                                                    });
+                                            }">
+                                </td>
+                                <td class="text-end">@Config.FormattedCurrency(salesQuote.FXCartage2Gst, salesQuote.CurrencyID)</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesQuote.FXCartage2ExGst + salesQuote.FXCartage2Gst, salesQuote.CurrencyID)</td>
+                            </tr>
+
+                            <tr>
+                                <td class="text-start">Cartage 3</td>
+                                <td class="text-end" width="160px">
+                                    <input type="number" class="form-control" id="FXCartage3ExGst"
+                                           style="text-align: right;"
+                                           value="@Config.FormattedDecimals(@salesQuote.FXCartage3ExGst, Config.CurrencyDecimals(salesQuote.CurrencyID), false)"
+                                           step="@(Math.Pow(10, (double)-Config.CurrencyDecimals(salesQuote.CurrencyID)))"
+                                           min="0"
+                                           @onchange="async (e) =>
+                                            {
+                                                await QuoteChanged(e, (q) =>
+                                                    {
+                                                        decimal value = 0;
+                                                        decimal.TryParse(e.Value.ToString(), out value);
+                                                        // We don't test the result of the decimal.TryPase - anything invalid is 0
+                                                        q.Cartage3ExGst = value;
+                                                    });
+                                            }">
+                                </td>
+                                <td class="text-end">@Config.FormattedCurrency(salesQuote.FXCartage3Gst, salesQuote.CurrencyID)</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesQuote.FXCartage3ExGst + salesQuote.FXCartage3Gst, salesQuote.CurrencyID)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">                
+                <button type="button" class="btn btn-success" @onclick=@ModalOk>OK</button>
+            </div>
+            <StatusMessage Message="@statusMessage" />
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; }
+    [Parameter]
+    public JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuote salesQuote { get; set; }
+    [Parameter]
+    public JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuoteHistory SelectedHistory { get; set; }
+
+    [Parameter]
+    public EventCallback<JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuote> OnClose { get; set; }
+
+    // APIRequestInProgress cannot be simply set to true and restored to original state, due to race conditions arising from asynchronous
+    // calls - so we use a counter instead, and increment or decrement that - and we look at the APIRequestInProgressCount to determine if a request is currently in progress or not.
+    private int APIRequestInProgressCount = 0;
+    public bool APIRequestInProgress => APIRequestInProgressCount > 0;
+    private string? statusMessage;    
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if (WebPortalUserSessionStateContainer.WebPortalUserSession == null)
+        {
+            // not authenticated ?
+            NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            return;
+        }        
+    }       
+
+    private Task ModalOk()
+    {
+        return OnClose.InvokeAsync(salesQuote);
+    }
+
+    private async Task QuoteChanged(ChangeEventArgs e, Action<JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotePATCHRequest> patchDTOAction)
+    {
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotePATCHRequest salesQuotePATCHRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotePATCHRequest();
+        salesQuotePATCHRequest.QuoteID = salesQuote.QuoteID;
+        patchDTOAction.Invoke(salesQuotePATCHRequest);
+
+        int? currentSnap = SelectedHistory.HistoryNo;
+
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuote response = await SendToAPI<JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuote>(salesQuotePATCHRequest);
+        if (response != null)
+        {
+            salesQuote = response;
+            SelectedHistory = salesQuote.Histories[currentSnap.Value - 1];
+        }
+    }
+
+    private async Task<TResponse> SendToAPI<TResponse>(IReturn<TResponse> requestDTO)
+    {
+        APIRequestInProgressCount++;
+
+        try
+        {
+            return await JiwaAPI.SendAsync(requestDTO, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+        }
+        catch (ServiceStack.WebServiceException webServiceException)
+        {
+            if (webServiceException.StatusCode == 401)
+            {
+                // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            }
+            else
+            {
+                statusMessage = webServiceException.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+        finally
+        {
+            APIRequestInProgressCount--;
+        }
+
+        return default(TResponse);
+    }
+}

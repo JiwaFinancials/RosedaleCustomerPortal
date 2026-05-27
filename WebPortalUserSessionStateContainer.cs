@@ -58,16 +58,42 @@ namespace JiwaCustomerPortal
                 try
                 {
                     JiwaFinancials.Jiwa.JiwaServiceModel.JiwaAuthUserSessionResponse jiwaAuthUserSession = await JiwaAPI.GetAsync(new JiwaFinancials.Jiwa.JiwaServiceModel.AuthCurrentSessionGETRequest(), jiwaAPISessionId: webPortalUserSession.Id);
-                    JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNameCustomerWebPortalRoleGETResponse debtorContactNameCustomerWebPortalRoleGETResponse = await JiwaAPI.GetAsync(new JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNameCustomerWebPortalRoleGETRequest(), jiwaAPISessionId: jiwaAuthUserSession.Id);
 
-                    if (debtorContactNameCustomerWebPortalRoleGETResponse.Roles == null || (!debtorContactNameCustomerWebPortalRoleGETResponse.Roles.Contains("User") && !debtorContactNameCustomerWebPortalRoleGETResponse.Roles.Contains("Admin")))
+                    if (webPortalUserSession.AuthProvider != "credentials")
                     {
-                        // no web portal role has been assigned to this debtor contact name; they are not allowed to sign in.
-                        throw new Exception("User does not have permission to sign in using the Customer Web Portal. Add the tag 'Customer Web Portal - User' or 'Customer Web Portal - Admin' to the debtor contact name");
+                        JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNameCustomerWebPortalRoleGETResponse debtorContactNameCustomerWebPortalRoleGETResponse = await JiwaAPI.GetAsync(new JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNameCustomerWebPortalRoleGETRequest(), jiwaAPISessionId: jiwaAuthUserSession.Id);
+
+                        if (debtorContactNameCustomerWebPortalRoleGETResponse.Roles == null || (!debtorContactNameCustomerWebPortalRoleGETResponse.Roles.Contains("User") && !debtorContactNameCustomerWebPortalRoleGETResponse.Roles.Contains("Admin")))
+                        {
+                            // no web portal role has been assigned to this debtor contact name; they are not allowed to sign in.
+                            throw new Exception("User does not have permission to sign in using the Customer Web Portal. Add the tag 'Customer Web Portal - User' or 'Customer Web Portal - Admin' to the debtor contact name");
+                        }
+
+                        webPortalUserSession.IsAdminRole = debtorContactNameCustomerWebPortalRoleGETResponse.Roles.Contains("Admin");
                     }
 
                     webPortalUserSession = jiwaAuthUserSession.ConvertTo<JiwaFinancials.Jiwa.JiwaServiceModel.WebPortalUserSession>();
-                    webPortalUserSession.IsAdminRole = debtorContactNameCustomerWebPortalRoleGETResponse.Roles.Contains("Admin");
+                    if (webPortalUserSession.AuthProvider != "credentials")
+                    {
+                        // null these because not relevant for non-credential based auth, and we don't want to accidentally persist staff details in the browser's local storage when they are not relevant to the authentication method used.
+                        webPortalUserSession.JiwaStaffID = null;
+                        webPortalUserSession.JiwaStaffUsername = null;
+                        webPortalUserSession.JiwaStaffTitle = null;
+                        webPortalUserSession.JiwaStaffFirstname = null;
+                        webPortalUserSession.JiwaStaffSurname = null;
+                        webPortalUserSession.JiwaStaffEmailAddress = null;
+                    }
+                    else
+                    {
+                        webPortalUserSession.DebtorContactNameID = null;
+                        webPortalUserSession.DebtorContactNameTitle = null;
+                        webPortalUserSession.DebtorContactNameFirstName = null;
+                        webPortalUserSession.DebtorContactNameSurname = null;
+                        webPortalUserSession.DebtorContactNameEmailAddress = null;
+                        webPortalUserSession.DebtorID = null;
+                        webPortalUserSession.DebtorName = null;
+                    }
+                    
                     await ProtectedLocalStore.SetAsync("JiwaCustomerWebPortalAuthUserSession", webPortalUserSession);
                     SetWebPortalUserSession(webPortalUserSession);
                 }

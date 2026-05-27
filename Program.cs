@@ -1,4 +1,5 @@
 using JiwaCustomerPortal.Components;
+using ServiceStack;
 using System.Net;
 
 namespace JiwaCustomerPortal
@@ -9,10 +10,16 @@ namespace JiwaCustomerPortal
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Host.UseWindowsService();
+
             ConfigurationManager configuration = builder.Configuration;
-            Config.ShowDiagnostics = configuration.GetValue<bool>("ShowDiagnostics");
-            Config.JiwaAPIURL = configuration.GetSection("JiwaAPIURL").Value;
-            Config.JiwaAPIKey = configuration.GetSection("JiwaAPIKey").Value;
+            Config.JiwaAPIURL = configuration.GetValue<string>("JiwaAPIURL");
+            Config.JiwaAPIKey = configuration.GetValue<string>("JiwaAPIKey");
+            Config.AllowCustomerLogin = configuration.GetValue<bool>("AllowCustomerLogin");
+            Config.AllowStaffLogin = configuration.GetValue<bool>("AllowStaffLogin"); ;
+
+            // HttpClient Factory Registration
+            //builder.Services.AddJsonApiClient(Config.JiwaAPIURL); TODO: Find a way for our static JiwaAPI class to use DI to get the JsonApiClient instead of creating it's own instances. The recommended way of using any HttpClient is by using a factory
 
             // We want to read some config settings and we should wait until thats' finished before proceediing
             // if it fails, it will throw an exception and we'll not be able to start - which is what we want because

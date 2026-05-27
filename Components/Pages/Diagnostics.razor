@@ -8,7 +8,7 @@
 @inject BrowserService BrowserService
 
 <PageTitle>Diagnostics</PageTitle>
-@if (APIRequestInPogress)
+@if (APIRequestInProgress)
 {
     <div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">
         <div class="modal-dialog modal-dialog-centered">
@@ -129,7 +129,10 @@
 </div>
 
 @code{
-    private bool APIRequestInPogress;
+    // APIRequestInProgress cannot be simply set to true and restored to original state, due to race conditions arising from asynchronous
+    // calls - so we use a counter instead, and increment or decrement that - and we look at the APIRequestInProgressCount to determine if a request is currently in progress or not.
+    private int APIRequestInProgressCount = 0;
+    public bool APIRequestInProgress => APIRequestInProgressCount > 0;
     private string? statusMessage;
     private JiwaFinancials.Jiwa.JiwaServiceModel.Tables.PluginExceptionQuery PluginExceptionQuery { get; set; } = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.PluginExceptionQuery();
     private JiwaFinancials.Jiwa.JiwaServiceModel.Tables.StartupLogEntryQuery StartupLogEntryQuery { get; set; } = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.StartupLogEntryQuery();
@@ -168,7 +171,7 @@
         NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
     }
 
-    public async Task APIException(Exception ex)
+    public async void APIException(Exception ex)
     {
         // first we need to work out what type of exception this was.  If it as a 401 (Not Authenticated), then we just redirect to to the login page
         // Anything else, we set the errorMessage property so the component displays the error to the user.

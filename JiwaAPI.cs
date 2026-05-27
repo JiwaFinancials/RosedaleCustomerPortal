@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
-using Microsoft.AspNetCore.Components;
-using System.Runtime.CompilerServices;
+﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using Microsoft.JSInterop;
 using ServiceStack;
+using System.Runtime.CompilerServices;
 
 namespace JiwaCustomerPortal
 {
@@ -12,7 +13,25 @@ namespace JiwaCustomerPortal
         // if passed a jiwaAPISessionId, adds an ss-id cookie to the request for auth, otherwise it if an APIKey is provided, it uses that
         // Requests to authenticate will provide neither jiwaAPISessionId or jiwaAPIKey
         // caller should be try catching this and taking appropriate if there was an exception
-        public static async Task<TResponse> GetAsync<TResponse>(ServiceStack.IReturn<TResponse> requestDTO, string? jiwaAPISessionId = null, string? jiwaAPIKey = null)
+
+        public static async Task<TResponse> SendAsync<TResponse>(ServiceStack.IReturn<TResponse> requestDTO, string? jiwaAPISessionId = null, string? jiwaAPIKey = null, CancellationToken cancellationToken = default)
+        {                 
+            using (ServiceStack.JsonApiClient client = new ServiceStack.JsonApiClient(Config.JiwaAPIURL))
+            {
+                if (!string.IsNullOrWhiteSpace(jiwaAPISessionId))
+                {
+                    client.SetCookie("ss-id", jiwaAPISessionId, null);
+                }
+                else
+                {
+                    client.BearerToken = jiwaAPIKey;
+                }
+
+                return await client.SendAsync(requestDTO, cancellationToken);
+            }
+        }
+
+        public static async Task<TResponse> GetAsync<TResponse>(ServiceStack.IReturn<TResponse> requestDTO, string? jiwaAPISessionId = null, string? jiwaAPIKey = null, CancellationToken cancellationToken = default)
         {
             using (ServiceStack.JsonApiClient client = new ServiceStack.JsonApiClient(Config.JiwaAPIURL))
             {
@@ -25,11 +44,11 @@ namespace JiwaCustomerPortal
                     client.BearerToken = jiwaAPIKey;
                 }
                
-                return await client.GetAsync(requestDTO);               
+                return await client.GetAsync(requestDTO, cancellationToken);               
             }
         }
 
-        public static async Task<TResponse> GetAsync<TResponse>(object requestDto, string? jiwaAPISessionId = null, string? jiwaAPIKey = null)
+        public static async Task<TResponse> GetAsync<TResponse>(object requestDto, string? jiwaAPISessionId = null, string? jiwaAPIKey = null, CancellationToken cancellationToken = default)
         {
             using (ServiceStack.JsonApiClient client = new ServiceStack.JsonApiClient(Config.JiwaAPIURL))
             {
@@ -41,12 +60,12 @@ namespace JiwaCustomerPortal
                 {
                     client.BearerToken = jiwaAPIKey;
                 }
-
-                return await client.GetAsync<TResponse>(requestDto);
+                
+                return await client.GetAsync<TResponse>(requestDto, cancellationToken);
             }
         }
         
-        public static async Task<TResponse> PostAsync<TResponse>(IReturn<TResponse> requestDto, string? jiwaAPISessionId = null, string? jiwaAPIKey = null)
+        public static async Task<TResponse> PostAsync<TResponse>(IReturn<TResponse> requestDto, string? jiwaAPISessionId = null, string? jiwaAPIKey = null, CancellationToken cancellationToken = default)
         {
             using (ServiceStack.JsonApiClient client = new ServiceStack.JsonApiClient(Config.JiwaAPIURL))
             {
@@ -59,11 +78,11 @@ namespace JiwaCustomerPortal
                     client.BearerToken = jiwaAPIKey;
                 }
 
-                return await client.PostAsync<TResponse>(requestDto);
+                return await client.PostAsync<TResponse>(requestDto, cancellationToken);
             }
         }
 
-        public static async Task<TResponse> PostAsync<TResponse>(object requestDto, string? jiwaAPISessionId = null, string? jiwaAPIKey = null)
+        public static async Task<TResponse> PostAsync<TResponse>(object requestDto, string? jiwaAPISessionId = null, string? jiwaAPIKey = null, CancellationToken cancellationToken = default)
         {
             using (ServiceStack.JsonApiClient client = new ServiceStack.JsonApiClient(Config.JiwaAPIURL))
             {
@@ -76,11 +95,11 @@ namespace JiwaCustomerPortal
                     client.BearerToken = jiwaAPIKey;
                 }
 
-                return await client.PostAsync<TResponse>(requestDto);
+                return await client.PostAsync<TResponse>(requestDto, cancellationToken);
             }
         }
 
-        public static async Task<TResponse> PatchAsync<TResponse>(ServiceStack.IReturn<TResponse> requestDTO, string? jiwaAPISessionId = null, string? jiwaAPIKey = null)
+        public static async Task<TResponse> PatchAsync<TResponse>(ServiceStack.IReturn<TResponse> requestDTO, string? jiwaAPISessionId = null, string? jiwaAPIKey = null, CancellationToken cancellationToken = default)
         {
             using (ServiceStack.JsonApiClient client = new ServiceStack.JsonApiClient(Config.JiwaAPIURL))
             {
@@ -93,11 +112,11 @@ namespace JiwaCustomerPortal
                     client.BearerToken = jiwaAPIKey;
                 }
 
-                return await client.PatchAsync(requestDTO);
+                return await client.PatchAsync(requestDTO, cancellationToken);
             }
         }
 
-        public static async Task<TResponse> PutAsync<TResponse>(ServiceStack.IReturn<TResponse> requestDTO, string? jiwaAPISessionId = null, string? jiwaAPIKey = null)
+        public static async Task<TResponse> PutAsync<TResponse>(ServiceStack.IReturn<TResponse> requestDTO, string? jiwaAPISessionId = null, string? jiwaAPIKey = null, CancellationToken cancellationToken = default)
         {
             using (ServiceStack.JsonApiClient client = new ServiceStack.JsonApiClient(Config.JiwaAPIURL))
             {
@@ -110,11 +129,11 @@ namespace JiwaCustomerPortal
                     client.BearerToken = jiwaAPIKey;
                 }
 
-                return await client.PutAsync(requestDTO);
+                return await client.PutAsync(requestDTO, cancellationToken);
             }
         }
 
-        public static async Task<TResponse> DeleteAsync<TResponse>(object requestDto, string? jiwaAPISessionId = null, string? jiwaAPIKey = null)
+        public static async Task<TResponse> DeleteAsync<TResponse>(object requestDto, string? jiwaAPISessionId = null, string? jiwaAPIKey = null, CancellationToken cancellationToken = default)
         {
             using (ServiceStack.JsonApiClient client = new ServiceStack.JsonApiClient(Config.JiwaAPIURL))
             {
@@ -127,7 +146,7 @@ namespace JiwaCustomerPortal
                     client.BearerToken = jiwaAPIKey;
                 }
 
-                return await client.DeleteAsync<TResponse>(requestDto);
+                return await client.DeleteAsync<TResponse>(requestDto, cancellationToken);
             }
         }
     }

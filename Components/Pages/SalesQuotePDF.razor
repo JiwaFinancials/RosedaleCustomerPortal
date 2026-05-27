@@ -66,6 +66,7 @@ else
             return;
         }
 
+        // Request filter in the API will ensure that the below GET will 404 if the sales quote does not belong to us, and we are authenticated as a debtor contact
         JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteSnapshotReportGETRequest quoteSnapshotReportGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteSnapshotReportGETRequest() { QuoteHistoryID = QuoteHistoryId, ReportID = Config.SalesQuoteReport, AsAttachment = true };
         try
         {

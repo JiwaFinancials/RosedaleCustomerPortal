@@ -9,7 +9,7 @@
 
 <PageTitle>Account</PageTitle>
 
-@if (APIRequestInPogress)
+@if (APIRequestInProgress)
 {
     <div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">
         <div class="modal-dialog modal-dialog-centered">
@@ -324,16 +324,15 @@
                                       ["InvoiceNoDashHistoryNo"] = "Sales Order No.",
                                       ["HistoryNo"] = "History No.",
                                       ["InvoiceInitDate"] = "Date",                              
-                                      ["Status"] = "Status",
                                       ["OrderNo"] = "Order No.",
                                       ["SOReference"] = "Reference",
-                                      ["InvoiceTotal"] = "Order Total",
+                                      ["FXInvoiceTotalIncTax"] = "Order Total",
                                       ["TotalAllocated"] = "Amount Paid",
                                       ["CreditNote"] = "Credit",
                                       ["CurrencyShortName"] = "Currency",
                                       ["DueDate"] = "Pay By"
                                   } )
-                HiddenColumns=@(new List<string>() { "InvoiceID", "CurrencyID", "HistoryNo" })
+                HiddenColumns=@(new List<string>() { "InvoiceID", "CurrencyID" })
                 AutoQuery="@SalesOrdersAutoQuery"
                 NoAuthenticationTokenCallbackMethod="@NoAuthenticationToken"
                 APIExceptionCallbackMethod="@APIException"
@@ -352,8 +351,8 @@
                               ["InvoiceInitDate"] = "Date",
                               ["OrderNo"] = "Order No.",
                               ["QOReference"] = "Reference",
-                              ["InvoiceTotal"] = "Quote Total",                              
-                              ["CurrencyShortName"] = "Currency"
+                                          ["FXInvoiceTotalIncTax"] = "Quote Total",
+                                                  ["CurrencyShortName"] = "Currency"
                               } )
                 HiddenColumns=@(new List<string>() { "InvoiceID", "CurrencyID" })
                 AutoQuery="@SalesQuotesAutoQuery"
@@ -365,50 +364,46 @@
         </div>
         <div class=@String.Format("tab-pane{0}", SelectedTabId=="Backorders-tab" ? " active": null) id="Backorders" role="tabpanel" aria-labelledby="Backorders-tab">
             @if (BackOrders != null)
-            {
-                @if (BackOrders.Count == 0)
-                {
-                    <p>You have no outstanding backorders.</p>
-                }
-                else
-                {
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-striped small">
-                            <thead>
-                                <tr>
-                                    <th>Part No.</th>
-                                    <th>Description</th>                    
-                                    <th>Invoice No.</th>
-                                    <th>Order No.</th>
-                                    <th class="text-end">Date</th>
-                                    <th class="text-end">Quantity</th>
-                                    <th class="text-end">ETA</th>
-                                </tr>
-                            </thead>
+            {                
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped small">
+                        <thead>
+                            <tr>
+                                <th>Part No.</th>
+                                <th>Description</th>                    
+                                <th>Invoice No.</th>
+                                <th>Order No.</th>
+                                <th class="text-end">Date</th>
+                                <th class="text-end">Quantity</th>
+                                <th class="text-end">ETA</th>
+                            </tr>
+                        </thead>
 
-                            <tbody>
-                                @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorBackOrder backorder in BackOrders)
-                                {
-                                    <tr>
-                                        <td>@backorder.PartNo</td>
-                                        <td>@backorder.Description</td>
-                                        <td><a href="SalesOrder/@backorder.InvoiceID">@backorder.InvoiceNo</a></td>
-                                        <td>@backorder.CustomerOrderNo</td>
-                                        <td class="text-end">@backorder.Date.ToString(@BrowserService.DateFormat)</td>
-                                        <td class="text-end">@backorder.Quantity.ToString($"#,0.{new String('0', backorder.QuantityDecimalPlaces)}")</td>
-                                        <td class="text-end">@backorder.ExpectedDeliveryDate.ToString(@BrowserService.DateFormat)</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
+                        <tbody>
+                            @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorBackOrder backorder in BackOrders)
+                            {
+                                <tr>
+                                    <td>@backorder.PartNo</td>
+                                    <td>@backorder.Description</td>
+                                    <td><a href="SalesOrder/@backorder.InvoiceID">@backorder.InvoiceNo</a></td>
+                                    <td>@backorder.CustomerOrderNo</td>
+                                    <td class="text-end">@backorder.Date.ToString(@BrowserService.DateFormat)</td>
+                                    <td class="text-end">@backorder.Quantity.ToString($"#,0.{new String('0', backorder.QuantityDecimalPlaces)}")</td>
+                                    <td class="text-end">@backorder.ExpectedDeliveryDate.ToString(@BrowserService.DateFormat)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>                
             }
         </div>
     </div>
 }
 @code {
-    private bool APIRequestInPogress;
+    // APIRequestInProgress cannot be simply set to true and restored to original state, due to race conditions arising from asynchronous
+    // calls - so we use a counter instead, and increment or decrement that - and we look at the APIRequestInProgressCount to determine if a request is currently in progress or not.
+    private int APIRequestInProgressCount = 0;
+    public bool APIRequestInProgress => APIRequestInProgressCount > 0;
     private string? statusMessage;
     private JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor Debtor { get; set; }
     private string SelectedTabId { get; set; } = "Contacts-tab";
@@ -455,8 +450,7 @@
             return;
         }
 
-        bool oldAPIRequestInPogress = APIRequestInPogress;        
-        APIRequestInPogress = true;
+        APIRequestInProgressCount++;
 
         JiwaFinancials.Jiwa.JiwaServiceModel.CustomerDebtorGETRequest customerDebtorGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.CustomerDebtorGETRequest();
         try
@@ -482,39 +476,7 @@
         }
         finally
         {
-            APIRequestInPogress = oldAPIRequestInPogress;
-        }    
-
-        switch (Debtor.PeriodType)
-        {
-            case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Weekly:
-                Period1Label = "Current";
-                Period2Label = "8-14 Days";
-                Period3Label = "15-21 Days";
-                Period4Label = "21+ Days";
-                break;
-
-            case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Fortnightly:
-                Period1Label = "Current";
-                Period2Label = "15-28 Days";
-                Period3Label = "29-42 Days";
-                Period4Label = "42+ Days";
-                break;
-
-            case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Monthly:
-                Period1Label = "Current";
-                Period2Label = "31-60 Days";
-                Period3Label = "61-90 Days";
-                Period4Label = "90+ Days";
-                break;
-
-            case JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.Debtor.PeriodTypes.Custom:
-                Period1Label = "Current";
-                Period2Label = "Period 1";
-                Period3Label = "Period 2";
-                Period4Label = "Period 3";
-                break;
-
+            APIRequestInProgressCount--;
         }
 
         if (Debtor != null)
@@ -565,18 +527,18 @@
             };        
 
         SalesOrdersAutoQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesOrder_ListQuery()
-                    {
-                        OrderByDesc = "InvoiceNoDashHistoryNo",
-                        InvoiceTotalNotEqualTo = 0,
-                        Fields = "InvoiceID,InvoiceNoDashHistoryNo,HistoryNo,InvoiceInitDate,Status,OrderNo,SOReference,CurrencyShortName,InvoiceTotal,TotalAllocated,DueDate,CreditNote,CurrencyID",
-                        Take = 10
-                    };
+            {
+                OrderByDesc = "InvoiceNoDashHistoryNo",
+            FXInvoiceTotalIncTaxNotEqualTo = 0,
+            Fields = "InvoiceID,InvoiceNoDashHistoryNo,HistoryNo,InvoiceInitDate,OrderNo,SOReference,CurrencyShortName,FXInvoiceTotalIncTax,TotalAllocated,DueDate,CreditNote,CurrencyID",
+                Take = 10
+            };
 
         SalesQuotesAutoQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_SalesQuote_ListQuery()
             {
                 OrderByDesc = "InvoiceNoDashHistoryNo",
-                InvoiceTotalNotEqualTo = 0,
-                    Fields = "InvoiceID,InvoiceNoDashHistoryNo,HistoryNo,InvoiceInitDate,Status,OrderNo,QOReference,CurrencyShortName,InvoiceTotal,CurrencyID",
+				FXInvoiceTotalIncTaxNotEqualTo = 0,
+				Fields = "InvoiceID,InvoiceNoDashHistoryNo,HistoryNo,InvoiceInitDate,Status,OrderNo,QOReference,CurrencyShortName,FXInvoiceTotalIncTax,CurrencyID",
                 Take = 10
             };
     }   
@@ -585,8 +547,7 @@
     {        
         if (Debtor != null)
         {
-            bool oldAPIRequestInPogress = APIRequestInPogress;
-            APIRequestInPogress = true;
+            APIRequestInProgressCount++;
 
             JiwaFinancials.Jiwa.JiwaServiceModel.Tables.DebtorBackordersGETRequest DebtorBackordersGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.DebtorBackordersGETRequest();
             DebtorBackordersGETRequest.DebtorID = Debtor.DebtorID;
@@ -613,7 +574,7 @@
             }
             finally
             {
-                APIRequestInPogress = oldAPIRequestInPogress;
+                APIRequestInProgressCount--;
             }
         }
     }
@@ -639,7 +600,7 @@
         NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
     }
 
-    public async Task APIException(Exception ex)
+    public async void APIException(Exception ex)
     {
         // first we need to work out what type of exception this was.  If it as a 401 (Not Authenticated), then we just redirect to to the login page
         // Anything else, we set the errorMessage property so the component displays the error to the user.
@@ -791,7 +752,7 @@
                     else
                     {
                         // Display unallocated credits as a negative in the amount owing.
-                        if (@item.OutstandingAmount.Value == 0)
+                        if(@item.OutstandingAmount.Value == 0)
                         {
                             content = @<td class="text-end"></td>;
                         }
@@ -817,49 +778,30 @@
             case "InvoiceNoDashHistoryNo":
                 content = @<td><a href="SalesOrder/@item.InvoiceID.Trim()?SnapshotNo=@item.HistoryNo">@item.InvoiceNoDashHistoryNo</a></td>;
                 break;
-            case "Status":
-                if (item.Status >= 1)
+            case "FXInvoiceTotalIncTax":
+                if (item.CreditNote && item.FXInvoiceTotalIncTax != null)
                 {
-                    // Processed or closed - if it's fully paid we display as closed, otherwise we display as entered
-                    if (item.TotalAllocated >= item.InvoiceTotal)
-                    {
-                        content =@<td><span class="badge rounded-pill bg-danger">Closed</span></td> ;
-                    }
-                    else
-                    {
-                        content =@<td><span class="badge rounded-pill bg-success">Processed</span></td>  ;
-                    }
-                }
-                else
-                {
-                    // Entered - it's not an invoice yet, so display as pending
-                    content = @<td><span class="badge rounded-pill bg-primary">Pending</span></td>;
-                }
-                break;
-            case "InvoiceTotal":
-                if (item.CreditNote && item.InvoiceTotal != null)
-                {
-                    decimal orderTotal = item.InvoiceTotal.Value * -1;
+                    decimal orderTotal = item.FXInvoiceTotalIncTax.Value * -1;
                     content = @<td class="text-end">@Config.FormattedCurrency(@orderTotal, item.CurrencyID)</td>;
                 }
                 else
                 {
-                    if (item.InvoiceTotal > item.TotalAllocated && item.DueDate < DateTime.Now)
+                    if (item.FXInvoiceTotalIncTax > item.TotalAllocated && item.DueDate < DateTime.Now)
                     {
                         // overdue 
-                        content = @<td class="text-end"><div class="text-danger">@Config.FormattedCurrency(@item.InvoiceTotal, item.CurrencyID)</div></td>;
+                        content = @<td class="text-end"><div class="text-danger">@Config.FormattedCurrency(@item.FXInvoiceTotalIncTax, item.CurrencyID)</div></td>;
                     }
                     else
                     {
-                        if (item.TotalAllocated >= item.InvoiceTotal)
+                        if (item.TotalAllocated >= item.FXInvoiceTotalIncTax)
                         {
                             // fully paid
-                            content = @<td class="text-end"><div class="text-success">@Config.FormattedCurrency(@item.InvoiceTotal, item.CurrencyID)</div></td>;
+                            content = @<td class="text-end"><div class="text-success">@Config.FormattedCurrency(@item.FXInvoiceTotalIncTax, item.CurrencyID)</div></td>;
                         }
                         else
                         {
                             // Not fully paid, and not overdue
-                            content = @<td class="text-end">@Config.FormattedCurrency(@item.InvoiceTotal, item.CurrencyID)</td>;
+                            content = @<td class="text-end">@Config.FormattedCurrency(@item.FXInvoiceTotalIncTax, item.CurrencyID)</td>;
                         }                        
                     }                    
                 }
@@ -872,7 +814,7 @@
                 }
                 else
                 {
-                    if (item.InvoiceTotal > item.TotalAllocated && item.DueDate < DateTime.Now)
+                    if (item.FXInvoiceTotalIncTax > item.TotalAllocated && item.DueDate < DateTime.Now)
                     {
                         // overdue
                         content = @<td class="text-end"><div class="text-danger">@Config.FormattedCurrency(@item.TotalAllocated, item.CurrencyID)</div></td>;
@@ -886,14 +828,14 @@
             case "DueDate":
                 if (!item.CreditNote && item.DueDate != null)
                 {
-                    if (item.InvoiceTotal > item.TotalAllocated && item.DueDate < DateTime.Now)
+                    if (item.FXInvoiceTotalIncTax > item.TotalAllocated && item.DueDate < DateTime.Now)
                     {
                         // overdue
                         content = @<td class="text-end"><span class="badge rounded-pill bg-danger">@item.DueDate.Value.ToString(@BrowserService.DateFormat)</span></td>;
                     }
                     else
                     {
-                        if (item.TotalAllocated >= item.InvoiceTotal)
+                        if (item.TotalAllocated >= item.FXInvoiceTotalIncTax)
                         {
                             // fully paid
                             content = @<td class="text-end"><div class="badge rounded-pill bg-success">Fully Paid</div></td>;
@@ -942,8 +884,8 @@
             case "InvoiceNoDashHistoryNo":
                 content = @<td><a href="SalesQuote/@item.InvoiceID.Trim()?SnapshotNo=@item.HistoryNo">@item.InvoiceNoDashHistoryNo</a></td>;
                 break;
-            case "InvoiceTotal":
-                content = @<td class="text-end">@Config.FormattedCurrency(@item.InvoiceTotal, item.CurrencyID)</td>;
+            case "FXInvoiceTotalIncTax":
+                content = @<td class="text-end">@Config.FormattedCurrency(@item.FXInvoiceTotalIncTax, item.CurrencyID)</td>;
                 break;
             case "CurrencyShortName":
                 content = @<td><img src="data:image/png;base64,@Convert.ToBase64String(Config.Currencies[@item.CurrencyID].Picture)" width="30" height="20"> @item.CurrencyShortName</td>;
@@ -957,7 +899,7 @@
                 {
                     content = @<td class="text-center"><span class="badge rounded-pill bg-danger">Closed</span></td>;
                 }
-
+                
                 break;
         }
 
@@ -990,8 +932,10 @@
         ContactNameToDelete = ContactName;
     }      
 
-    public async Task CreateContactDialogClosed(JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactName)
+    public async void CreateContactDialogClosed(JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactName)
     {
+        ContactNameToCreate = null;
+
         if (ContactName != null)
         {
             // edit the contact
@@ -1004,8 +948,7 @@
             debtorContactNamePOSTRequest.EmailAddress = ContactName.EmailAddress;
             debtorContactNamePOSTRequest.TagMemberships = ContactName.TagMemberships;
 
-            bool oldAPIRequestInPogress = APIRequestInPogress;
-            APIRequestInPogress = true;
+            APIRequestInProgressCount++;
 
             try
             {
@@ -1037,7 +980,7 @@
             }
             finally
             {
-                APIRequestInPogress = oldAPIRequestInPogress;
+                APIRequestInProgressCount--;
             }
         }
         else
@@ -1045,13 +988,14 @@
             // clear any previously set status message when the user cancels the create
             statusMessage = null;
         }
-
-        ContactNameToCreate = null;
-        StateHasChanged();
+        
+        await InvokeAsync(StateHasChanged);
     }
 
-    public async Task EditContactDialogClosed(JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactName)
+    public async void EditContactDialogClosed(JiwaFinancials.Jiwa.JiwaServiceModel.Debtors.DebtorContactName ContactName)
     {
+        ContactNameToEdit = null;
+
         if (ContactName != null)
         {
             // edit the contact
@@ -1065,8 +1009,7 @@
             debtorContactNamePATCHRequest.EmailAddress = ContactName.EmailAddress;
             debtorContactNamePATCHRequest.TagMemberships = null; // Tag memberships we ignore in the contact name patch, as we do a subsequent PUT to replace all the tags instead.
 
-            bool oldAPIRequestInPogress = APIRequestInPogress;
-            APIRequestInPogress = true;
+            APIRequestInProgressCount++;
 
             try
             {
@@ -1105,7 +1048,7 @@
             }
             finally
             {
-                APIRequestInPogress = oldAPIRequestInPogress;
+                APIRequestInProgressCount--;
             }
         }
         else
@@ -1113,12 +1056,11 @@
             // clear any previously set status message when the user cancels the edit
             statusMessage = null;
         }
-
-        ContactNameToEdit = null;
-        StateHasChanged();
+        
+        await InvokeAsync(StateHasChanged);
     }
 
-    public async Task DeleteContactConfirmationDialogClosed(bool resultOK)
+    public async void DeleteContactConfirmationDialogClosed(bool resultOK)
     {
         if (resultOK)
         {
@@ -1132,9 +1074,11 @@
             JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNameDELETERequest debtorContactNameDELETERequest = new JiwaFinancials.Jiwa.JiwaServiceModel.DebtorContactNameDELETERequest();
             debtorContactNameDELETERequest.DebtorID = Debtor.DebtorID;
             debtorContactNameDELETERequest.ContactNameID = ContactNameToDelete.ContactNameID;
+            
+            string deletedMessage = $"Contact {ContactNameToDelete.DisplayName()}, {ContactNameToDelete.EmailAddress} has been deleted.";
+            ContactNameToDelete = null;
 
-            bool oldAPIRequestInPogress = APIRequestInPogress;
-            APIRequestInPogress = true;
+            APIRequestInProgressCount++;
 
             try
             {
@@ -1145,7 +1089,7 @@
                 debtorContactNamesGETManyRequest.DebtorID = Debtor.DebtorID;
                 Debtor.ContactNames = await JiwaAPI.GetAsync(debtorContactNamesGETManyRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
 
-                statusMessage = $"Contact {ContactNameToDelete.DisplayName()}, {ContactNameToDelete.EmailAddress} has been deleted.";
+                statusMessage = deletedMessage;
             }
             catch (ServiceStack.WebServiceException webServiceException)
             {
@@ -1166,17 +1110,17 @@
             }
             finally
             {
-                APIRequestInPogress = oldAPIRequestInPogress;
+                APIRequestInProgressCount--;
             }
         }
         else
         {
             // clear any previously set status message when the user cancels the delete
             statusMessage = null;
+            ContactNameToDelete = null;
         }
-
-        ContactNameToDelete = null;
-        StateHasChanged();
+        
+        await InvokeAsync(StateHasChanged);
     }
 
     public short GetSnapshotNoFromInvoiceNoDashDocketNumHeaderHistoryNo(string InvoiceNoDashDocketNumHeaderHistoryNo)

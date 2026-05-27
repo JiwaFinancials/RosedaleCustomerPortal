@@ -18,7 +18,7 @@
 @inject NavigationManager NavigationManager
 @inject BrowserService BrowserService
 
-@if (APIRequestInPogress)
+@if (APIRequestInProgress)
 {
     <div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">
         <div class="modal-dialog modal-dialog-centered">
@@ -40,7 +40,7 @@
 
 @if (ShowPageNavigationHeader)
 {
-    <p class="small">Page @CurrentPageDisplayNumber() Showing Results @FirstRecordNumber() to @LastRecordNumber() of @RecordCount()</p>
+    <p class="small">Page @CurrentPageDisplayNumber() of @(PageCount() + 1), Showing Results @FirstRecordNumber() to @LastRecordNumber() of @RecordCount()</p>
 }
 <div class="table-responsive">
     <table class="table table-bordered table-striped small">
@@ -61,7 +61,7 @@
             {
                 @foreach (Model item in Response.Results)
                 {
-                    <tr class="@RowClass(item)">
+                    <tr class="@RowClass(item)" @onclick="() => OnRowClick(item)">
                         @foreach (JiwaAutoQueryColumn<Model> column in Columns.Where(x => !x.IsHidden).OrderBy(x => x.DisplayOrder))
                         {
                             @DataCellRenderFragment(item, column.Id)                        
@@ -69,7 +69,7 @@
                         @if (AddSelectButtonColumn)
                         {
                             <td><button @onclick="(() => OnSelectItem(item))" type="button" IsToggle="true" class="btn btn-secondary">Select</button></td>
-                        }
+                        }                        
                     </tr>
                 }
             }
@@ -83,105 +83,118 @@
     int currentPageDisplayNumber = currentPageIndex + 1;
     int pageCount = PageCount();
 
-    @if (pageCount > 0)
+    if (CompactNavigationButtons)
     {
-        <button @onclick="OnTakePreviousClick" disabled="@TakePreviousDisbled()" class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1">&lt;</button>
-    }
-
-    if (pageCount > 7)
-    {
-        if (currentPageIndex > 4)
+        // for cases where there may be limited space, CompactNavigationButtons can be used and we display only the << < PageNo. > >> buttons
+        @if (pageCount > 0)
         {
-            if (currentPageIndex > pageCount - 5)
+            <button @onclick="(() => OnPageBlockClick(0))" disabled="@TakePreviousDisbled()" class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1">&lt;&lt;</button>
+            <button @onclick="OnTakePreviousClick" disabled="@TakePreviousDisbled()" class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1">&lt;</button>
+            <button @onclick="OnTakeNextClick" disabled="@TakeNextDisbled()" class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1">&gt;</button>
+            <button @onclick="(() => OnPageBlockClick(pageCount))" disabled="@TakeNextDisbled()" class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1">&gt;&gt;</button>
+        }
+    }
+    else
+    {        
+        @if (pageCount > 0)
+        {
+            <button @onclick="OnTakePreviousClick" disabled="@TakePreviousDisbled()" class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1">&lt;</button>
+        }
+
+        if (pageCount > 7)
+        {
+            if (currentPageIndex > 4)
             {
-                // We're at the end - we display the first page number, elipses and the last 5 page numbers
-                <button @onclick="(() => OnPageBlockClick(0))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(1) me-1"> 1</button>
-                <button disabled class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1"> ... </button>
+                if (currentPageIndex > pageCount - 5)
+                {
+                    // We're at the end - we display the first page number, elipses and the last 5 page numbers
+                    <button @onclick="(() => OnPageBlockClick(0))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(1) me-1"> 1</button>
+                    <button disabled class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1"> ... </button>
 
-                // We need a declare a SEPARATE variable for each button index because the value passed to the lambdas PageBlockClick and PageButtonStyle will not be
-                // what you expect if you just use the same variable, incrementing along.
-                // Yay for the web!
+                    // We need a declare a SEPARATE variable for each button index because the value passed to the lambdas PageBlockClick and PageButtonStyle will not be
+                    // what you expect if you just use the same variable, incrementing along.
+                    // Yay for the web!
 
-                int pageIndexMinusFour = pageCount - 4;
-                currentPageDisplayNumber = pageCount - 3;
-                <button @onclick="(() => OnPageBlockClick(pageIndexMinusFour))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexMinusFour) me-1"> @currentPageDisplayNumber</button>
-                
-                int pageIndexMinusThree = pageCount - 3;
-                currentPageDisplayNumber++;
-                <button @onclick="(() => OnPageBlockClick(pageIndexMinusThree))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexMinusThree) me-1"> @currentPageDisplayNumber</button>
+                    int pageIndexMinusFour = pageCount - 4;
+                    currentPageDisplayNumber = pageCount - 3;
+                    <button @onclick="(() => OnPageBlockClick(pageIndexMinusFour))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexMinusFour) me-1"> @currentPageDisplayNumber</button>
 
-                int pageIndexMinusTwo = pageCount - 2;
-                currentPageDisplayNumber++;
-                <button @onclick="(() => OnPageBlockClick(pageIndexMinusTwo))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexMinusTwo) me-1"> @currentPageDisplayNumber</button>
+                    int pageIndexMinusThree = pageCount - 3;
+                    currentPageDisplayNumber++;
+                    <button @onclick="(() => OnPageBlockClick(pageIndexMinusThree))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexMinusThree) me-1"> @currentPageDisplayNumber</button>
 
-                int pageIndexMinusOne = pageCount - 1;
-                currentPageDisplayNumber++;
-                <button @onclick="(() => OnPageBlockClick(pageIndexMinusOne))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexMinusOne) me-1"> @currentPageDisplayNumber</button>
-                
-                int pageIndex = pageCount;
-                currentPageDisplayNumber++;
-                <button @onclick="(() => OnPageBlockClick(pageIndex))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndex) me-1"> @currentPageDisplayNumber</button>
+                    int pageIndexMinusTwo = pageCount - 2;
+                    currentPageDisplayNumber++;
+                    <button @onclick="(() => OnPageBlockClick(pageIndexMinusTwo))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexMinusTwo) me-1"> @currentPageDisplayNumber</button>
+
+                    int pageIndexMinusOne = pageCount - 1;
+                    currentPageDisplayNumber++;
+                    <button @onclick="(() => OnPageBlockClick(pageIndexMinusOne))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexMinusOne) me-1"> @currentPageDisplayNumber</button>
+
+                    int pageIndex = pageCount;
+                    currentPageDisplayNumber++;
+                    <button @onclick="(() => OnPageBlockClick(pageIndex))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndex) me-1"> @currentPageDisplayNumber</button>
+                }
+                else
+                {
+                    // display first page number, elipses, the 3 middle pages (prior to current, current, next) and then elipses and last page number
+                    <button @onclick="(() => OnPageBlockClick(0))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(1) me-1"> 1</button>
+                    <button disabled class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1"> ... </button>
+                    int pageIndexMinusOne = currentPageIndex - 1;
+                    currentPageDisplayNumber--;
+                    <button @onclick="(() => OnPageBlockClick(pageIndexMinusOne))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexMinusOne) me-1"> @currentPageDisplayNumber</button>
+
+                    currentPageDisplayNumber++;
+                    <button @onclick="(() => OnPageBlockClick(currentPageIndex))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(currentPageIndex) me-1"> @currentPageDisplayNumber</button>
+
+                    int pageIndexPlusOne = currentPageIndex + 1;
+                    currentPageDisplayNumber++;
+                    <button @onclick="(() => OnPageBlockClick(pageIndexPlusOne))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexPlusOne) me-1"> @currentPageDisplayNumber</button>
+
+                    <button disabled class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1"> ... </button>
+
+                    <button @onclick="(() => OnPageBlockClick(pageCount))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(@pageCount) me-1"> @PageDisplayCount()</button>
+                }
             }
             else
             {
-                // display first page number, elipses, the 3 middle pages (prior to current, current, next) and then elipses and last page number
-                <button @onclick="(() => OnPageBlockClick(0))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(1) me-1"> 1</button>
-                <button disabled class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1"> ... </button>
-                
-                int pageIndexMinusOne = currentPageIndex - 1;                
-                currentPageDisplayNumber--;
-                <button @onclick="(() => OnPageBlockClick(pageIndexMinusOne))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexMinusOne) me-1"> @currentPageDisplayNumber</button>
-                                
-                currentPageDisplayNumber++;
-                <button @onclick="(() => OnPageBlockClick(currentPageIndex))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(currentPageIndex) me-1"> @currentPageDisplayNumber</button>
-
-                int pageIndexPlusOne = currentPageIndex + 1;
-                currentPageDisplayNumber++;
-                <button @onclick="(() => OnPageBlockClick(pageIndexPlusOne))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageIndexPlusOne) me-1"> @currentPageDisplayNumber</button>
-
-                <button disabled class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1"> ... </button>
-
-                <button @onclick="(() => OnPageBlockClick(pageCount))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(@pageCount) me-1"> @PageDisplayCount()</button>
+                // current page is within the first 5, display them and then elipses and last page number
+                @if (pageCount > 5)
+                {
+                    <button @onclick="(() => OnPageBlockClick(0))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(0) me-1"> 1</button>
+                    <button @onclick="(() => OnPageBlockClick(1))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(1) me-1"> 2</button>
+                    <button @onclick="(() => OnPageBlockClick(2))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(2) me-1"> 3</button>
+                    <button @onclick="(() => OnPageBlockClick(3))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(3) me-1"> 4</button>
+                    <button @onclick="(() => OnPageBlockClick(4))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(4) me-1"> 5</button>
+                    <button disabled class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1"> ... </button>
+                    <button @onclick="(() => OnPageBlockClick(pageCount))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(@pageCount) me-1"> @PageDisplayCount()</button>
+                }
+                else
+                {
+                    // Less than or equal to 5 pages, just display all pages
+                    for (int i = 0; i < pageCount; i++)
+                    {
+                        int pageNum = i;
+                        int pageDisplayNum = pageNum + 1;
+                        <button @onclick="(() => OnPageBlockClick(pageNum))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageNum) me-1"> @pageDisplayNum</button>
+                    }
+                }
             }
         }
         else
         {
-            // current page is within the first 5, display them and then elipses and last page number
-            @if (pageCount > 5)
+            // just display all the page numbers 
+            for (int i = 1; i <= pageCount + 1; i++)
             {
-                <button @onclick="(() => OnPageBlockClick(0))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(0) me-1"> 1</button>
-                <button @onclick="(() => OnPageBlockClick(1))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(1) me-1"> 2</button>
-                <button @onclick="(() => OnPageBlockClick(2))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(2) me-1"> 3</button>
-                <button @onclick="(() => OnPageBlockClick(3))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(3) me-1"> 4</button>
-                <button @onclick="(() => OnPageBlockClick(4))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(4) me-1"> 5</button>
-                <button disabled class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1"> ... </button>
-                <button @onclick="(() => OnPageBlockClick(pageCount))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(@pageCount) me-1"> @PageDisplayCount()</button>
-            }
-            else
-            {
-                // Less than or equal to 5 pages, just display all pages
-                for(int i = 0; i <pageCount; i++)
-                {
-                    int pageNum = i;
-                    int pageDisplayNum = pageNum + 1;
-                    <button @onclick="(() => OnPageBlockClick(pageNum))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageNum) me-1"> @pageDisplayNum</button>
-                }
+                int pageNumber = i;
+                <button @onclick="(() => OnPageBlockClick(pageNumber - 1))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageNumber - 1) me-1"> @pageNumber</button>
             }
         }
-    }
-    else
-    {
-        // just display all the page numbers 
-        for(int i = 1; i <= pageCount + 1; i++)
-        {
-            int pageNumber = i;
-            <button @onclick="(() => OnPageBlockClick(pageNumber - 1))" class="JiwaAPIAutoQueryGridNavButton @PageButtonStyle(pageNumber - 1) me-1"> @pageNumber</button>
-        }
-    }
 
-    @if (pageCount > 0)
-    {
-        <button @onclick="OnTakeNextClick" disabled="@TakeNextDisbled()" class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1">&gt;</button>
+        @if (pageCount > 0)
+        {
+            <button @onclick="OnTakeNextClick" disabled="@TakeNextDisbled()" class="JiwaAPIAutoQueryGridNavButton btn btn-secondary me-1">&gt;</button>
+        }
     }
 }
 
@@ -242,7 +255,7 @@
                         headerCellRenderFragment = @<th class="text-end" @onclick="(() => OnColumnHeaderClick(column))">@column.Caption @HeaderCellIconsRenderFragment(column)</th>;
                         break;
                     case Type _ when dataType == typeof(string):
-                        headerCellRenderFragment = @<th class="text-start" @onclick="(() => OnColumnHeaderClick(column))">@column.Caption @HeaderCellIconsRenderFragment(column)</th>;
+                        headerCellRenderFragment = @<th class="text-start" @onclick ="(() => OnColumnHeaderClick(column))">@column.Caption @HeaderCellIconsRenderFragment(column)</th>;
                         break;
                     case Type _ when dataType == typeof(bool):
                         headerCellRenderFragment = @<th class="text-center" @onclick="(() => OnColumnHeaderClick(column))">@column.Caption @HeaderCellIconsRenderFragment(column)</th>;
@@ -273,7 +286,7 @@
         }
         else
         {
-            return @<td>@PropertyValue(item, columnId) </td>;
+            return @<td>@PropertyValue(item, columnId) </td>;            
         }
 
         if (dataCellRenderFragment == null)
@@ -300,7 +313,7 @@
                         dataCellRenderFragment =@<td class="text-end">@dateValue.Date.ToString(@BrowserService.DateFormat)</td>;
                         break;
                     case Type _ when dataType == typeof(string):
-                        dataCellRenderFragment =@<td class="text-start">@PropertyValue(item, columnId) </td>;
+                        dataCellRenderFragment = @<td class="text-start">@PropertyValue(item, columnId) </td>;
                         break;
                     case Type _ when dataType == typeof(bool):
                         if (PropertyValue<bool>(item, columnId))
@@ -326,7 +339,7 @@
 
         if (dataCellRenderFragment == null)
         {
-            dataCellRenderFragment = @<td>@PropertyValue(item, columnId) </td>;
+            dataCellRenderFragment = @<td>@PropertyValue(item, columnId) </td>;            
         }
 
         return dataCellRenderFragment;

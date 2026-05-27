@@ -8,12 +8,13 @@ namespace JiwaCustomerPortal
 {
     public static class Config
     {
-        public static bool ShowDiagnostics { get; set; }
         // JiwaAPIURL is the URL of the remote Jiwa API.
-        public static string JiwaAPIURL { get; set; }
+        public static string? JiwaAPIURL { get; set; }
         // JiwaAPIKey is the API Key to use to perform some requests (such as getting the list of debtor contacts for a given email address to disambiguate identities at login time)
         // The key should be attached to a user with minimal permisssions, and does not need an interactive Jiwa licence.
-        public static string JiwaAPIKey { get; set; }
+        public static string? JiwaAPIKey { get; set; }
+        public static bool AllowCustomerLogin { get; set; }
+        public static bool AllowStaffLogin { get; set; }
 
         public static SystemInformationGETResponse JiwaAPISystemInformation { get; set; }
 
@@ -22,6 +23,10 @@ namespace JiwaCustomerPortal
         public static string DebtorStatementReport { get; set; }
         public static string CustomerWebPortalPluginVersion { get; set; }
         public static string DocketNumHeader { get; set; }
+        public static string IN_LogicalID { get; set; }
+        public static string LogicalWarehouseDescription { get; set; }
+        public static string IN_PhysicalID { get; set; }
+        public static string PhysicalWarehouseDescription { get; set; }
 
         public static string _ServiceStackJsonAPIClientVersion;
         public static string ServiceStackJsonAPIClientVersion
@@ -54,18 +59,23 @@ namespace JiwaCustomerPortal
 
                     try
                     {
-                    Task readCurrenciesTask = Task.Run( async () =>
-                    {
-                        ServiceStack.QueryResponse<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.FX_Currency> currencyAutoQueryResponse = await JiwaAPI.GetAsync(currencyAutoQuery, jiwaAPIKey: JiwaAPIKey);
-
-                        _Currencies = new System.Collections.Generic.Dictionary<string, JiwaFinancials.Jiwa.JiwaServiceModel.Tables.FX_Currency>();
-                        foreach (JiwaFinancials.Jiwa.JiwaServiceModel.Tables.FX_Currency currency in currencyAutoQueryResponse.Results)
+                        Task readCurrenciesTask = Task.Run( async () =>
                         {
-                            _Currencies.Add(currency.RecID, currency);
-                        }
-                    });
+                            ServiceStack.QueryResponse<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.FX_Currency> currencyAutoQueryResponse = await JiwaAPI.GetAsync(currencyAutoQuery, jiwaAPIKey: JiwaAPIKey);
 
-                    readCurrenciesTask.Wait();
+                            _Currencies = new System.Collections.Generic.Dictionary<string, JiwaFinancials.Jiwa.JiwaServiceModel.Tables.FX_Currency>();
+                            foreach (JiwaFinancials.Jiwa.JiwaServiceModel.Tables.FX_Currency currency in currencyAutoQueryResponse.Results)
+                            {
+                                _Currencies.Add(currency.RecID, currency);
+
+                                if (currency.IsLocal)
+                                {
+                                    _LocalCurrency = currency;
+                                }   
+                            }
+                        });
+
+                        readCurrenciesTask.Wait();
                     }
                     catch (Exception ex)
                     {
@@ -78,6 +88,15 @@ namespace JiwaCustomerPortal
             }            
         }
 
+        private static JiwaFinancials.Jiwa.JiwaServiceModel.Tables.FX_Currency _LocalCurrency;
+        public static JiwaFinancials.Jiwa.JiwaServiceModel.Tables.FX_Currency LocalCurrency
+        {
+            get
+            {
+                return _LocalCurrency;
+            }
+        }
+
         public static async Task ReadSettingsFromAPI()
         {
             CustomerWebPortalSettings response = await JiwaAPI.GetAsync(new CustomerWebPortalSettingsGETRequest(), jiwaAPIKey: JiwaAPIKey);
@@ -86,21 +105,32 @@ namespace JiwaCustomerPortal
             DebtorStatementReport = response.DebtorStatementReport;
             CustomerWebPortalPluginVersion = response.PluginVersion;
             DocketNumHeader = response.DocketNumHeader;
+            IN_LogicalID = response.IN_LogicalID;
+            LogicalWarehouseDescription = response.LogicalWarehouseDescription;
+            IN_PhysicalID = response.IN_PhysicalID;
+            PhysicalWarehouseDescription = response.PhysicalWarehouseDescription;
 
             JiwaAPISystemInformation = await JiwaAPI.GetAsync(new SystemInformationGETRequest(), jiwaAPIKey: JiwaAPIKey);
         }
 
-        public static string FormattedDecimals(decimal value, short decimalPlaces)
+        public static string FormattedDecimals(decimal value, short decimalPlaces, bool useCommas = true)
         {
             string decimalsFormat = new string('0', decimalPlaces);
-            return value.ToString($"###,###,###,###,###.{decimalsFormat}");
+            if (useCommas)
+            {
+                return value.ToString($"###,###,###,###,##0.{decimalsFormat}");
+            }
+            else
+            {
+                return value.ToString($"##############0.{decimalsFormat}");
+            }
         }
 
-        public static string FormattedDecimals(decimal? value, short decimalPlaces)
+        public static string FormattedDecimals(decimal? value, short decimalPlaces, bool useCommas = true)
         {
             if (value != null)
             {
-                return FormattedDecimals(value.Value, decimalPlaces);
+                return FormattedDecimals(value.Value, decimalPlaces, useCommas);
             }
             else
             {
@@ -108,15 +138,29 @@ namespace JiwaCustomerPortal
             }
         }
 
-        public static string FormattedDecimals(decimal? value, short? decimalPlaces)
+        public static string FormattedDecimals(decimal? value, short? decimalPlaces, bool useCommas = true)
         {
             if (decimalPlaces == null)
             {
-                return FormattedDecimals(value, 0);
+                return FormattedDecimals(value, 0, useCommas);
             }
             else
             {
-                return FormattedDecimals(value, decimalPlaces.Value);
+                return FormattedDecimals(value, decimalPlaces.Value, useCommas);
+            }
+        }
+
+        public static short? CurrencyDecimals(string CurrencyID)
+        {
+            JiwaFinancials.Jiwa.JiwaServiceModel.Tables.FX_Currency currency = _Currencies[CurrencyID];
+
+            if (currency != null)
+            {
+                return currency.DecimalPlaces;
+            }
+            else
+            {
+                return 0;
             }
         }
 
@@ -127,7 +171,7 @@ namespace JiwaCustomerPortal
             if (currency != null)
             {                
                 string decimalsFormat = new string('0', (int)currency.DecimalPlaces);
-                string currencyFormat = $"###,###,###,###,###.{decimalsFormat}";
+                string currencyFormat = $"###,###,###,###,##0.{decimalsFormat}";
                 if (value < 0)
                 {
                     return $"-{currency.Symbol}{Math.Abs(value).ToString(currencyFormat)}";
@@ -155,7 +199,7 @@ namespace JiwaCustomerPortal
             }
         }
 
-        public static string GetTargetFrameworkName()
+        public static string? GetTargetFrameworkName()
         {
             return Assembly
                 .GetEntryAssembly()?

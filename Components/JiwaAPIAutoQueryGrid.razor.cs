@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using static System.Net.WebRequestMethods;
 using ServiceStack.DataAnnotations;
 using System.Reflection;
+using System.Threading;
 
 namespace JiwaCustomerPortal.Components
 {
@@ -21,9 +22,13 @@ namespace JiwaCustomerPortal.Components
         [Parameter]
         public IQuery AutoQuery { get; set; }
         [Parameter]
+        public bool UseFilters { get; set; } = true;
+        [Parameter]
         public bool ShowPageNavigationHeader { get; set; } = true;
         [Parameter]
         public bool ShowPageNavigation { get; set; } = true;
+        [Parameter]
+        public bool CompactNavigationButtons { get; set; }
         [Parameter]
         public List<string> HiddenColumns { get; set; } = new List<string>();
         [Parameter]
@@ -37,16 +42,21 @@ namespace JiwaCustomerPortal.Components
         [Parameter]
         public EventCallback<Model> ItemSelectedCallbackMethod { get; set; }
         [Parameter]
+        public Func<List<Model>, Model>? InitialSelectedItemMethod { get; set; }
+        [Parameter]
         public Func<JiwaAutoQueryColumn<Model>, RenderFragment> HeaderCellRenderFragmentCallbackMethod { get; set; }
         [Parameter]
         public Func<Model, string, RenderFragment> DataCellRenderFragmentCallbackMethod { get; set; }
 
         public List<JiwaAutoQueryColumn<Model>> Columns { get; set; } = new List<JiwaAutoQueryColumn<Model>>();
-        private ServiceStack.QueryResponse<Model> Response { get; set; }
-        public Model SelectedItem { get; set; }
-        private bool APIRequestInPogress;
+        private ServiceStack.QueryResponse<Model> Response { get; set; }        
+        public Model? SelectedItem { get; set; }
+        private int APIRequestInProgressCount = 0;
 
-        DOMRect? tableRect;
+        // APIRequestInProgress cannot be simply set to true and restored to original state, due to race conditions arising from asynchronous
+        // calls - so we use a counter instead, and increment or decrement that - and we look at the APIRequestInProgressCount to determine if a request is currently in progress or not.
+        public bool APIRequestInProgress => APIRequestInProgressCount > 0;
+        
         [Inject] public IJSRuntime JS { get; set; }
         ElementReference? refResults;
 
@@ -55,12 +65,13 @@ namespace JiwaCustomerPortal.Components
         private System.Reflection.PropertyInfo[] ModelProperties;
         private System.Reflection.PropertyInfo[] QueryModelProperties;
 
+        private CancellationTokenSource? CancellationTokenSource { get; set; } = new CancellationTokenSource();
         private Dictionary<string, object> ImmutableFilters { get; set; } = new Dictionary<string, object>();
 
         protected override async Task OnInitializedAsync()
         {
             await base.OnInitializedAsync();
-
+            
             if (AutoQuery == null)
             {
                 return;
@@ -188,14 +199,43 @@ namespace JiwaCustomerPortal.Components
             }            
 
             await ExecuteAutoQuery();
+
+            if (InitialSelectedItemMethod is not null && Response is not null)
+            {
+                SelectedItem = InitialSelectedItemMethod.Invoke(Response.Results);
+                await ItemSelectedCallbackMethod.InvokeAsync(SelectedItem);
+            }
         }
 
-        public async Task ExecuteAutoQuery()
+        public void Dispose()
+        {
+            CancellationTokenSource?.Cancel();
+            CancellationTokenSource?.Dispose();
+        }
+
+        public async Task ExecuteAutoQuery(CancellationToken cancellationToken = default)
         {            
+            if (cancellationToken == default)
+            {
+                // create our own cancellation token
+                try
+                {
+                    CancellationTokenSource?.Cancel();
+                    CancellationTokenSource?.Dispose();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // swallow if already disposed - we don't care
+                }
+
+                CancellationTokenSource = new CancellationTokenSource();
+                cancellationToken = CancellationTokenSource.Token;
+            }
+
             string? jiwaAPIKey = null;
 
             if (AuthType == AuthTypes.JiwaAPISessionId)
-            {                
+            {
                 if (WebPortalUserSessionStateContainer.WebPortalUserSession == null)
                 {
                     // not authenticated - no token found in session storage
@@ -208,7 +248,7 @@ namespace JiwaCustomerPortal.Components
                         NavigationManager.NavigateTo("User/SignIn");
                     }
                     return;
-                }                
+                }
             }
             else
             {
@@ -234,93 +274,99 @@ namespace JiwaCustomerPortal.Components
             AutoQuery.OrderBy = string.Join(",", orderByAscending, orderByDescending);
 
             // Filters
-            foreach (JiwaAutoQueryColumn<Model> column in Columns)
+            if (UseFilters)
             {
-                // Set initial value to null for all properties which start with a column name
-                // So OrderNo, OrderNoContains, OrderNoStartsWith and so on are all nulled first
-                // We need to null them first or else once we apply a filter it will stay there set in the AutoQuery property until we set it to something else.
-                foreach (System.Reflection.PropertyInfo propertyInfo in QueryModelProperties.Where(x => x.Name.StartsWith(column.Id)))
-                {                    
-                    propertyInfo.SetValue(AutoQuery, null, null);
-                    object value = null;
-                    ImmutableFilters.TryGetValue(propertyInfo.Name, out value);
-                    if (value != null)
-                    {
-                        propertyInfo.SetValue(AutoQuery, value, null);
-                    }
-                }
-
-                // Now set values corresponding to the selected filters
-                foreach (JiwaAutoQueryColumnFilter filter in column.Filters)
+                foreach (JiwaAutoQueryColumn<Model> column in Columns)
                 {
-                    System.Reflection.PropertyInfo propertyInfo = AutoQuery.GetType().GetProperty(filter.FilterOperator.QueryModelProperty);
-                    if (propertyInfo != null)
+                    // Set initial value to null for all properties which start with a column name
+                    // So OrderNo, OrderNoContains, OrderNoStartsWith and so on are all nulled first
+                    // We need to null them first or else once we apply a filter it will stay there set in the AutoQuery property until we set it to something else.
+                    foreach (System.Reflection.PropertyInfo propertyInfo in QueryModelProperties.Where(x => x.Name.StartsWith(column.Id)))
                     {
-                        Type dataType = column.ColumnDataType;
-                        if (dataType.IsGenericType && dataType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                        propertyInfo.SetValue(AutoQuery, null, null);
+                        object value = null;
+                        ImmutableFilters.TryGetValue(propertyInfo.Name, out value);
+                        if (value != null)
                         {
-                            dataType = Nullable.GetUnderlyingType(dataType);
+                            propertyInfo.SetValue(AutoQuery, value, null);
                         }
+                    }
 
-                        if (dataType == typeof(string))
+                    // Now set values corresponding to the selected filters
+                    foreach (JiwaAutoQueryColumnFilter filter in column.Filters)
+                    {
+                        System.Reflection.PropertyInfo propertyInfo = AutoQuery.GetType().GetProperty(filter.FilterOperator.QueryModelProperty);
+                        if (propertyInfo != null)
                         {
-                            propertyInfo.SetValue(AutoQuery, filter.FilterValue, null);
-                        }
-                        else if (dataType == typeof(decimal))
-                        {
-                            decimal value = 0;
-                            if (decimal.TryParse(filter.FilterValue, out value))
+                            Type dataType = column.ColumnDataType;
+                            if (dataType.IsGenericType && dataType.GetGenericTypeDefinition() == typeof(Nullable<>))
                             {
-                                propertyInfo.SetValue(AutoQuery, value, null);
-                            }
-                            
-                        }
-                        else if (dataType == typeof(int))
-                        {
-                            int value = 0;
-                            if (int.TryParse(filter.FilterValue, out value))
-                            {
-                                propertyInfo.SetValue(AutoQuery, value, null);
+                                dataType = Nullable.GetUnderlyingType(dataType);
                             }
 
-                        }
-                        else if (dataType == typeof(bool))
-                        {
-                            bool value = false;
-                            if (bool.TryParse(filter.FilterValue, out value))
+                            if (dataType == typeof(string))
                             {
-                                propertyInfo.SetValue(AutoQuery, value, null);
+                                propertyInfo.SetValue(AutoQuery, filter.FilterValue, null);
                             }
-
-                        }
-                        else if (dataType == typeof(DateTime))
-                        {
-                            DateTime value = DateTime.Now;
-                            if (DateTime.TryParse(filter.FilterValue, out value))
+                            else if (dataType == typeof(decimal))
                             {
-                                propertyInfo.SetValue(AutoQuery, value, null);
+                                decimal value = 0;
+                                if (decimal.TryParse(filter.FilterValue, out value))
+                                {
+                                    propertyInfo.SetValue(AutoQuery, value, null);
+                                }
+
+                            }
+                            else if (dataType == typeof(int))
+                            {
+                                int value = 0;
+                                if (int.TryParse(filter.FilterValue, out value))
+                                {
+                                    propertyInfo.SetValue(AutoQuery, value, null);
+                                }
+
+                            }
+                            else if (dataType == typeof(bool))
+                            {
+                                bool value = false;
+                                if (bool.TryParse(filter.FilterValue, out value))
+                                {
+                                    propertyInfo.SetValue(AutoQuery, value, null);
+                                }
+
+                            }
+                            else if (dataType == typeof(DateTime))
+                            {
+                                DateTime value = DateTime.Now;
+                                if (DateTime.TryParse(filter.FilterValue, out value))
+                                {
+                                    propertyInfo.SetValue(AutoQuery, value, null);
+                                }
                             }
                         }
                     }
                 }
             }
 
-            bool oldAPIRequestInPogress = APIRequestInPogress;
-            APIRequestInPogress = true;
+            APIRequestInProgressCount++;
             // Signal the page has changed so the spinner starts animating
-            StateHasChanged();
+            await InvokeAsync(StateHasChanged);
 
             try
             {
                 if (AuthType == AuthTypes.JiwaAPIKey)
                 {
-                    Response = await JiwaAPI.GetAsync<QueryResponse<Model>>(AutoQuery, jiwaAPIKey: jiwaAPIKey);
+                    Response = await JiwaAPI.GetAsync<QueryResponse<Model>>(AutoQuery, jiwaAPIKey: jiwaAPIKey, cancellationToken: cancellationToken);
                 }
                 else
                 {
-                    Response = await JiwaAPI.GetAsync<QueryResponse<Model>>(AutoQuery, jiwaAPISessionId: WebPortalUserSessionStateContainer?.WebPortalUserSession?.Id);
-                }                
+                    Response = await JiwaAPI.GetAsync<QueryResponse<Model>>(AutoQuery, jiwaAPISessionId: WebPortalUserSessionStateContainer?.WebPortalUserSession?.Id, cancellationToken: cancellationToken);
+                }
             }            
+            catch(OperationCanceledException)
+            {
+                //swallow
+            }
             catch (Exception ex)
             {
                 if (APIExceptionCallbackMethod.HasDelegate)
@@ -334,11 +380,11 @@ namespace JiwaCustomerPortal.Components
             }
             finally
             {
-                APIRequestInPogress = oldAPIRequestInPogress;
+                APIRequestInProgressCount--;
             }
 
             // Signal the page has changed again, as many properties of the AutoQuery response are used to render the page
-            StateHasChanged();
+            await InvokeAsync(StateHasChanged);
         }
 
         public T PropertyValue<T>(Model item, string propertyName)
@@ -451,7 +497,7 @@ namespace JiwaCustomerPortal.Components
             return (CurrentPageNumber() == PageCount());
         }
 
-        public async Task OnTakeNextClick()
+        public async void OnTakeNextClick()
         {
             if (AutoQuery.Skip == null)
             {
@@ -467,7 +513,7 @@ namespace JiwaCustomerPortal.Components
             await ExecuteAutoQuery();
         }
 
-        public async Task OnTakePreviousClick()
+        public async void OnTakePreviousClick()
         {
             AutoQuery.Skip -= AutoQuery.Take;
 
@@ -479,7 +525,7 @@ namespace JiwaCustomerPortal.Components
             await ExecuteAutoQuery();
         }
 
-        public async Task OnPageBlockClick(int pageNumberBlock)
+        public async void OnPageBlockClick(int pageNumberBlock)
         {
             AutoQuery.Skip = AutoQuery.Take * pageNumberBlock;
             await ExecuteAutoQuery();
@@ -491,7 +537,7 @@ namespace JiwaCustomerPortal.Components
             ShowFilterDialogColumn = column;
         }
 
-        public async Task FilterClosed(bool resultOK)
+        public async void FilterClosed(bool resultOK)
         {
             if (resultOK)
             {
@@ -501,7 +547,7 @@ namespace JiwaCustomerPortal.Components
             }
 
             ShowFilterDialogColumn = null;
-            StateHasChanged();
+            await InvokeAsync(StateHasChanged);
         }
 
         public string RowClass(Model item)
@@ -516,7 +562,7 @@ namespace JiwaCustomerPortal.Components
             }
         }
        
-        public async Task OnSelectItem(Model item)
+        public async void OnSelectItem(Model item)
         {
             SelectedItem = item;
             if (ItemSelectedCallbackMethod.HasDelegate)
@@ -524,17 +570,21 @@ namespace JiwaCustomerPortal.Components
                 await ItemSelectedCallbackMethod.InvokeAsync(item);
             }
         }
-    }
 
-    public struct DOMRect
-    {
-        public double X { get; set; }
-        public double Y { get; set; }
-        public double Width { get; set; }
-        public double Height { get; set; }
-        public double Top { get; set; }
-        public double Right { get; set; }
-        public double Bottom { get; set; }
-        public double Left { get; set; }
+        public async void OnRowClick(Model item)
+        {
+            if (AddSelectButtonColumn)
+            {
+                // We don't use OnSelectItem if the button is present, otherwise the ItemSelectedCallbackMethod gets invoked twice - once for
+                // the row click and once for the button click
+                // So we simply set the SelectedItem
+                SelectedItem = item;
+            }
+            else
+            {
+                // if there is no select button column, then clicking the row itself selects the item
+                OnSelectItem(item);
+            }
+        }
     }
 }

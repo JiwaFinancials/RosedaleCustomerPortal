@@ -10,7 +10,7 @@
 
 <PageTitle>Sales Quote</PageTitle>
 
-@if (APIRequestInPogress)
+@if (APIRequestInProgress)
 {
     <div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">
         <div class="modal-dialog modal-dialog-centered">
@@ -24,6 +24,20 @@
 }
 
 <StatusMessage Message="@statusMessage"/>
+
+@if (AddingItem)
+{
+    <div class="relative">
+        <JiwaInventoryAutoQueryModalSelectionDialog Title="Select Item" OnClose="@AddItemDialogClosed" />
+    </div>
+}
+
+@if (EditingFreight)
+{
+    <div class="relative">
+        <EditQuoteFreightModalDialog Title="Edit Freight" salesQuote="@salesQuote" SelectedHistory="@SelectedHistory" OnClose="@EditFreightDialogClosed" />
+    </div>
+}
 
 @if (salesQuote != null)
 {
@@ -51,15 +65,47 @@
     <div class="row">
         <div class="col-3">
             <label for="Date" class="form-label">Date</label>
-            <input type="text" class="form-control" id="Date" readonly placeholder="@salesQuote.InvoiceInitDate.Value.ToString(@BrowserService.DateFormat)">
+            @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+            {
+                <input type="text" class="form-control" id="Date" readonly placeholder="@salesQuote.InvoiceInitDate.Value.ToString(@BrowserService.DateFormat)">
+            }
+            else
+            {                
+                <input type="date" class="form-control" id="Date" value="@salesQuote.InvoiceInitDate.Value.ToString("yyyy-MM-dd")" @onchange="@(async (e) =>
+                                                              {
+                                                                                         await QuoteChanged(e, (q) =>
+                                                                                         {
+                                                                                             q.InvoiceInitDate = DateTime.ParseExact(e.Value.ToString(), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture); });
+                                                              })">
+            }
         </div>
         <div class="col-3">
             <label for="OrderNo" class="form-label">Order No.</label>
-            <input type="text" class="form-control" id="OrderNo" readonly placeholder="@salesQuote.OrderNo">
+            @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+            {
+                <input type="text" class="form-control" id="OrderNo" readonly placeholder="@salesQuote.OrderNo">
+            }
+            else
+            {
+                <input type="text" class="form-control" id="OrderNo" value="@salesQuote.OrderNo" @onchange="async (e) =>
+                                       {
+                                           await QuoteChanged(e, (q) => { q.OrderNo = e.Value.ToString(); });
+                                       }">
+            }
         </div>
         <div class="col-3">
-            <label for="Reference" class="form-label">Reference</label>
-            <input type="text" class="form-control" id="Reference" readonly placeholder="@salesQuote.SOReference">
+            <label for="Reference" class="form-label">Reference</label>            
+            @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+            {
+                <input type="text" class="form-control" id="Reference" readonly placeholder="@salesQuote.SOReference">
+            }
+            else
+            {
+                <input type="text" class="form-control" id="Reference" value="@salesQuote.SOReference" @onchange="async (e) => 
+                { 
+                    await QuoteChanged(e, (q) => { q.SOReference = e.Value.ToString();  });
+                }">
+            }
         </div>
     </div>
 
@@ -70,7 +116,10 @@
 
     <div class="row">
         <div class="col-1">
-            <label for="Currency" class="form-label"><img src="data:image/png;base64,@Convert.ToBase64String(Config.Currencies[salesQuote.CurrencyID].Picture)" width="30" height="20"> @salesQuote.CurrencyShortName</label>
+            <label for="Currency" class="form-label">
+                <img src="data:image/png;base64,@Convert.ToBase64String(Config.Currencies[salesQuote.CurrencyID].Picture)" width="30" height="20">
+                @salesQuote.CurrencyShortName
+            </label>
         </div>        
     </div>
 
@@ -108,7 +157,7 @@
                 <table class="table table-bordered table-striped small">
                     <thead>
                         <tr>
-                            <th>#</th>
+                            <th class="text-center">#</th>
                             <th>Part No.</th>                                        
                             <th>Description</th>
                             <th>Unit</th>
@@ -117,13 +166,15 @@
                             <th class="text-end">Total Ex</th>
                             <th class="text-end">Tax</th>
                             <th class="text-end">Total Inc.</th>
+                            <th class="text-center" width="50px"></th>
+
                         </tr>
                     </thead>
 
                     <tbody>
                         @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuoteLine salesQuoteLine in SelectedHistory.Lines)
                         {
-                            <tr>
+                            <tr class="align-middle">
                                 @if (salesQuoteLine.CommentLine.Value)
                                 {
                                     <td>@salesQuoteLine.ItemNo</td>
@@ -131,7 +182,7 @@
                                 }
                                 else
                                 {
-                                    <td>@salesQuoteLine.ItemNo</td>
+                                    <td class="text-end">@salesQuoteLine.ItemNo</td>
                                     <td>@salesQuoteLine.PartNo</td>
                                     <td>@salesQuoteLine.Description</td>
                                     @if (@salesQuoteLine.UnitOfMeasure != null)
@@ -143,69 +194,127 @@
                                         <td>@salesQuoteLine.SKUUnitName</td>
                                     }
 
-                                    <td class="text-end">@Config.FormattedDecimals(@salesQuoteLine.QuantityOrdered, salesQuoteLine.QuantityDecimalPlaces)</td>
-                                    <td class="text-end">@Config.FormattedCurrency(@salesQuoteLine.FXDiscountedPrice, salesQuote.CurrencyID)</td>
-                                    <td class="text-end">@Config.FormattedCurrency(@salesQuoteLine.FXLineTotal - salesQuoteLine.TaxToCharge, @salesQuote.CurrencyID)</td>
+                                    @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                    {
+                                        <td class="text-end">@Config.FormattedDecimals(@salesQuoteLine.QuantityOrdered, salesQuoteLine.QuantityDecimalPlaces)</td>
+                                    }
+                                    else
+                                    {
+                                        <td width="160px">
+                                            <input type="number" class="form-control" id="QuantityOrdered" 
+                                                    style="text-align: right;"
+                                                    value="@Config.FormattedDecimals(@salesQuoteLine.QuantityOrdered, salesQuoteLine.QuantityDecimalPlaces)" 
+                                                    step="@(Math.Pow(10, (double)-salesQuoteLine.QuantityDecimalPlaces))" 
+                                                    min="0"
+                                                    @onchange="async (e) =>
+                                                    {
+                                                        await QuoteLineChanged(e, salesQuoteLine.QuoteLineID, (q) => 
+                                                        {
+                                                            decimal value = 0;
+                                                            decimal.TryParse(e.Value.ToString(), out value);
+                                                            // We don't test the result of the decimal.TryPase - anything invalid is 0
+                                                            q.QuantityOrdered = value;                                                             
+                                                        });
+                                                    }">
+                                        </td>                                        
+                                    }                                    
+
+                                    @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                    {
+                                        <td class="text-end">@Config.FormattedCurrency(@salesQuoteLine.FXDiscountedPrice, salesQuote.CurrencyID)</td>
+                                    }
+                                    else
+                                    {
+                                        <td width="160px">
+                                            <input type="number" class="form-control" id="FXDiscountedPrice" 
+                                                value="@Config.FormattedDecimals(@salesQuoteLine.FXDiscountedPrice, Config.CurrencyDecimals(salesQuote.CurrencyID), false)"
+                                                   style="text-align: right;"
+                                                step="@(Math.Pow(10, (double)-Config.CurrencyDecimals(salesQuote.CurrencyID)))"
+                                                min="0"
+                                                @onchange="async (e) =>
+                                                {
+                                                    await QuoteLineChanged(e, salesQuoteLine.QuoteLineID, (q) =>
+                                                        {
+                                                            decimal value = 0;
+                                                            decimal.TryParse(e.Value.ToString(), out value);
+                                                            // We don't test the result of the decimal.TryPase - anything invalid is 0
+                                                            q.FXDiscountedPrice = value;
+                                                        });
+                                                }">
+                                        </td>
+                                    }
+
+                                    <td class="text-end">@Config.FormattedCurrency(@salesQuoteLine.FXLineTotal - salesQuoteLine.FXTaxToCharge, @salesQuote.CurrencyID)</td>
                                     <td class="text-end">@Config.FormattedCurrency(@salesQuoteLine.FXTaxToCharge, salesQuote.CurrencyID)</td>
                                     <td class="text-end">@Config.FormattedCurrency(@salesQuoteLine.FXLineTotal, salesQuote.CurrencyID)</td>
+                                    <td class="text-center">
+                                        <button @onclick="_ => DeleteQuoteLine(salesQuoteLine)" class="btn" style="background-color:transparent">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="red" class="bi bi-x-circle" viewBox="0 0 20 20">
+                                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+                                                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
+                                            </svg>
+                                        </button>
+                                    </td>
                                 }
                             </tr>
                         }
-                        <tr>
+                        <tr class="align-middle">
                             <td colspan="6" class="text-end">Sub Total</td>
-                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal - x.TaxToCharge), salesQuote.CurrencyID)</td>
-                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.TaxToCharge), salesQuote.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal - x.FXTaxToCharge), salesQuote.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXTaxToCharge), salesQuote.CurrencyID)</td>
                             <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal), salesQuote.CurrencyID)</td>
+                            <td class="text-end"></td>
                         </tr>
 
-                        @if (salesQuote.Cartage1ExGst + salesQuote.Cartage1Gst != 0)
-                        {
-                            <tr>
+                        <tr class="align-middle">
+                        @if (salesQuote.FXCartage1ExGst != 0 || salesQuote.FXCartage1Gst != 0 || salesQuote.FXCartage2ExGst != 0 || salesQuote.FXCartage2Gst != 0 || salesQuote.FXCartage3ExGst != 0 || salesQuote.FXCartage3Gst != 0)
+                        {                            
                                 <td colspan="6" class="text-end">Freight</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesQuote.Cartage1ExGst, salesQuote.CurrencyID)</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesQuote.Cartage1Gst, salesQuote.CurrencyID)</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesQuote.Cartage1ExGst + salesQuote.Cartage1Gst, salesQuote.CurrencyID)</td>
-                            </tr>
+                                <td class="text-end">@Config.FormattedCurrency(salesQuote.FXCartage1ExGst + salesQuote.FXCartage2ExGst + salesQuote.FXCartage3ExGst, salesQuote.CurrencyID)</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesQuote.FXCartage1Gst + salesQuote.FXCartage2Gst + salesQuote.FXCartage3Gst, salesQuote.CurrencyID)</td>
+                                <td class="text-end">@Config.FormattedCurrency(salesQuote.FXCartage1ExGst + salesQuote.FXCartage1Gst + salesQuote.FXCartage2ExGst + salesQuote.FXCartage2Gst + salesQuote.FXCartage3ExGst + salesQuote.FXCartage3Gst, salesQuote.CurrencyID)</td>                                
                         }
                         else
                         {
-                            // even if Cartage1 is 0, display as blank to give a better visual appeal - space out the sub total and total
-                            <tr>
-                                <td colspan="6" class="text-end">Freight</td>
-                                <td class="text-end"></td>
-                                <td class="text-end"></td>
-                                <td class="text-end"></td>
-                            </tr>
+                            // even if there is no cartage, display as blank to give a better visual appeal - space out the sub total and total                            
+                            <td colspan="6" class="text-end">Freight</td>
+                            <td class="text-end"></td>
+                            <td class="text-end"></td>
+                            <td class="text-end"></td>                           
                         }
+                            <td class="text-center">
+                                <button @onclick="_ => EditFreight()" class="btn" style="background-color:transparent">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 20 20">
+                                        <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
+                                        <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z" />
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
 
-                        @if (salesQuote.Cartage2ExGst + salesQuote.Cartage2Gst != 0)
-                        {
-                            <tr>
-                                <td colspan="6" class="text-end">Freight</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesQuote.Cartage2ExGst, salesQuote.CurrencyID)</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesQuote.Cartage2Gst, salesQuote.CurrencyID)</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesQuote.Cartage2ExGst + salesQuote.Cartage2Gst, salesQuote.CurrencyID)</td>
-                            </tr>
-                        }
-
-                        @if (salesQuote.Cartage3ExGst + salesQuote.Cartage3Gst != 0)
-                        {
-                            <tr>
-                                <td colspan="6" class="text-end">Freight</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesQuote.Cartage3ExGst, salesQuote.CurrencyID)</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesQuote.Cartage3Gst, salesQuote.CurrencyID)</td>
-                                <td class="text-end">@Config.FormattedCurrency(salesQuote.Cartage3ExGst + salesQuote.Cartage3Gst, salesQuote.CurrencyID)</td>
-                            </tr>
-                        }
-
-                        <tr>
-                            <td colspan="6" class="text-end">Total</td>
-                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal - x.TaxToCharge) + salesQuote.Cartage1ExGst + salesQuote.Cartage2ExGst + salesQuote.Cartage3ExGst, salesQuote.CurrencyID)</td>
-                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.TaxToCharge) + salesQuote.Cartage1Gst + salesQuote.Cartage2Gst + salesQuote.Cartage3Gst, salesQuote.CurrencyID)</td>
-                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal) + salesQuote.Cartage1ExGst + salesQuote.Cartage2ExGst + salesQuote.Cartage3ExGst + salesQuote.Cartage1Gst + salesQuote.Cartage2Gst + salesQuote.Cartage3Gst, salesQuote.CurrencyID)</td>
+                        <tr class="align-middle">
+                            <td colspan="6" class="text-end">
+                                <label for="CurrencyTotal" class="form-label">
+                                    <img src="data:image/png;base64,@Convert.ToBase64String(Config.Currencies[salesQuote.CurrencyID].Picture)" width="30" height="20">
+                                    @salesQuote.CurrencyShortName
+                                </label>
+                                Total
+                            </td>
+                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal - x.FXTaxToCharge) + salesQuote.FXCartage1ExGst + salesQuote.FXCartage2ExGst + salesQuote.FXCartage3ExGst, salesQuote.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXTaxToCharge) + salesQuote.FXCartage1Gst + salesQuote.FXCartage2Gst + salesQuote.FXCartage3Gst, salesQuote.CurrencyID)</td>
+                            <td class="text-end">@Config.FormattedCurrency(SelectedHistory.Lines.Sum(x => x.FXLineTotal) + salesQuote.FXCartage1ExGst + salesQuote.FXCartage2ExGst + salesQuote.FXCartage3ExGst + salesQuote.FXCartage1Gst + salesQuote.FXCartage2Gst + salesQuote.FXCartage3Gst, salesQuote.CurrencyID)</td>
+                            <td class="text-end"></td>
                         </tr>
                     </tbody>
                 </table>
+                <button @onclick="(() => AddQuoteLine())" type="button" class="btn btn-success">
+                    Add Item
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="-6 -6 48 48">
+                        <circle cx="16" cy="16" r="14" style="stroke: white;stroke-width:2" fill="transparent" />
+                        <line x1="16" y1="6" x2="16" y2="26" style="stroke: white;stroke-width:2" />
+                        <line x1="6" y1="16" x2="26" y2="16" style="stroke: white;stroke-width:2" />
+                    </svg>
+                </button>                
             </div>
         </div>
 
@@ -219,55 +328,158 @@
                         <div class="row">
                             <div class="col-3">
                                 <label for="DeliveryAddressee" class="form-label">Addressee</label>
-                                <input type="text" class="form-control" id="DeliveryAddressee" readonly placeholder="@salesQuote.DeliveryAddressee">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressee" readonly placeholder="@salesQuote.DeliveryAddressee">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressee" value="@salesQuote.DeliveryAddressee" @onchange="async (e) =>
+                                        {
+                                           await QuoteChanged(e, (q) => { q.DeliveryAddressee = e.Value.ToString(); });
+                                        }">
+                                }
+
                             </div>
                             <div class="col-3">
                                 <label for="DeliveryAddressContactName" class="form-label">Contact Name</label>
-                                <input type="text" class="form-control" id="DeliveryAddressContactName" readonly placeholder="@salesQuote.DeliveryAddressContactName">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressContactName" readonly placeholder="@salesQuote.DeliveryAddressContactName">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressContactName" value="@salesQuote.DeliveryAddressContactName" @onchange="async (e) =>
+                                            {
+                                               await QuoteChanged(e, (q) => { q.DeliveryAddressContactName = e.Value.ToString(); });
+                                            }">
+                                }
+
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-3">
                                 <label for="DeliveryAddress1" class="form-label">Address 1</label>
-                                <input type="text" class="form-control" id="DeliveryAddress1" readonly placeholder="@salesQuote.DeliveryAddress1">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddress1" readonly placeholder="@salesQuote.DeliveryAddress1">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddress1" value="@salesQuote.DeliveryAddress1" @onchange="async (e) =>
+                                        {
+                                            await QuoteChanged(e, (q) => { q.DeliveryAddress1 = e.Value.ToString(); });
+                                        }">
+                                }
+
                             </div>
                             <div class="col-3">
                                 <label for="DeliveryAddress2" class="form-label">Address 2</label>
-                                <input type="text" class="form-control" id="DeliveryAddress2" readonly placeholder="@salesQuote.DeliveryAddress2">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddress2" readonly placeholder="@salesQuote.DeliveryAddress2">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddress2" value="@salesQuote.DeliveryAddress2" @onchange="async (e) =>
+                                        {
+                                            await QuoteChanged(e, (q) => { q.DeliveryAddress2 = e.Value.ToString(); });
+                                        }">
+                                }
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-3">
                                 <label for="DeliveryAddressState" class="form-label">State</label>
-                                <input type="text" class="form-control" id="DeliveryAddressState" readonly placeholder="@salesQuote.DeliveryAddressState">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressState" readonly placeholder="@salesQuote.DeliveryAddressState">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressState" value="@salesQuote.DeliveryAddressState" @onchange="async (e) =>
+                                        {
+                                            await QuoteChanged(e, (q) => { q.DeliveryAddressState = e.Value.ToString(); });
+                                        }">
+                                }
                             </div>
                             <div class="col-3">
                                 <label for="DeliveryAddressSuburb" class="form-label">Suburb</label>
-                                <input type="text" class="form-control" id="DeliveryAddressSuburb" readonly placeholder="@salesQuote.DeliveryAddressSuburb">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressSuburb" readonly placeholder="@salesQuote.DeliveryAddressSuburb">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressSuburb" value="@salesQuote.DeliveryAddressSuburb" @onchange="async (e) =>
+                                        {
+                                                                                        await QuoteChanged(e, (q) => { q.DeliveryAddressSuburb = e.Value.ToString(); });
+                                        }">
+                                }
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-3">
                                 <label for="DeliveryAddressPostcode" class="form-label">Postcode</label>
-                                <input type="text" class="form-control" id="DeliveryAddressPostcode" readonly placeholder="@salesQuote.DeliveryAddressPostcode">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressPostcode" readonly placeholder="@salesQuote.DeliveryAddressPostcode">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressPostcode" value="@salesQuote.DeliveryAddressPostcode" @onchange="async (e) =>
+                                        {
+                                            await QuoteChanged(e, (q) => { q.DeliveryAddressPostcode = e.Value.ToString(); });
+                                        }">
+                                }
                             </div>
                             <div class="col-3">
                                 <label for="DeliveryAddressCountry" class="form-label">Country</label>
-                                <input type="text" class="form-control" id="DeliveryAddressCountry" readonly placeholder="@salesQuote.DeliveryAddressCountry">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressCountry" readonly placeholder="@salesQuote.DeliveryAddressCountry">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressCountry" value="@salesQuote.DeliveryAddressCountry" @onchange="async (e) =>
+                                        {
+                                            await QuoteChanged(e, (q) => { q.DeliveryAddressCountry = e.Value.ToString(); });
+                                        }">
+                                }
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-3">
                                 <label for="DeliveryAddressCourierDetails" class="form-label">Delivery Instructions</label>
-                                <input type="text" class="form-control" id="DeliveryAddressCourierDetails" readonly placeholder="@salesQuote.DeliveryAddressCourierDetails">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <textarea rows="3" class="form-control" id="DeliveryAddressCourierDetails" readonly placeholder="@salesQuote.DeliveryAddressCourierDetails"></textarea>
+                                }
+                                else
+                                {
+                                    <textarea rows="3" class="form-control" id="DeliveryAddressCourierDetails" value="@salesQuote.DeliveryAddressCourierDetails" @onchange="async (e) =>
+                                        {
+                                            await QuoteChanged(e, (q) => { q.DeliveryAddressCourierDetails = e.Value.ToString(); });
+                                                                                      }"></textarea>
+                                }
                             </div>
                             <div class="col-3">
                                 <label for="DeliveryAddressNotes" class="form-label">Notes</label>
-                                <input type="text" class="form-control" id="DeliveryAddressNotes" readonly placeholder="@salesQuote.DeliveryAddressNotes">
+                                @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+                                {
+                                    <textarea rows="3" class="form-control" id="DeliveryAddressNotes" readonly placeholder="@salesQuote.DeliveryAddressNotes"></textarea>
+                                }
+                                else
+                                {
+                                    <textarea rows="3" class="form-control" id="DeliveryAddressNotes" value="@salesQuote.DeliveryAddressNotes" @onchange="async (e) =>
+                                        {
+                                            await QuoteChanged(e, (q) => { q.DeliveryAddressNotes = e.Value.ToString(); });
+                                                                                      }"></textarea>
+                                }
                             </div>
                         </div>
                     </div>
@@ -278,15 +490,23 @@
 }
 @code {
     [Parameter]
-    public string QuoteId { get; set; }
+    public string QuoteId { get; set; }    
+
+    [SupplyParameterFromQuery(Name = "CreateForDebtorID")]
+    public string CreateForDebtorID { get; set; }
 
     public string SnapshotNo { get; set; }
 
-    private bool APIRequestInPogress;
+    // APIRequestInProgress cannot be simply set to true and restored to original state, due to race conditions arising from asynchronous
+    // calls - so we use a counter instead, and increment or decrement that - and we look at the APIRequestInProgressCount to determine if a request is currently in progress or not.
+    private int APIRequestInProgressCount = 0;
+    public bool APIRequestInProgress => APIRequestInProgressCount > 0;
     private string? statusMessage;
     private JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuote salesQuote { get; set; }
     private string SelectedTabId { get; set; } = "Items-tab";
     private JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuoteHistory SelectedHistory { get; set; }
+    private bool AddingItem { get; set; }
+    private bool EditingFreight { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -310,15 +530,22 @@
             // not authenticated
             NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
             return;
-        }
+        }        
 
-        bool oldAPIRequestInPogress = APIRequestInPogress;        
-        APIRequestInPogress = true;
-
-        JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteGETRequest salesQuoteGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteGETRequest() { QuoteID = QuoteId };
-        try
+        if (CreateForDebtorID != null)
         {
-            salesQuote = await JiwaAPI.GetAsync(salesQuoteGETRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+            // create a new quote, and then proceed to show that quote
+            JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotePOSTRequest salesQuotePOSTRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotePOSTRequest() { DebtorID = CreateForDebtorID };
+            salesQuote = await SendToAPI<JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuote>(salesQuotePOSTRequest);
+        }
+        else if (QuoteId != null)
+        {
+            JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteGETRequest salesQuoteGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteGETRequest() { QuoteID = QuoteId };
+            salesQuote = await SendToAPI<JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuote>(salesQuoteGETRequest);            
+        }        
+
+        if (salesQuote != null)
+        {
             SelectedHistory = salesQuote.Histories[0];
 
             if (QueryHelpers.ParseQuery(NavigationManager.ToAbsoluteUri(NavigationManager.Uri).Query).TryGetValue("SnapshotNo", out var snapshotNoParam))
@@ -331,27 +558,6 @@
                 }
             }
         }
-        catch (ServiceStack.WebServiceException webServiceException)
-        {
-            if (webServiceException.StatusCode == 401)
-            {
-                // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
-                WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
-                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
-            }
-            else
-            {
-                statusMessage = webServiceException.ErrorMessage;
-            }
-        }
-        catch (Exception ex)
-        {
-            statusMessage = ex.Message;
-        }
-        finally
-        {
-            APIRequestInPogress = oldAPIRequestInPogress;
-        }        
     }       
 
     private async Task OnSelectTab(string tabId)
@@ -393,4 +599,174 @@
             statusMessage = ex.Message;
         }
     }    
+
+    private async Task QuoteChanged(ChangeEventArgs e, Action<JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotePATCHRequest> patchDTOAction)
+    {
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotePATCHRequest salesQuotePATCHRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotePATCHRequest();
+        salesQuotePATCHRequest.QuoteID = salesQuote.QuoteID;
+        patchDTOAction.Invoke(salesQuotePATCHRequest);
+
+        int? currentSnap = SelectedHistory.HistoryNo;
+
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuote response = await SendToAPI<JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuote>(salesQuotePATCHRequest);
+        if (response != null)
+        {
+            salesQuote = response;
+            SelectedHistory = salesQuote.Histories[currentSnap.Value - 1];
+        }        
+    }
+
+    private async Task QuoteLineChanged(ChangeEventArgs e, string quoteLineID, Action<JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuoteLine> patchDTOAction)
+    {
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotePATCHRequest salesQuotePATCHRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotePATCHRequest();
+        salesQuotePATCHRequest.QuoteID = salesQuote.QuoteID;
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuoteLine quoteLine = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuoteLine();
+        quoteLine.QuoteLineID = quoteLineID;
+        patchDTOAction.Invoke(quoteLine);
+        salesQuotePATCHRequest.Lines = new List<JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuoteLine>();
+        salesQuotePATCHRequest.Lines.Add(quoteLine);
+
+        int? currentSnap = SelectedHistory.HistoryNo;
+
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuote response = await SendToAPI<JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuote>(salesQuotePATCHRequest);
+        if (response != null)
+        {
+            salesQuote = response;
+            SelectedHistory = salesQuote.Histories[currentSnap.Value - 1];
+        }
+    }
+
+    private async Task DeleteQuoteLine(JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuoteLine salesQuoteLine)
+    {
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteLineDELETERequest salesQuoteLineDELETERequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteLineDELETERequest();
+        salesQuoteLineDELETERequest.QuoteID = salesQuote.QuoteID;
+        salesQuoteLineDELETERequest.QuoteHistoryID = SelectedHistory.QuoteHistoryID;
+        salesQuoteLineDELETERequest.QuoteLineID = salesQuoteLine.QuoteLineID;
+        await DeleteFromAPI(salesQuoteLineDELETERequest);
+
+        // re-read the quote
+        int? currentSnap = SelectedHistory.HistoryNo;
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteGETRequest salesQuoteGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteGETRequest() { QuoteID = salesQuote.QuoteID };
+        salesQuote = await SendToAPI<JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuote>(salesQuoteGETRequest);
+
+        if (salesQuote != null)
+        {
+            SelectedHistory = salesQuote.Histories[currentSnap.Value - 1];
+        }
+    }
+
+    private async Task AddQuoteLine()
+    {
+        AddingItem = true;
+    }
+
+    public async void AddItemDialogClosed(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR InventoryItem)
+    {
+        AddingItem = false;
+
+        if (InventoryItem != null)
+        {
+            JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotePATCHRequest salesQuotePATCHRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotePATCHRequest();
+            salesQuotePATCHRequest.QuoteID = salesQuote.QuoteID;
+            JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuoteLine quoteLine = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuoteLine();
+            quoteLine.InventoryID = InventoryItem.InventoryID;
+            salesQuotePATCHRequest.Lines = new List<JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuoteLine>();
+            salesQuotePATCHRequest.Lines.Add(quoteLine);
+
+            int? currentSnap = SelectedHistory.HistoryNo;
+
+            JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuote response = await SendToAPI<JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuote>(salesQuotePATCHRequest);
+            if (response != null)
+            {
+                salesQuote = response;
+                SelectedHistory = salesQuote.Histories[currentSnap.Value - 1];
+                await InvokeAsync(StateHasChanged);  // required otherwise the UI doesn't update properly - indeterminate progress indicator just keeps spinning and the new line doesn't appear
+            }
+        }
+    }
+
+    private async Task EditFreight()
+    {
+        EditingFreight = true;
+    }
+
+    public async void EditFreightDialogClosed(JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuote FreightDTO)
+    {
+        EditingFreight = false;
+
+        // re-read the quote
+        int? currentSnap = SelectedHistory.HistoryNo;
+        JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteGETRequest salesQuoteGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuoteGETRequest() { QuoteID = salesQuote.QuoteID };
+        salesQuote = await SendToAPI<JiwaFinancials.Jiwa.JiwaServiceModel.SalesQuotes.SalesQuote>(salesQuoteGETRequest);
+
+        if (salesQuote != null)
+        {
+            SelectedHistory = salesQuote.Histories[currentSnap.Value - 1];
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task DeleteFromAPI(IReturnVoid requestDTO)
+    {
+        APIRequestInProgressCount++;
+
+        try
+        {
+            await JiwaAPI.DeleteAsync<ServiceStack.IReturnVoid>(requestDTO, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+        }
+        catch (ServiceStack.WebServiceException webServiceException)
+        {
+            if (webServiceException.StatusCode == 401)
+            {
+                // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            }
+            else
+            {
+                statusMessage = webServiceException.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+        finally
+        {
+            APIRequestInProgressCount--;
+        }
+    }
+
+    private async Task<TResponse> SendToAPI<TResponse>(IReturn<TResponse> requestDTO)
+    {
+        APIRequestInProgressCount++;
+
+        try
+        {
+            return await JiwaAPI.SendAsync(requestDTO, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+        }
+        catch (ServiceStack.WebServiceException webServiceException)
+        {
+            if (webServiceException.StatusCode == 401)
+            {
+                // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            }
+            else
+            {
+                statusMessage = webServiceException.ErrorMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+        finally
+        {
+            APIRequestInProgressCount--;
+        }
+
+        return default(TResponse);
+    }
 }
