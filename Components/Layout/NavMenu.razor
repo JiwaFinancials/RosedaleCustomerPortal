@@ -68,6 +68,15 @@
 
         @if (WebPortalUserSessionStateContainer.WebPortalUserSession != null)
         {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="Products">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-seam" viewBox="0 0 16 16">
+                        <path d="M8.186.113a.5.5 0 0 0-.372 0L1.846 2.5 8 4.897 14.154 2.5zM15 3.39 8.5 5.922V15.5a.5.5 0 0 0 .276.447l6-3A.5.5 0 0 0 15 12.5zM8 15.5V5.922L1 3.39V12.5a.5.5 0 0 0 .224.447l6 3A.5.5 0 0 0 8 15.5" />
+                    </svg>
+                    Products
+                </NavLink>
+            </div>
+
             @if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
             {
                 <div class="nav-item px-3">

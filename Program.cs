@@ -18,6 +18,10 @@ namespace JiwaCustomerPortal
             Config.JiwaAPIKey = configuration.GetValue<string>("JiwaAPIKey");
             Config.AllowCustomerLogin = configuration.GetValue<bool>("AllowCustomerLogin");
             Config.AllowStaffLogin = configuration.GetValue<bool>("AllowStaffLogin"); ;
+            Config.AppSettingsIN_LogicalID = configuration.GetValue<string>("IN_LogicalID") ?? string.Empty;
+            Config.AppSettingsLogicalWarehouseDescription = configuration.GetValue<string>("LogicalWarehouseDescription") ?? string.Empty;
+            Config.AppSettingsIN_PhysicalID = configuration.GetValue<string>("IN_PhysicalID") ?? string.Empty;
+            Config.AppSettingsPhysicalWarehouseDescription = configuration.GetValue<string>("PhysicalWarehouseDescription") ?? string.Empty;
 
             // HttpClient Factory Registration
             //builder.Services.AddJsonApiClient(Config.JiwaAPIURL); TODO: Find a way for our static JiwaAPI class to use DI to get the JsonApiClient instead of creating it's own instances. The recommended way of using any HttpClient is by using a factory

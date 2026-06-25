@@ -1,0 +1,1239 @@
+@page "/Products"
+@attribute [type: RenderModeInteractiveServer]
+@using System.Linq
+@using System.Globalization
+@using System.Text
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using ServiceStack
+@inject ProtectedLocalStorage ProtectedLocalStore
+@inject NavigationManager NavigationManager
+@inject WebPortalUserSessionStateContainer WebPortalUserSessionStateContainer
+@inject IJSRuntime JS
+
+<script>
+    window.downloadFileFromStream = async (fileName, contentStreamReference) => {
+      const arrayBuffer = await contentStreamReference.arrayBuffer();
+      const blob = new Blob([arrayBuffer]);
+      const url = URL.createObjectURL(blob);
+      const anchorElement = document.createElement('a');
+      anchorElement.href = url;
+      anchorElement.download = fileName ?? '';
+      anchorElement.click();
+      anchorElement.remove();
+      URL.revokeObjectURL(url);
+    }
+</script>
+
+<PageTitle>Products</PageTitle>
+
+@if (APIRequestInProgress)
+{
+    <div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0">
+                <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<StatusMessage Message="@statusMessage" />
+
+@if (!string.IsNullOrWhiteSpace(SessionNotice))
+{
+    <div class="alert alert-info" role="alert">@SessionNotice</div>
+}
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="DatabaseSearchText" class="form-label">Search Products</label>
+                <input id="DatabaseSearchText" class="form-control" type="text" placeholder="Search Jiwa by part no. or description" value="@DatabaseSearchText" @oninput="DatabaseSearchTextChanged" @onkeydown="DatabaseSearchKeyDown" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Search By</label>
+                <select class="form-select" value="@DatabaseSearchMode" @onchange="DatabaseSearchModeChanged">
+                    <option value="Description">Description</option>
+                    <option value="PartNo">Part No.</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-primary me-2" @onclick="SearchDatabaseAsync">Search</button>
+                <button class="btn btn-outline-secondary" @onclick="ClearDatabaseSearchAsync">Reset Results</button>
+            </div>
+        </div>
+
+        <div class="row g-3 align-items-end mt-1">
+            <div class="col-md-4">
+                <label for="SearchText" class="form-label">Filter Results</label>
+                <input id="SearchText" class="form-control" type="text" placeholder="Part no. or description" value="@SearchText" @oninput="SearchTextChanged" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Category 1</label>
+                <select class="form-select" value="@SelectedCategory1" @onchange="Category1Changed">
+                    <option value="">All</option>
+                    @foreach (string category in Category1Options)
+                    {
+                        <option value="@category">@category</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Category 2</label>
+                <select class="form-select" value="@SelectedCategory2" @onchange="Category2Changed">
+                    <option value="">All</option>
+                    @foreach (string category in Category2Options)
+                    {
+                        <option value="@category">@category</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Category 3</label>
+                <select class="form-select" value="@SelectedCategory3" @onchange="Category3Changed">
+                    <option value="">All</option>
+                    @foreach (string category in Category3Options)
+                    {
+                        <option value="@category">@category</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2 text-end">
+                <button class="btn btn-outline-secondary me-2" @onclick="ClearFilters">Clear Filters</button>
+                <button class="btn btn-success" @onclick="ExportPriceListCsv" disabled="@(FilteredProducts.Count == 0)">Export CSV</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Product Catalogue</span>
+                <span class="text-muted small">@FilteredProducts.Count item(s)</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Part No.</th>
+                            <th>Description</th>
+                            <th class="text-end">Stock on Hand</th>
+                            <th class="text-end">Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR product in PagedProducts)
+                        {
+                            bool isSelected = SelectedProduct?.InventoryID == product.InventoryID;
+                            <tr style="cursor:pointer;" class="@(isSelected ? "table-primary" : null)" @onclick="(() => SelectProduct(product))">
+                                <td>@product.PartNo</td>
+                                <td>@product.Description</td>
+                                <td class="text-end">@FormatStockOnHand(product)</td>
+                                <td class="text-end">@FormatCurrencySafe(product.SellPrice)</td>
+                            </tr>
+                        }
+                        @if (PagedProducts.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No products match the current filters.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <span class="small text-muted">Page @CurrentPage of @TotalPages</span>
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary me-2" @onclick="PreviousPage" disabled="@(CurrentPage <= 1)">Previous</button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="NextPage" disabled="@(CurrentPage >= TotalPages)">Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card mb-3">
+            <div class="card-header">Product Details</div>
+            <div class="card-body">
+                @if (SelectedProduct == null)
+                {
+                    <div class="text-muted">Select a product to view full details.</div>
+                }
+                else
+                {
+                    @if (SelectedProductImages.Count > 0)
+                    {
+                        <div class="mb-2 d-flex align-items-center justify-content-center border rounded bg-light" style="height: 320px;">
+                            <img src="@SelectedProductImages[SelectedProductImageIndex].Source" alt="@SelectedProductImages[SelectedProductImageIndex].Title" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain;" />
+                        </div>
+
+                        @if (SelectedProductImages.Count > 1)
+                        {
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                @for (int i = 0; i < SelectedProductImages.Count; i++)
+                                {
+                                    int imageIndex = i;
+                                    ProductGalleryImage galleryImage = SelectedProductImages[i];
+                                    bool isActive = i == SelectedProductImageIndex;
+                                    <button class="btn btn-sm @(isActive ? "btn-primary" : "btn-outline-secondary")" @onclick="(() => SelectProductImage(imageIndex))" title="@galleryImage.Title">@(string.IsNullOrWhiteSpace(galleryImage.Title) ? $"Image {i + 1}" : galleryImage.Title)</button>
+                                }
+                            </div>
+                        }
+                    }
+
+                    @if (IsSelectedProductImageLoading)
+                    {
+                        <div class="text-muted mb-3 d-flex align-items-center justify-content-center border rounded bg-light" style="height: 320px;">Loading image...</div>
+                    }
+
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Part No.</dt>
+                        <dd class="col-sm-8">@SelectedProduct.PartNo</dd>
+
+                        <dt class="col-sm-4">Description</dt>
+                        <dd class="col-sm-8">@SelectedProduct.Description</dd>
+
+                        <dt class="col-sm-4">Classification</dt>
+                        <dd class="col-sm-8">@SelectedProduct.ClassificationDescription</dd>
+
+                        <dt class="col-sm-4">Category Path</dt>
+                        <dd class="col-sm-8">@ProductCategoryPath(SelectedProduct)</dd>
+
+                        <dt class="col-sm-4">Stock on Hand</dt>
+                        <dd class="col-sm-8">@FormatStockOnHand(SelectedProduct)</dd>
+
+                        <dt class="col-sm-4">Available Stock</dt>
+                        <dd class="col-sm-8">@Config.FormattedDecimals(SelectedProduct.AvailableStock, SelectedProduct.QuantityDecimalPlaces, true)</dd>
+
+                        <dt class="col-sm-4">List Price</dt>
+                        <dd class="col-sm-8">@FormatCurrencySafe(SelectedProduct.SellPrice)</dd>
+
+                        <dt class="col-sm-4">Your Price</dt>
+                        <dd class="col-sm-8">@FormatCustomerSpecificPrice()</dd>
+
+                        <dt class="col-sm-4">RRP</dt>
+                        <dd class="col-sm-8">@FormatCurrencySafe(SelectedProduct.RRPPrice)</dd>
+
+                        <dt class="col-sm-4">Logical WH</dt>
+                        <dd class="col-sm-8">@SelectedProduct.LogicalWarehouseDescription</dd>
+
+                        <dt class="col-sm-4">Physical WH</dt>
+                        <dd class="col-sm-8">@SelectedProduct.PhysicalWarehouseDescription</dd>
+                    </dl>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private const int PageSize = 25;
+
+    private bool APIRequestInProgress;
+    private string? statusMessage;
+    private string? SessionNotice;
+
+    private string? SearchText;
+    private string? DatabaseSearchText;
+    private string DatabaseSearchMode = "Description";
+    private string? SelectedCategory1;
+    private string? SelectedCategory2;
+    private string? SelectedCategory3;
+    private Dictionary<string, byte[]?> ProductPictureCache { get; set; } = new();
+    private Dictionary<string, Task<byte[]?>> ProductPictureLoadTasks { get; set; } = new();
+    private Dictionary<string, List<ProductGalleryImage>> ProductGalleryCache { get; set; } = new();
+    private List<ProductGalleryImage> SelectedProductImages { get; set; } = new();
+    private int SelectedProductImageIndex = 0;
+    private bool IsAdditionalImagesLoading;
+    private decimal? CustomerSpecificPrice;
+    private bool IsCustomerPriceLoading;
+    private string? CustomerPriceStatus;
+
+    private List<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR> AllProducts { get; set; } = new();
+    private List<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR> FilteredProducts { get; set; } = new();
+    private JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR? SelectedProduct { get; set; }
+
+    private int CurrentPage = 1;
+
+    private List<string> Category1Options => BuildCategoryOptions(1);
+    private List<string> Category2Options => BuildCategoryOptions(2);
+    private List<string> Category3Options => BuildCategoryOptions(3);
+    private bool IsSelectedProductImageLoading =>
+        SelectedProduct != null &&
+        (((SelectedProduct.Picture == null || SelectedProduct.Picture.Length == 0) && ProductPictureLoadTasks.ContainsKey(SelectedProduct.InventoryID)) || IsAdditionalImagesLoading);
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling((double)FilteredProducts.Count / PageSize));
+
+    private List<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR> PagedProducts =>
+        FilteredProducts.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if (WebPortalUserSessionStateContainer.ProtectedLocalStore == null)
+        {
+            try
+            {
+                await WebPortalUserSessionStateContainer.SetProtectedLocalStore(ProtectedLocalStore);
+            }
+            catch (Exception ex)
+            {
+                statusMessage = ex.Message;
+                return;
+            }
+        }
+
+        if (WebPortalUserSessionStateContainer.WebPortalUserSession == null)
+        {
+            NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            return;
+        }
+
+        if (WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider == "credentials")
+        {
+            AppendSessionNotice("Signed in as staff. Pricing shown may not be debtor-specific until a customer account context is selected.");
+        }
+
+        await LoadProducts();
+        ApplyFilters();
+    }
+
+    private async Task LoadProducts()
+    {
+        bool oldAPIRequestInProgress = APIRequestInProgress;
+        APIRequestInProgress = true;
+
+        try
+        {
+            List<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR> products = await LoadProductsUnscoped();
+
+            if (products.Count == 0)
+            {
+                AppendSessionNotice("No products were returned by the Jiwa inventory query.");
+            }
+
+            AllProducts = products
+                .GroupBy(x => x.InventoryID)
+                .Select(x => x.First())
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            HandleAPIException(ex);
+        }
+        finally
+        {
+            APIRequestInProgress = oldAPIRequestInProgress;
+        }
+    }
+
+    private async Task<List<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR>> LoadProductsUnscoped()
+    {
+        List<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR> products = new();
+        const int take = 500;
+        const int minimumRecordsToLoad = 200;
+        int skip = 0;
+
+        while (true)
+        {
+            JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_Inventory_Item_ListQuery query = BuildInventoryListQuery(skip, take);
+
+            QueryResponse<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR> response =
+                await JiwaAPI.GetAsync(query, WebPortalUserSessionStateContainer.WebPortalUserSession.Id);
+
+            if ((response?.Results == null || response.Results.Count == 0) && !string.IsNullOrWhiteSpace(Config.JiwaAPIKey))
+            {
+                response = await JiwaAPI.GetAsync(query, jiwaAPIKey: Config.JiwaAPIKey);
+                if (response?.Results != null && response.Results.Count > 0)
+                {
+                    AppendSessionNotice("No products were returned for your current session context. Showing products via portal API key fallback.");
+                }
+            }
+
+            if (response?.Results == null || response.Results.Count == 0)
+            {
+                break;
+            }
+
+            products.AddRange(response.Results);
+            skip += response.Results.Count;
+
+            // Some API/plugin configurations cap page size lower than requested Take.
+            // Keep paging with Skip until an empty page, but ensure at least a practical minimum is loaded.
+            if (products.Count >= minimumRecordsToLoad && response.Results.Count < take)
+            {
+                break;
+            }
+        }
+
+        return products;
+    }
+
+    private JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_Inventory_Item_ListQuery BuildInventoryListQuery(int skip, int take, string fields = "InventoryID,PartNo,Description,InventoryClassificationID,ClassificationDescription,Category1Description,Category2Description,Category3Description,Category4Description,Category5Description,IN_LogicalID,LogicalWarehouseDescription,IN_PhysicalID,PhysicalWarehouseDescription,AvailableStock,SellPrice,RRPPrice,InStock,QuantityDecimalPlaces")
+    {
+        JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_Inventory_Item_ListQuery query = new()
+        {
+            IN_LogicalID = Config.IN_LogicalID,
+            OrderBy = "PartNo",
+            Fields = fields,
+            Take = take,
+            Skip = skip
+        };
+
+        string? search = DatabaseSearchText?.Trim();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            if (string.Equals(DatabaseSearchMode, "PartNo", StringComparison.OrdinalIgnoreCase))
+            {
+                query.PartNoContains = search;
+            }
+            else
+            {
+                query.DescriptionContains = search;
+            }
+        }
+
+        return query;
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR> query = AllProducts;
+
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            string search = SearchText.Trim();
+            query = query.Where(x =>
+                (!string.IsNullOrWhiteSpace(x.PartNo) && x.PartNo.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrWhiteSpace(x.Description) && x.Description.Contains(search, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(SelectedCategory1))
+        {
+            query = query.Where(x => string.Equals(x.Category1Description, SelectedCategory1, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(SelectedCategory2))
+        {
+            query = query.Where(x => string.Equals(x.Category2Description, SelectedCategory2, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(SelectedCategory3))
+        {
+            query = query.Where(x => string.Equals(x.Category3Description, SelectedCategory3, StringComparison.OrdinalIgnoreCase));
+        }
+
+        FilteredProducts = query.OrderBy(x => x.PartNo).ToList();
+
+        CurrentPage = 1;
+
+        if (SelectedProduct != null && !FilteredProducts.Any(x => x.InventoryID == SelectedProduct.InventoryID))
+        {
+            SelectedProduct = null;
+        }
+    }
+
+    private List<string> BuildCategoryOptions(int level)
+    {
+        IEnumerable<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR> query = AllProducts;
+
+        if (!string.IsNullOrWhiteSpace(SelectedCategory1))
+        {
+            query = query.Where(x => string.Equals(x.Category1Description, SelectedCategory1, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(SelectedCategory2) && level >= 3)
+        {
+            query = query.Where(x => string.Equals(x.Category2Description, SelectedCategory2, StringComparison.OrdinalIgnoreCase));
+        }
+
+        IEnumerable<string?> categories = level switch
+        {
+            1 => query.Select(x => x.Category1Description),
+            2 => query.Select(x => x.Category2Description),
+            _ => query.Select(x => x.Category3Description),
+        };
+
+        return categories
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList();
+    }
+
+    private Task SearchTextChanged(ChangeEventArgs e)
+    {
+        SearchText = e.Value?.ToString();
+        ApplyFilters();
+        return Task.CompletedTask;
+    }
+
+    private Task DatabaseSearchTextChanged(ChangeEventArgs e)
+    {
+        DatabaseSearchText = e.Value?.ToString();
+        return Task.CompletedTask;
+    }
+
+    private Task DatabaseSearchModeChanged(ChangeEventArgs e)
+    {
+        DatabaseSearchMode = e.Value?.ToString() ?? "Description";
+        return Task.CompletedTask;
+    }
+
+    private async Task DatabaseSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (string.Equals(e.Key, "Enter", StringComparison.OrdinalIgnoreCase))
+        {
+            await SearchDatabaseAsync();
+        }
+    }
+
+    private async Task SearchDatabaseAsync()
+    {
+        await LoadProducts();
+        ApplyFilters();
+    }
+
+    private async Task ClearDatabaseSearchAsync()
+    {
+        DatabaseSearchText = null;
+        DatabaseSearchMode = "Description";
+        await LoadProducts();
+        ApplyFilters();
+    }
+
+    private Task Category1Changed(ChangeEventArgs e)
+    {
+        SelectedCategory1 = e.Value?.ToString();
+        SelectedCategory2 = null;
+        SelectedCategory3 = null;
+        ApplyFilters();
+        return Task.CompletedTask;
+    }
+
+    private Task Category2Changed(ChangeEventArgs e)
+    {
+        SelectedCategory2 = e.Value?.ToString();
+        SelectedCategory3 = null;
+        ApplyFilters();
+        return Task.CompletedTask;
+    }
+
+    private Task Category3Changed(ChangeEventArgs e)
+    {
+        SelectedCategory3 = e.Value?.ToString();
+        ApplyFilters();
+        return Task.CompletedTask;
+    }
+
+    private Task ClearFilters()
+    {
+        SearchText = null;
+        SelectedCategory1 = null;
+        SelectedCategory2 = null;
+        SelectedCategory3 = null;
+        ApplyFilters();
+        return Task.CompletedTask;
+    }
+
+    private async Task SelectProduct(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR product)
+    {
+        if (product == null)
+        {
+            return;
+        }
+
+        SelectedProduct = product;
+        SetDefaultSelectedProductImage(product);
+        StateHasChanged();
+        await EnsureSelectedProductPicture(product);
+        Task galleryTask = LoadAdditionalProductImages(product);
+        Task priceTask = LoadCustomerSpecificPrice(product);
+        await Task.WhenAll(galleryTask, priceTask);
+        StateHasChanged();
+    }
+
+    private void SetDefaultSelectedProductImage(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR product)
+    {
+        SelectedProductImages = new List<ProductGalleryImage>();
+        SelectedProductImageIndex = 0;
+
+        if (product?.Picture != null && product.Picture.Length > 0)
+        {
+            SelectedProductImages.Add(new ProductGalleryImage
+            {
+                Source = $"data:image/png;base64,{Convert.ToBase64String(product.Picture)}",
+                Title = string.IsNullOrWhiteSpace(product.PartNo) ? "Primary" : product.PartNo
+            });
+        }
+    }
+
+    private async Task LoadAdditionalProductImages(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR product)
+    {
+        if (product == null || string.IsNullOrWhiteSpace(product.InventoryID))
+        {
+            return;
+        }
+
+        string requestedInventoryId = product.InventoryID;
+        IsAdditionalImagesLoading = true;
+
+        try
+        {
+            if (ProductGalleryCache.TryGetValue(requestedInventoryId, out List<ProductGalleryImage>? cachedGallery))
+            {
+                if (SelectedProduct?.InventoryID == requestedInventoryId)
+                {
+                    SelectedProductImages = cachedGallery;
+                    SelectedProductImageIndex = 0;
+                }
+                return;
+            }
+
+            List<ProductGalleryImage> gallery = new();
+
+            if (product.Picture != null && product.Picture.Length > 0)
+            {
+                gallery.Add(new ProductGalleryImage
+                {
+                    Source = $"data:image/png;base64,{Convert.ToBase64String(product.Picture)}",
+                    Title = string.IsNullOrWhiteSpace(product.PartNo) ? "Primary" : product.PartNo
+                });
+            }
+
+            List<ProductGalleryImage> additionalImages = await GetInventoryImages(requestedInventoryId);
+            foreach (ProductGalleryImage image in additionalImages)
+            {
+                gallery.Add(image);
+            }
+
+            ProductGalleryCache[requestedInventoryId] = gallery;
+
+            if (SelectedProduct?.InventoryID == requestedInventoryId)
+            {
+                SelectedProductImages = gallery;
+                SelectedProductImageIndex = 0;
+            }
+        }
+        finally
+        {
+            if (SelectedProduct?.InventoryID == requestedInventoryId)
+            {
+                IsAdditionalImagesLoading = false;
+            }
+        }
+    }
+
+    private void SelectProductImage(int index)
+    {
+        if (index >= 0 && index < SelectedProductImages.Count)
+        {
+            SelectedProductImageIndex = index;
+        }
+    }
+
+    private async Task<List<ProductGalleryImage>> GetInventoryImages(string inventoryId)
+    {
+        string path = $"/Inventory/{Uri.EscapeDataString(inventoryId)}/Images";
+
+        string? sessionId = WebPortalUserSessionStateContainer.WebPortalUserSession?.Id;
+        if (!string.IsNullOrWhiteSpace(sessionId))
+        {
+            List<ProductGalleryImage>? sessionImages = await TryGetInventoryImages(path, sessionId, null);
+            if (sessionImages != null && sessionImages.Count > 0)
+            {
+                return sessionImages;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(Config.JiwaAPIKey))
+        {
+            List<ProductGalleryImage>? apiKeyImages = await TryGetInventoryImages(path, null, Config.JiwaAPIKey);
+            if (apiKeyImages != null)
+            {
+                return apiKeyImages;
+            }
+        }
+
+        return new List<ProductGalleryImage>();
+    }
+
+    private static async Task<List<ProductGalleryImage>?> TryGetInventoryImages(string path, string? sessionId, string? apiKey)
+    {
+        try
+        {
+            using JsonApiClient client = new(Config.JiwaAPIURL);
+
+            if (!string.IsNullOrWhiteSpace(sessionId))
+            {
+                client.SetCookie("ss-id", sessionId, null);
+            }
+            else
+            {
+                client.BearerToken = apiKey;
+            }
+
+            List<Dictionary<string, object>> rows = await client.GetAsync<List<Dictionary<string, object>>>(path);
+            List<ProductGalleryImage> images = new();
+
+            foreach (Dictionary<string, object> row in rows)
+            {
+                string title = FirstNonEmpty(row,
+                    "Title",
+                    "Caption",
+                    "Description",
+                    "WebStore_Image_name",
+                    "AltText",
+                    "PhysicalFileName") ?? "Image";
+
+                string? physicalFileName = FirstNonEmpty(row, "PhysicalFileName");
+                string mime = GetMimeTypeFromFileName(physicalFileName);
+
+                string? base64 = FirstNonEmpty(row,
+                    "FileBinary",
+                    "Image",
+                    "Picture",
+                    "Base64",
+                    "ImageBase64",
+                    "Content",
+                    "Data");
+
+                string? source = null;
+                if (!string.IsNullOrWhiteSpace(base64))
+                {
+                    string normalized = base64.Trim();
+                    if (normalized.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        source = normalized;
+                    }
+                    else if (!normalized.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !normalized.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                    {
+                        source = $"data:{mime};base64,{normalized}";
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(source))
+                {
+                    source = FirstNonEmpty(row,
+                        "WebStore_Image_src",
+                        "Url",
+                        "URL",
+                        "ImageUrl",
+                        "SourceUrl",
+                        "Src");
+                }
+
+                if (!string.IsNullOrWhiteSpace(source))
+                {
+                    source = await ResolveImageSourceAsync(source, mime);
+                    images.Add(new ProductGalleryImage { Source = source, Title = title });
+                }
+            }
+
+            return images;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static async Task<string> ResolveImageSourceAsync(string source, string fallbackMime)
+    {
+        string normalized = source.Trim();
+
+        if (normalized.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+        {
+            return normalized;
+        }
+
+        if (!normalized.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !normalized.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"data:{fallbackMime};base64,{normalized}";
+        }
+
+        try
+        {
+            using HttpClient httpClient = new();
+            using HttpResponseMessage response = await httpClient.GetAsync(normalized);
+            if (!response.IsSuccessStatusCode)
+            {
+                return normalized;
+            }
+
+            byte[] bytes = await response.Content.ReadAsByteArrayAsync();
+            string mime = response.Content.Headers.ContentType?.MediaType ?? fallbackMime;
+            return $"data:{mime};base64,{Convert.ToBase64String(bytes)}";
+        }
+        catch
+        {
+            return normalized;
+        }
+    }
+
+    private static string? FirstNonEmpty(Dictionary<string, object> row, params string[] keys)
+    {
+        foreach (string key in keys)
+        {
+            if (!row.TryGetValue(key, out object? value) || value == null)
+            {
+                continue;
+            }
+
+            string? text = value switch
+            {
+                string s => s,
+                JsonElement je when je.ValueKind == JsonValueKind.String => je.GetString(),
+                JsonElement je => je.ToString(),
+                _ => value.ToString()
+            };
+
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                return text;
+            }
+        }
+
+        return null;
+    }
+
+    private static string GetMimeTypeFromFileName(string? fileName)
+    {
+        string extension = Path.GetExtension(fileName ?? string.Empty).ToLowerInvariant();
+        return extension switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".gif" => "image/gif",
+            ".webp" => "image/webp",
+            _ => "image/png"
+        };
+    }
+
+    private async Task LoadCustomerSpecificPrice(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR product)
+    {
+        if (product == null || string.IsNullOrWhiteSpace(product.InventoryID))
+        {
+            return;
+        }
+
+        string requestedInventoryId = product.InventoryID;
+        string? debtorId = WebPortalUserSessionStateContainer.WebPortalUserSession?.DebtorID;
+
+        CustomerSpecificPrice = null;
+        CustomerPriceStatus = null;
+        IsCustomerPriceLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(debtorId))
+            {
+                CustomerPriceStatus = "Not available for current sign-in context.";
+                return;
+            }
+
+            CustomerSpecificPricingResponse? pricing = await GetCustomerSpecificPrice(requestedInventoryId, debtorId);
+
+            if (SelectedProduct?.InventoryID != requestedInventoryId)
+            {
+                return;
+            }
+
+            if (pricing?.Price != null)
+            {
+                CustomerSpecificPrice = pricing.Price;
+            }
+            else
+            {
+                CustomerPriceStatus = "No customer-specific price returned.";
+            }
+        }
+        catch
+        {
+            if (SelectedProduct?.InventoryID == requestedInventoryId)
+            {
+                CustomerPriceStatus = "Unable to load customer-specific price.";
+            }
+        }
+        finally
+        {
+            if (SelectedProduct?.InventoryID == requestedInventoryId)
+            {
+                IsCustomerPriceLoading = false;
+            }
+        }
+    }
+
+    private async Task<CustomerSpecificPricingResponse?> GetCustomerSpecificPrice(string inventoryId, string debtorId)
+    {
+        string date = DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        string logicalId = Config.IN_LogicalID;
+        string path = $"/Inventory/{Uri.EscapeDataString(inventoryId)}/Pricing/{Uri.EscapeDataString(debtorId)}/{Uri.EscapeDataString(logicalId)}/{Uri.EscapeDataString(date)}/1";
+
+        string? sessionId = WebPortalUserSessionStateContainer.WebPortalUserSession?.Id;
+        if (!string.IsNullOrWhiteSpace(sessionId))
+        {
+            CustomerSpecificPricingResponse? sessionResponse = await TryGetCustomerSpecificPrice(path, sessionId, null);
+            if (sessionResponse != null)
+            {
+                return sessionResponse;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(Config.JiwaAPIKey))
+        {
+            return await TryGetCustomerSpecificPrice(path, null, Config.JiwaAPIKey);
+        }
+
+        return null;
+    }
+
+    private static async Task<CustomerSpecificPricingResponse?> TryGetCustomerSpecificPrice(string path, string? sessionId, string? apiKey)
+    {
+        try
+        {
+            using JsonApiClient client = new(Config.JiwaAPIURL);
+
+            if (!string.IsNullOrWhiteSpace(sessionId))
+            {
+                client.SetCookie("ss-id", sessionId, null);
+            }
+            else
+            {
+                client.BearerToken = apiKey;
+            }
+
+            return await client.GetAsync<CustomerSpecificPricingResponse>(path);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private async Task EnsureSelectedProductPicture(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR product)
+    {
+        if (product == null || string.IsNullOrWhiteSpace(product.InventoryID))
+        {
+            return;
+        }
+
+        if (product.Picture != null && product.Picture.Length > 0)
+        {
+            ProductPictureCache[product.InventoryID] = product.Picture;
+            return;
+        }
+
+        if (ProductPictureCache.TryGetValue(product.InventoryID, out byte[]? cachedPicture))
+        {
+            product.Picture = cachedPicture ?? Array.Empty<byte>();
+            return;
+        }
+
+        Task<byte[]?> loadTask;
+        if (!ProductPictureLoadTasks.TryGetValue(product.InventoryID, out loadTask))
+        {
+            loadTask = LoadPictureFromInventoryEndpoint(product.InventoryID);
+            ProductPictureLoadTasks[product.InventoryID] = loadTask;
+        }
+
+        byte[]? picture;
+        try
+        {
+            picture = await loadTask;
+        }
+        finally
+        {
+            ProductPictureLoadTasks.Remove(product.InventoryID);
+        }
+
+        ProductPictureCache[product.InventoryID] = picture;
+        product.Picture = picture ?? Array.Empty<byte>();
+    }
+
+    private async Task<byte[]?> LoadPictureFromInventoryEndpoint(string inventoryId)
+    {
+        try
+        {
+            byte[]? queryPicture = await LoadPictureFromInventoryListQuery(inventoryId);
+            if (queryPicture != null)
+            {
+                return queryPicture;
+            }
+
+            string? sessionId = WebPortalUserSessionStateContainer.WebPortalUserSession?.Id;
+            byte[]? sessionPicture = null;
+            if (!string.IsNullOrWhiteSpace(sessionId))
+            {
+                sessionPicture = await TryLoadPictureFromInventoryEndpoint(inventoryId, sessionId, null);
+                if (sessionPicture != null)
+                {
+                    return sessionPicture;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(Config.JiwaAPIKey))
+            {
+                return await TryLoadPictureFromInventoryEndpoint(inventoryId, null, Config.JiwaAPIKey);
+            }
+
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private async Task<byte[]?> LoadPictureFromInventoryListQuery(string inventoryId)
+    {
+        JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_Inventory_Item_ListQuery query = new()
+        {
+            IN_LogicalID = Config.IN_LogicalID,
+            InventoryID = inventoryId,
+            Take = 1,
+            Fields = "InventoryID,Picture"
+        };
+
+        QueryResponse<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR>? response = null;
+        string? sessionId = WebPortalUserSessionStateContainer.WebPortalUserSession?.Id;
+
+        if (!string.IsNullOrWhiteSpace(sessionId))
+        {
+            response = await JiwaAPI.GetAsync(query, sessionId);
+        }
+
+        JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR? product = response?.Results?.FirstOrDefault();
+        if ((product == null || !string.Equals(product.InventoryID, inventoryId, StringComparison.OrdinalIgnoreCase)) && !string.IsNullOrWhiteSpace(Config.JiwaAPIKey))
+        {
+            response = await JiwaAPI.GetAsync(query, jiwaAPIKey: Config.JiwaAPIKey);
+            product = response?.Results?.FirstOrDefault();
+        }
+
+        if (product == null || !string.Equals(product.InventoryID, inventoryId, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return product.Picture != null && product.Picture.Length > 0 ? product.Picture : null;
+    }
+
+    private static async Task<byte[]?> TryLoadPictureFromInventoryEndpoint(string inventoryId, string? sessionId, string? apiKey)
+    {
+        using JsonApiClient client = new(Config.JiwaAPIURL);
+
+        if (!string.IsNullOrWhiteSpace(sessionId))
+        {
+            client.SetCookie("ss-id", sessionId, null);
+        }
+        else
+        {
+            client.BearerToken = apiKey;
+        }
+
+        InventoryImageResponse? response = await client.GetAsync<InventoryImageResponse>($"/Inventory/{Uri.EscapeDataString(inventoryId)}");
+        if (string.IsNullOrWhiteSpace(response?.Picture))
+        {
+            return null;
+        }
+
+        string picture = response.Picture.Trim();
+        const string dataUrlMarker = "base64,";
+        int markerIndex = picture.IndexOf(dataUrlMarker, StringComparison.OrdinalIgnoreCase);
+        if (markerIndex >= 0)
+        {
+            picture = picture[(markerIndex + dataUrlMarker.Length)..];
+        }
+
+        try
+        {
+            return Convert.FromBase64String(picture);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private async Task ExportPriceListCsv()
+    {
+        if (FilteredProducts.Count == 0)
+        {
+            return;
+        }
+
+        StringBuilder csv = new();
+        csv.AppendLine("PartNo,Description,Classification,Category1,Category2,Category3,AvailableStock,SellPrice,RRPPrice");
+
+        foreach (JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR product in FilteredProducts)
+        {
+            csv.Append(EscapeCsv(product.PartNo));
+            csv.Append(',');
+            csv.Append(EscapeCsv(product.Description));
+            csv.Append(',');
+            csv.Append(EscapeCsv(product.ClassificationDescription));
+            csv.Append(',');
+            csv.Append(EscapeCsv(product.Category1Description));
+            csv.Append(',');
+            csv.Append(EscapeCsv(product.Category2Description));
+            csv.Append(',');
+            csv.Append(EscapeCsv(product.Category3Description));
+            csv.Append(',');
+            csv.Append((product.AvailableStock ?? 0m).ToString(CultureInfo.InvariantCulture));
+            csv.Append(',');
+            csv.Append((product.SellPrice ?? 0m).ToString(CultureInfo.InvariantCulture));
+            csv.Append(',');
+            csv.Append((product.RRPPrice ?? 0m).ToString(CultureInfo.InvariantCulture));
+            csv.AppendLine();
+        }
+
+        string debtorName = WebPortalUserSessionStateContainer.WebPortalUserSession?.DebtorName ?? "PriceList";
+        string safeDebtorName = string.Join("_", debtorName.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+        string fileName = $"{safeDebtorName}_PriceList_{DateTime.Now:yyyyMMdd}.csv";
+
+        byte[] data = Encoding.UTF8.GetBytes(csv.ToString());
+        await using MemoryStream stream = new(data);
+        using DotNetStreamReference streamRef = new(stream: stream);
+
+        await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+    }
+
+    private string EscapeCsv(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return "";
+        }
+
+        string escaped = value.Replace("\"", "\"\"");
+        return $"\"{escaped}\"";
+    }
+
+    private string ProductCategoryPath(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR product)
+    {
+        List<string> categories = new()
+        {
+            product.Category1Description,
+            product.Category2Description,
+            product.Category3Description,
+            product.Category4Description,
+            product.Category5Description
+        };
+
+        return string.Join(" > ", categories.Where(x => !string.IsNullOrWhiteSpace(x)));
+    }
+
+    private string FormatCurrencySafe(decimal? value)
+    {
+        if (value == null)
+        {
+            return "";
+        }
+
+        if (!string.IsNullOrWhiteSpace(Config.LocalCurrency?.RecID))
+        {
+            return Config.FormattedCurrency(value, Config.LocalCurrency.RecID);
+        }
+
+        return value.Value.ToString("0.00", CultureInfo.InvariantCulture);
+    }
+
+    private string FormatCustomerSpecificPrice()
+    {
+        if (IsCustomerPriceLoading)
+        {
+            return "Loading...";
+        }
+
+        if (CustomerSpecificPrice != null)
+        {
+            return FormatCurrencySafe(CustomerSpecificPrice);
+        }
+
+        return string.IsNullOrWhiteSpace(CustomerPriceStatus) ? "Not available" : CustomerPriceStatus;
+    }
+
+    private string FormatStockOnHand(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR product)
+    {
+        decimal? stockOnHand = product.InStock ?? product.AvailableStock;
+        return Config.FormattedDecimals(stockOnHand, product.QuantityDecimalPlaces, true);
+    }
+
+    private sealed class InventoryImageResponse
+    {
+        public string? Picture { get; set; }
+    }
+
+    private sealed class CustomerSpecificPricingResponse
+    {
+        public decimal? Price { get; set; }
+        public bool? IncludesTax { get; set; }
+    }
+
+    private sealed class ProductGalleryImage
+    {
+        public string Source { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+    }
+
+    private void PreviousPage()
+    {
+        if (CurrentPage > 1)
+        {
+            CurrentPage--;
+        }
+    }
+
+    private void NextPage()
+    {
+        if (CurrentPage < TotalPages)
+        {
+            CurrentPage++;
+        }
+    }
+
+    private void HandleAPIException(Exception ex)
+    {
+        if (ex is WebServiceException webServiceException)
+        {
+            if (webServiceException.StatusCode == 401)
+            {
+                WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+                return;
+            }
+
+            statusMessage = webServiceException.ErrorMessage;
+            return;
+        }
+
+        statusMessage = ex.Message;
+    }
+
+    private void AppendSessionNotice(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(SessionNotice))
+        {
+            SessionNotice = message;
+            return;
+        }
+
+        if (!SessionNotice.Contains(message, StringComparison.OrdinalIgnoreCase))
+        {
+            SessionNotice += " " + message;
+        }
+    }
+}
