@@ -141,6 +141,7 @@ namespace JiwaCustomerPortal.Components.Pages
             DebtorsTransactionsAutoQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.v_Jiwa_Debtor_Transactions_ListQuery()
                 {
                     OrderByDesc = "TranDate",
+                    AmountNotEqualTo = 0,
                     Fields = "InvRemitNo,TranDate,Description,DueDate,CurrencyShortName,Ref,Remark,Note,SourceID,DecimalPlaces,CurrencyID,DebitCredit,DebitAmountIncTax,CreditAmountIncTax,GSTAmount,AllocatedAmount,OutstandingAmount",
                     Take = 10
                 };        
