@@ -19,6 +19,7 @@
     <None Remove="wwwroot\bootstrap\**" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" />
     <PackageReference Include="ServiceStack" />
     <PackageReference Include="ServiceStack.Client" />
@@ -32,19 +33,10 @@
     <_ContentIncludedByDefault Remove="Components\User\PasswordReset.razor" />
   </ItemGroup>
   <ItemGroup>
-    <Content Update="Components\Pages\SalesQuote.razor">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-    </Content>
-    <Content Update="Components\Pages\SalesOrder.razor">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-    </Content>
     <Content Update="Components\Pages\Diagnostics.razor">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
     <Content Update="Components\Pages\StatementPDF.razor">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-    </Content>
-    <Content Update="Components\Pages\SalesQuotePDF.razor">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
     <Content Update="Components\User\ChangePasswordConfirmation.razor">

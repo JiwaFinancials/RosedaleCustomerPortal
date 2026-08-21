@@ -8,61 +8,75 @@
 @inject BrowserService BrowserService
 @using Microsoft.AspNetCore.WebUtilities
 
-<div class="modal fade show modal-lg" id="myModal" style="display:block; background-color: rgba(10,10,10,.8);" draggable="true"
-     aria-modal="true" role="dialog">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            @if (InventoryItemsListGrid != null && InventoryItemsListGrid.APIRequestInProgress)
-            {
-                <div class="modal fade show" id="myModal" style="display:inline-flex" aria-modal="true" role="dialog">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content border-0">
-                            <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
-                                <span class="visually-hidden">Loading...</span>
-                            </div>
-                        </div>
-                    </div>
+<div class="relative">
+    <div class="modal @modalClass" id="inventorySelectionDialog" style="display:@modalDisplay; background-color: rgba(10,10,10,.8);" draggable="true"
+         aria-modal="true" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                @if (InventoryItemsListGrid != null && InventoryItemsListGrid.APIRequestInProgress)
+                {
+                    <Throbber></Throbber>
+                }
+
+                <StatusMessage Message="@statusMessage" />
+
+                <div class="modal-header">
+                    <h4 class="modal-title">@Title</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" 
+                    @onclick="async(e) => 
+                    {                        
+                        Close();
+                    }
+                "></button>
                 </div>
-            }
 
-            <StatusMessage Message="@statusMessage" />
+                <div class="modal-body">
 
-            <div class="modal-header">
-                <h4 class="modal-title">@Title</h4>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @onclick="@ModalCancel"></button>
-            </div>
+                    <label for="SearchText" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="SearchText" @bind="@SearchText" @oninput="@(async x => { await SearchTextChanged((string)x.Value); })" />
 
-            <div class="modal-body">
+                    <p>@Text</p>
 
-                <label for="SearchText" class="form-label">Search</label>
-                <input type="text" class="form-control" id="SearchText" @bind="@SearchText" @oninput="@(async x => { await SearchTextChanged((string)x.Value); })" />
+                    <JiwaAPIAutoQueryGrid @ref="InventoryItemsListGrid" 
+                                          Model="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR"
+                                          QueryType="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery"
+                                          AutoQuery="@v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery"
+                                          UseFilters="false"
+                                          CaptionMaps=@(new Dictionary<string, string>
+                                          {
+                                              ["PartNo"] = "Part No.",
+                                              ["Price"] = "Price",
+                                              ["AvailableStock"] = "Available Stock"                               
+                                          } )
+                                          HiddenColumns=@(new List<string>() { "InventoryID" })                                      
+                                          NoAuthenticationTokenCallbackMethod="@NoAuthenticationToken"
+                                          AuthType="AuthTypes.JiwaAPISessionId"
+                                          APIExceptionCallbackMethod="@APIException"
+                                          DataCellRenderFragmentCallbackMethod="@InventoryItemsListGridDataCellRenderFragment">
+                                      </JiwaAPIAutoQueryGrid>
 
-                <p>@Text</p>
-
-                <JiwaAPIAutoQueryGrid @ref="InventoryItemsListGrid" Model="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR"
-                                      QueryType="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery"
-                                      AutoQuery="@v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery"
-                                      UseFilters="false"
-                                      CaptionMaps=@(new Dictionary<string, string>
-                                      {
-                                          ["PartNo"] = "Part No.",
-                                          ["Price"] = "Price",
-                                          ["AvailableStock"] = "Available Stock"                               
-                                      } )
-                                      HiddenColumns=@(new List<string>() { "InventoryID" })                                      
-                                      NoAuthenticationTokenCallbackMethod="@NoAuthenticationToken"
-                                      AuthType="AuthTypes.JiwaAPISessionId"
-                                      APIExceptionCallbackMethod="@APIException"
-                                      DataCellRenderFragmentCallbackMethod="@InventoryItemsListGridDataCellRenderFragment">
-                                  </JiwaAPIAutoQueryGrid>
-
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger" @onclick=@ModalCancel>Cancel</button>
-                <button type="button" class="btn btn-success" @onclick=@ModalOk>OK</button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger"
+                    @onclick="async(e) => 
+                    {                        
+                        Close();
+                    }">Cancel</button>
+                    <button type="button" class="btn btn-success"
+                    @onclick="async (e) =>
+                    {                        
+                        await OnItemSelected.InvokeAsync(InventoryItemsListGrid.SelectedItem);
+                        Close();
+                    }">OK</button>
+                </div>
             </div>
         </div>
     </div>
+
+    @if (showBackdrop)
+    {
+        <div class="modal-backdrop fade show"></div>
+    }
 </div>
 
 @code {
@@ -70,16 +84,26 @@
     public string Title { get; set; }
     [Parameter]
     public string Text { get; set; }
+    [Parameter]
+    public bool AutoOpen { get; set; } = false;
 
     [Parameter]
-    public EventCallback<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR> OnClose { get; set; }
+    public EventCallback<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR> OnItemSelected { get; set; }
+
+    // These three properties work together to control the display of the modal dialog.
+    // They are used in the razor markup to set the appropriate css classes and styles to show/hide the modal and backdrop.
+    // We start off with the modal hidden, and no backdrop.
+    // To show the modal, the Open() method is invoked, and it modifies there properties to show the modal.
+    private string modalDisplay = "none;";
+    private string modalClass = string.Empty;
+    private bool showBackdrop = false;
 
     private JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery { get; set; }
     private JiwaAPIAutoQueryGrid<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR, JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery>? InventoryItemsListGrid { get; set; }        
     private string? statusMessage;
 
     private string? SearchText;    
-    private CancellationTokenSource? CancellationTokenSource { get; set; } = new CancellationTokenSource();
+    private CancellationTokenSource? CancellationTokenSource { get; set; } = new CancellationTokenSource();    
 
     protected override async Task OnInitializedAsync()
     {
@@ -127,16 +151,26 @@
             Take = 12,            
             Immutable_IN_LogicalID=Config.IN_LogicalID
         };        
+
+        if (AutoOpen)
+        {
+            Open();
+        }
     }
 
-    private Task ModalCancel()
+    public void Open()
     {
-        return OnClose.InvokeAsync(null);
+        modalDisplay = "block";
+        modalClass = "fade show modal-lg";
+        showBackdrop = true;        
+        StateHasChanged();
     }
 
-    private Task ModalOk()
+    public void Close()
     {
-        return OnClose.InvokeAsync(InventoryItemsListGrid.SelectedItem);
+        modalDisplay = "none";
+        modalClass = string.Empty;
+        showBackdrop = false;
     }
 
     private async Task SearchTextChanged(string NewValue)

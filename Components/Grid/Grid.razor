@@ -1,0 +1,235 @@
+﻿@attribute [type: RenderModeInteractiveServer]
+
+<div class="table-responsive" id="@Name">
+    <table class="table table-bordered table-striped small">
+        <thead>
+            <tr>
+                @foreach (Column column in Cells.Columns.Where(x => x.IsVisible && !x.IsHidden).OrderBy(x => x.ColumnNo))
+                {                
+                    <th class=@ClassHorizontalAlignment(column.CellType.HorizontalAlignment) width="@column.Widthpx">@column.Caption</th>              
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @for(int row = 0; row < Cells.RowCount; row++)
+            {
+                int colSpanSkipsRemaining = 0;
+                <tr class="align-middle">                    
+                    @foreach (Column column in Cells.Columns.Where(x => x.IsVisible && !x.IsHidden).OrderBy(x => x.ColumnNo))
+                    {
+                        @if (colSpanSkipsRemaining == 0)
+                        {
+                            Cell cell = Cells[column.Id, row];
+
+                            if (cell.ColSpan > 1)
+                            {
+                                colSpanSkipsRemaining = cell.ColSpan.Value;
+                            }
+
+                            if (cell.CustomRenderFragment != null)
+                            {
+                                <td>@cell.CustomRenderFragment</td>
+                            }
+                            else
+                            {
+                                switch (cell.CellType)
+                                {
+                                    case CellType.ButtonCellType:
+                                        CellType.ButtonCellType buttonCellType = (CellType.ButtonCellType)cell.CellType;
+                                        <td class=@ClassHorizontalAlignment(cell.HorizontalAlignment) colspan="@cell.ColSpan">
+                                            @if (cell.IsEditable)
+                                            {
+                                                <button @onclick="_ => OnCellButtonClicked(cell)" class="btn" style="background-color:transparent">
+                                                    @switch (buttonCellType.ButtonType)
+                                                    {
+                                                        case CellType.ButtonCellType.ButtonTypes.Bin:
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="red" class="bi bi-x-circle" viewBox="0 0 20 20">
+                                                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+                                                                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708" />
+                                                            </svg>
+                                                            break;
+                                                        case CellType.ButtonCellType.ButtonTypes.Lookup:
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-up-circle" viewBox="0 0 16 16">
+                                                                <path fill-rule="evenodd" d="M1 8a7 7 0 1 0 14 0A7 7 0 0 0 1 8m15 0A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-7.5 3.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708l3-3a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707z" />
+                                                            </svg>
+                                                            break;
+                                                        case CellType.ButtonCellType.ButtonTypes.Edit:
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 20 20">
+                                                                <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z" />
+                                                                <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z" />
+                                                            </svg>
+                                                            break;
+                                                    }
+                                                </button>
+                                            }
+                                        </td>
+                                        break;
+
+                                    case CellType.CheckboxCellType:
+                                        if (cell.IsEditable)
+                                        {
+                                            <td class=@ClassHorizontalAlignment(cell.HorizontalAlignment) colspan="@cell.ColSpan">
+                                                @if (!(cell.Value is null) && (bool)cell.Value)
+                                                {
+                                                    <input type="checkbox" id="@Cells[column.Id, row].Key" checked @onchange="async (e) => { await OnCellValueChanged(cell, e); }">
+                                                }
+                                                else
+                                                {
+                                                    <input type="checkbox" id="@Cells[column.Id, row].Key" @onchange="async (e) => { await OnCellValueChanged(cell, e); }">
+                                                }
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td class=@ClassHorizontalAlignment(cell.HorizontalAlignment) colspan="@cell.ColSpan">
+                                                @if (!(cell.Value is null) && (bool)cell.Value)
+                                                {
+                                                    <input type="checkbox" disabled id="@Cells[column.Id, row].Key" checked>
+                                                }
+                                                else
+                                                {
+                                                    <input type="checkbox" disabled id="@Cells[column.Id, row].Key">
+                                                }
+                                            </td>
+                                        }
+                                        break;
+
+                                    case CellType.ComboCellType:
+                                        CellType.ComboCellType comboCellType = (CellType.ComboCellType)cell.CellType;
+                                        if (cell.IsEditable)
+                                        {
+                                            <td class=@ClassHorizontalAlignment(cell.HorizontalAlignment) colspan="@cell.ColSpan">
+                                                <select class="form-control" name="@Cells[column.Id, row].Key" id="@Cells[column.Id, row].Key" @onchange="async (e) => { await OnCellValueChanged(cell, e); }">
+                                                    @foreach (var item in comboCellType.ComboKeyValuePairs)
+                                                    {
+                                                        if (cell.Value != null && cell.Value.ToString() == @item.Key)
+                                                        {
+                                                            <option value="@item.Key" selected>@item.Value</option>
+                                                        }
+                                                        else
+                                                        {
+                                                            <option value="@item.Key">@item.Value</option>
+                                                        }
+                                                    }
+                                                </select>
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            string? value = null;
+                                            if (cell.Value != null && comboCellType.ComboKeyValuePairs.TryGetValue(cell.Value.ToString(), out value))
+                                            {
+                                                <td class=@ClassHorizontalAlignment(cell.HorizontalAlignment) colspan="@cell.ColSpan">@value</td>
+                                            }
+                                            else
+                                            {
+                                                // invalid value
+                                                <td class=@ClassHorizontalAlignment(cell.HorizontalAlignment) colspan="@cell.ColSpan"></td>
+                                            }
+                                        }
+                                        break;
+
+                                    case CellType.DateCellType:
+                                        CellType.DateCellType dateCellType = (CellType.DateCellType)cell.CellType;
+                                        if (cell.IsEditable)
+                                        {
+                                            string? dateValue = null;
+                                            if (cell.Value != null)
+                                            {
+                                                dateValue = ((DateTime)cell.Value).ToString("yyyy-MM-dd");
+                                            }
+
+                                            <td class=@ClassHorizontalAlignment(dateCellType.HorizontalAlignment) colspan="@cell.ColSpan">
+                                                <input type="date" class="form-control" id="@Cells[column.Id, row].Key" style="@StyleHorizontalAlignment(dateCellType.HorizontalAlignment)" value="@dateValue" @onchange="@(async (e) => { await OnCellValueChanged(cell, e); })">
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            if (Cells[column.Id, row].Value != null)
+                                            {
+                                                <td class=@ClassHorizontalAlignment(dateCellType.HorizontalAlignment) colspan="@cell.ColSpan">@(((DateTime)Cells[column.Id, row].Value).ToString(dateCellType.DateFormat))</td>
+                                            }
+                                            else
+                                            {
+                                                <td class=@ClassHorizontalAlignment(dateCellType.HorizontalAlignment) colspan="@cell.ColSpan"></td>
+                                            }
+                                        }
+                                        break;
+
+                                    case CellType.DecimalCellType:
+                                        CellType.DecimalCellType decimalCellType = (CellType.DecimalCellType)cell.CellType;
+                                        if (cell.IsEditable)
+                                        {
+                                            // TODO: Look into attribute splatting instead specifying attributes
+                                            <td class=@ClassHorizontalAlignment(decimalCellType.HorizontalAlignment) colspan="@cell.ColSpan">
+                                                @if (cell.Value is null || cell.Value == "")
+                                                {
+                                                    <input type="number" class="form-control" id="@Cells[column.Id, row].Key" value="" style="@StyleHorizontalAlignment(decimalCellType.HorizontalAlignment)" step="@(Math.Pow(10, (double)-decimalCellType.MinDecimalPlaces))" min="@decimalCellType.MinValue" max="@decimalCellType.MaxValue" @onchange="@(async (e) => { await OnCellValueChanged(cell, e); })">
+                                                }
+                                                else
+                                                {
+                                                    <input type="number" class="form-control" id="@Cells[column.Id, row].Key" value="@Config.FormattedDecimals((decimal)cell.Value, decimalCellType.MinDecimalPlaces)" style="@StyleHorizontalAlignment(decimalCellType.HorizontalAlignment)" step="@(Math.Pow(10, (double)-decimalCellType.MinDecimalPlaces))" min="@decimalCellType.MinValue" max="@decimalCellType.MaxValue" @onchange="@(async (e) => { await OnCellValueChanged(cell, e); })">
+                                                }
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            if (cell.Value is null)
+                                            {
+                                                <td class=@ClassHorizontalAlignment(decimalCellType.HorizontalAlignment) colspan="@cell.ColSpan"></td>
+                                            }
+                                            else
+                                            {
+                                                <td style=@StyleHorizontalAlignment(decimalCellType.HorizontalAlignment) colspan="@cell.ColSpan">@Config.FormattedDecimals((decimal)cell.Value, decimalCellType.MinDecimalPlaces)</td>
+                                            }
+                                        }
+                                        break;
+
+                                    case CellType.IntegerCellType:
+                                        CellType.IntegerCellType integerCellType = (CellType.IntegerCellType)cell.CellType;
+                                        if (cell.IsEditable)
+                                        {
+                                            <td class=@ClassHorizontalAlignment(integerCellType.HorizontalAlignment) colspan="@cell.ColSpan">
+                                                <input type="number" class="form-control" id="@Cells[column.Id, row].Key" value="@cell.Value" style="@StyleHorizontalAlignment(integerCellType.HorizontalAlignment)" step="1" min="@integerCellType.MinValue" max="@integerCellType.MaxValue" @onchange="@(async (e) => { await OnCellValueChanged(cell, e); })">
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            if (cell.Value is null)
+                                            {
+                                                <td class=@ClassHorizontalAlignment(integerCellType.HorizontalAlignment) colspan="@cell.ColSpan"></td>
+                                            }
+                                            else
+                                            {
+                                                <td class=@ClassHorizontalAlignment(integerCellType.HorizontalAlignment) colspan="@cell.ColSpan">@Cells[column.Id, row].Value</td>
+                                            }
+                                        }
+                                        break;
+
+                                    case CellType.TextCellType:
+                                        CellType.TextCellType textCellType = (CellType.TextCellType)cell.CellType;
+                                        if (cell.IsEditable)
+                                        {
+                                            <td class=@ClassHorizontalAlignment(textCellType.HorizontalAlignment) colspan="@cell.ColSpan">
+                                                <input type="text" class="form-control" id="@Cells[column.Id, row].Key" style="@StyleHorizontalAlignment(textCellType.HorizontalAlignment)" value="@cell.Value" maxlength="@textCellType.MaxLength" @onchange="@(async (e) => { await OnCellValueChanged(cell, e); })">
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td style=@ClassHorizontalAlignment(textCellType.HorizontalAlignment) colspan="@cell.ColSpan">@(cell.Value)</td>
+                                        }
+                                        break;
+                                }
+                            }
+                        }
+
+                        if (colSpanSkipsRemaining > 0)
+                        {
+                            colSpanSkipsRemaining--;                            
+                        }
+                    }
+                </tr>
+            }  
+        </tbody>        
+    </table>
+</div>

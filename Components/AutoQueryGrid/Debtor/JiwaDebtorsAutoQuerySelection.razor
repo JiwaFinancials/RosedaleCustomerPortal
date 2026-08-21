@@ -13,7 +13,7 @@
 <input type="text" class="form-control" id="SearchText" @bind="@SearchText" @oninput="@(async x => { await SearchTextChanged((string)x.Value); })" />
 
 <JiwaAPIAutoQueryGrid @ref="CustomerListGrid" Model="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Debtor_ListOR"
-                      QueryType="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Debtor_ListORQuery"
+                      QueryType="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Debtor_ListORQuery"                      
                       UseFilters="false"
                       AutoQuery="@v_Jiwa_Debtor_ListORQuery"
                       ShowPageNavigationHeader="true"

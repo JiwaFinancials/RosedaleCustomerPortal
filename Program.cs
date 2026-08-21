@@ -17,7 +17,8 @@ namespace JiwaCustomerPortal
             Config.JiwaAPIURL = configuration.GetValue<string>("JiwaAPIURL");
             Config.JiwaAPIKey = configuration.GetValue<string>("JiwaAPIKey");
             Config.AllowCustomerLogin = configuration.GetValue<bool>("AllowCustomerLogin");
-            Config.AllowStaffLogin = configuration.GetValue<bool>("AllowStaffLogin"); ;
+            Config.AllowStaffLogin = configuration.GetValue<bool>("AllowStaffLogin");
+            Config.CustomFieldsToDisplay = configuration.GetSection("CustomFieldsToDisplay").Get<JiwaCustomerPortal.CustomFieldsToDisplay>();
 
             // HttpClient Factory Registration
             //builder.Services.AddJsonApiClient(Config.JiwaAPIURL); TODO: Find a way for our static JiwaAPI class to use DI to get the JsonApiClient instead of creating it's own instances. The recommended way of using any HttpClient is by using a factory
@@ -28,23 +29,20 @@ namespace JiwaCustomerPortal
             try
             {
                 Task readConfigTask = Task.Run(async () =>
-                    {
-                        await Config.ReadSettingsFromAPI();
-                    });
+                {
+                    await Config.ReadSettingsFromAPI();
+                });
                 readConfigTask.Wait();
-            }            
+            }
             catch (Exception ex)
             {
                 // wrap the exception with something more obvious to the operator what the problem is.
-                throw new Exception("Could not read the Config settings from the API - ensure the Jiwa API is running and you have configured in appsettings.json the correct value for JiwaAPIURL and JiwaAPIKey.", ex);
+                throw new Exception($"Could not read the Config settings from the API - ensure the Jiwa API is running and you have configured in appsettings.json the correct value for JiwaAPIURL and JiwaAPIKey. Also ensure route permissions are set appropriately. {ex.GetInnerMostException().Message}", ex);
             }
 
             // Add services to the container.
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
-
-            // only used for the /downloadlicences route
-            builder.Services.AddControllers();
 
             // ColourModeServices is used to store the colour mode and it's a singleton so it can be referenced everywhere
             builder.Services.AddSingleton<IColourModeServices, ColourModeServices>();
@@ -68,9 +66,6 @@ namespace JiwaCustomerPortal
 
             app.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode();
-
-            // only used for the /downloadlicences route
-            app.MapControllers();
 
             app.Run();
         }

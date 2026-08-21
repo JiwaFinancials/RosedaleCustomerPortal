@@ -1,4 +1,4 @@
-﻿namespace JiwaCustomerPortal.Components
+﻿namespace JiwaCustomerPortal.Components.AutoQueryGrid
 {
     public class JiwaAutoQueryColumnFilter
     {

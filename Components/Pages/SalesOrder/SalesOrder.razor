@@ -1,0 +1,396 @@
+﻿@page "/SalesOrder/{InvoiceId}"
+@attribute [type: RenderModeInteractiveServer]
+@using JiwaCustomerPortal.Components.AutoQueryGrid.Inventory
+@using JiwaCustomerPortal.Components.Grid.CustomField
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using ServiceStack;
+@inject ProtectedLocalStorage ProtectedLocalStore
+@inject NavigationManager NavigationManager
+@inject WebPortalUserSessionStateContainer WebPortalUserSessionStateContainer
+@inject BrowserService BrowserService
+@using Microsoft.AspNetCore.WebUtilities
+@using JiwaFinancials.Jiwa.JiwaServiceModel.Tables;
+@using JiwaFinancials.Jiwa.JiwaServiceModel;
+@using JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields;
+@using JiwaCustomerPortal.Components.Grid;
+
+<PageTitle>Sales Order</PageTitle>
+
+@if (APIRequestInProgressCount > 0)
+{
+    <Throbber></Throbber>
+}
+
+<StatusMessage Message="@statusMessage"/>
+
+@if (CustomFieldLookupRenderFragment != null)
+{
+    @CustomFieldLookupRenderFragment
+}
+
+@if (salesOrder != null)
+{
+    if (IsEditable)
+    {
+        <JiwaInventoryAutoQueryModalSelectionDialog @ref="@AddItemDialog" Title="Select Item" OnItemSelected="@AddInventoryItem" />        
+    }
+    <div class="row">
+        <div class="col-3">
+            <label for="InvoiceNo" class="form-label">Invoice No.</label>
+            <input type="text" class="form-control" id="InvoiceNo" readonly placeholder="@salesOrder.InvoiceNo">
+        </div>
+        <div class="col-6">
+            <label for="Name" class="form-label">Name</label>
+            <input type="text" class="form-control" id="Name" readonly placeholder="@salesOrder.DebtorName">
+        </div>
+        <div class="col-1">
+            @if (salesOrder.Status == JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrder.SalesOrderStatuses.e_SalesOrderProcessed)
+            {
+                <div class="badge rounded-pill bg-warning">Processed</div>
+            }
+            else if (salesOrder.Status == JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrder.SalesOrderStatuses.e_SalesOrderClosed)
+            {
+                <div class="badge rounded-pill bg-danger">Closed</div>                
+            }
+            else
+            {
+                <div class="badge rounded-pill bg-success">Entered</div>
+                
+            }
+        </div>
+        <div class="col-2 text-end">
+            <a href="/SalesOrderPDF/@SelectedHistory.InvoiceHistoryID" target="_blank" rel="noopener noreferrer">                
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-printer" viewBox="0 0 16 16">
+                    <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1" />
+                    <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1" />
+                </svg>                
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-3">
+            <label for="Date" class="form-label">Date</label>
+            @if (!IsEditable)
+            {
+                <input type="text" class="form-control" id="Date" readonly placeholder="@salesOrder.InvoiceInitDate.Value.ToString(@BrowserService.DateFormat)">
+            }
+            else
+            {
+                <input type="date" class="form-control" id="Date" value="@salesOrder.InvoiceInitDate.Value.ToString("yyyy-MM-dd")" @onchange="@(async (e) =>
+                                                                                     {
+                                                                                         await SalesOrderChanged(e, (dtoSalesOrder) =>
+                                                                                             {
+                                                                                                    dtoSalesOrder.InvoiceInitDate = DateTime.ParseExact(e.Value.ToString(), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+                                                                                              });
+                                                                                     })">
+            }
+        </div>
+        <div class="col-3">
+            <label for="OrderNo" class="form-label">Order No.</label>
+            @if (!IsEditable)
+            {
+                <input type="text" class="form-control" id="OrderNo" readonly placeholder="@salesOrder.OrderNo">
+            }
+            else
+            {
+                <input type="text" class="form-control" id="OrderNo" value="@salesOrder.OrderNo" @onchange="async (e) =>
+                                                              {
+                                                                await SalesOrderChanged(e, (dtoSalesOrder) => 
+                                                                    { 
+                                                                        dtoSalesOrder.OrderNo = e.Value.ToString(); 
+                                                                    });
+                                                              }">
+            }
+        </div>
+        <div class="col-3">
+            <label for="Reference" class="form-label">Reference</label>
+            @if (!IsEditable)
+            {
+                <input type="text" class="form-control" id="Reference" readonly placeholder="@salesOrder.SOReference">
+            }
+            else
+            {
+                <input type="text" class="form-control" id="Reference" value="@salesOrder.SOReference" @onchange="async (e) =>
+                                       {
+                                        await SalesOrderChanged(e, (dtoSalesOrder) => 
+                                        { 
+                                            dtoSalesOrder.SOReference = e.Value.ToString(); 
+                                        });
+                                       }">
+            }
+        </div>
+    </div>
+
+    <div class="row">
+    </div>
+
+    <br />
+
+    <div class="row">
+        <div class="col-1">
+            <label for="Currency" class="form-label">
+                <img src="data:image/png;base64,@Convert.ToBase64String(Config.Currencies[salesOrder.CurrencyID].Picture)" width="30" height="20">
+                @salesOrder.CurrencyShortName
+            </label>
+        </div>        
+    </div>
+
+    <br />
+
+    <label>
+        Snapshot:
+        <select @onchange="SelectedHistoryChange" class="form-select form-select-lg mb-3">
+            @foreach (JiwaFinancials.Jiwa.JiwaServiceModel.SalesOrders.SalesOrderHistory history in salesOrder.Histories)
+            {
+                if (history.InvoiceHistoryID == SelectedHistory?.InvoiceHistoryID)
+                {
+                    <option value="@history.InvoiceHistoryID" selected>@history.Ref</option>
+                }
+                else
+                {
+                    <option value="@history.InvoiceHistoryID">@history.Ref</option>
+                }
+            }
+        </select>
+    </label>        
+
+    <ul class="nav nav-tabs" id="detailsTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a @onclick='(() => OnSelectTab("Items-tab"))' class=@String.Format("nav-link{0}", SelectedTabId=="Items-tab" ? " active": null) id="Items-tab" data-bs-toggle="tab" data-bs-target="#Items" type="button" role="tab" aria-controls="Items" aria-selected=@String.Format("nav-link{0}", SelectedTabId=="Items-tab" ? "true": "false")>Items</a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a @onclick='(() => OnSelectTab("Shipping-tab"))' class=@String.Format("nav-link{0}", SelectedTabId=="Shipping-tab" ? " active": null) id="Shipping-tab" data-bs-toggle="tab" data-bs-target="#Shipping" type="button" role="tab" aria-controls="Shipping" aria-selected=@String.Format("nav-link{0}", SelectedTabId=="Shipping-tab" ? "true": "false")>Shipping</a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a @onclick='(() => OnSelectTab("CustomFields-tab"))' class=@String.Format("nav-link{0}", SelectedTabId == "CustomFields-tab" ? " active" : null) id="CustomFields-tab" data-bs-toggle="tab" data-bs-target="#CustomFields" type="button" role="tab" aria-controls="CustomFields" aria-selected=@String.Format("nav-link{0}", SelectedTabId == "CustomFields-tab" ? "true" : "false")>Custom Fields</a>
+        </li>
+    </ul>
+    
+    <div class="tab-content">        
+         <div class=@String.Format("tab-pane{0}", SelectedTabId=="Items-tab" ? " active": null) id="Items" role="tabpanel" aria-labelledby="Items-tab">                    
+            <Grid @ref="@SalesOrderLinesGrid" Name="SalesOrderLines" Cells="@SalesOrderLinesGridCells" CellButtonClicked="@SalesOrderLinesGrid_CellButtonClicked" CellChanged="@SalesOrderLinesGrid_CellChanged" DisplayMethod="@DisplaySalesOrderLines" />
+            <div class="row">
+                <div class="col-4">
+                <Grid @ref="@FreightGrid" Name="Freight" Cells="@FreightGridCells" CellChanged="@FreightGrid_CellChanged" DisplayMethod="@DisplayFreight" />
+                </div>
+                <div class="col-2">
+                </div>
+                <div class="col-4">
+                <Grid @ref="@TotalsGrid" Name="Totals" Cells="@TotalsGridCells" DisplayMethod="@DisplayTotals" />
+                </div>
+            </div>                
+
+            @if (IsEditable)
+            {
+                <button @onclick="(() => AddItemDialog.Open())" type="button" class="btn btn-success">
+                    Add Item
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="-6 -6 48 48">
+                        <circle cx="16" cy="16" r="14" style="stroke: white;stroke-width:2" fill="transparent" />
+                        <line x1="16" y1="6" x2="16" y2="26" style="stroke: white;stroke-width:2" />
+                        <line x1="6" y1="16" x2="26" y2="16" style="stroke: white;stroke-width:2" />
+                    </svg>
+                </button>
+                <button @onclick="(() => AddSalesOrderCommentLine())" type="button" class="btn btn-success">
+                    Add Comment
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="-6 -6 48 48">
+                        <circle cx="16" cy="16" r="14" style="stroke: white;stroke-width:2" fill="transparent" />
+                        <line x1="16" y1="6" x2="16" y2="26" style="stroke: white;stroke-width:2" />
+                        <line x1="6" y1="16" x2="26" y2="16" style="stroke: white;stroke-width:2" />
+                    </svg>
+                </button>
+            }            
+        </div>
+
+        <div class=@String.Format("tab-pane{0}", SelectedTabId=="Shipping-tab" ? " active": null) id="Addresses" role="tabpanel" aria-labelledby="Shipping-tab">
+            <div class="d-grid gap-3">
+                <div></div>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Shipping Address</h5>
+
+                        <div class="row">
+                            <div class="col-3">
+                                <label for="DeliveryAddressee" class="form-label">Addressee</label>
+                                @if (!IsEditable)
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressee" readonly placeholder="@salesOrder.DeliveryAddressee">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressee" value="@salesOrder.DeliveryAddressee" @onchange="async (e) =>
+                                        {
+                                            await SalesOrderChanged(e, (dtoSalesOrder) => { dtoSalesOrder.DeliveryAddressee = e.Value.ToString(); });
+                                        }">
+                                }
+                            </div>
+                            <div class="col-3">
+                                <label for="DeliveryAddressContactName" class="form-label">Contact Name</label>
+                                @if (!IsEditable)
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressContactName" readonly placeholder="@salesOrder.DeliveryAddressContactName">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressContactName" value="@salesOrder.DeliveryAddressContactName" @onchange="async (e) =>
+                                        {
+                                           await SalesOrderChanged(e, (dtoSalesOrder) => { dtoSalesOrder.DeliveryAddressContactName = e.Value.ToString(); });
+                                        }">
+                                }
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-3">
+                                <label for="DeliveryAddress1" class="form-label">Address 1</label>
+                                @if (!IsEditable)
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddress1" readonly placeholder="@salesOrder.DeliveryAddress1">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddress1" value="@salesOrder.DeliveryAddress1" @onchange="async (e) =>
+                                        {
+                                            await SalesOrderChanged(e, (dtoSalesOrder) => { dtoSalesOrder.DeliveryAddress1 = e.Value.ToString(); });
+                                        }">
+                                }
+                            </div>
+                            <div class="col-3">
+                                <label for="DeliveryAddress2" class="form-label">Address 2</label>
+                                @if (!IsEditable)
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddress2" readonly placeholder="@salesOrder.DeliveryAddress2">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddress2" value="@salesOrder.DeliveryAddress2" @onchange="async (e) =>
+                                        {
+                                            await SalesOrderChanged(e, (dtoSalesOrder) => { dtoSalesOrder.DeliveryAddress2 = e.Value.ToString(); });
+                                        }">
+                                }
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-3">
+                                <label for="DeliveryAddressState" class="form-label">State</label>
+                                @if (!IsEditable)
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressState" readonly placeholder="@salesOrder.DeliveryAddressState">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressState" value="@salesOrder.DeliveryAddressState" @onchange="async (e) =>
+                                        {
+                                            await SalesOrderChanged(e, (dtoSalesOrder) => { dtoSalesOrder.DeliveryAddressState = e.Value.ToString(); });
+                                        }">
+                                }
+                            </div>
+                            <div class="col-3">
+                                <label for="DeliveryAddressSuburb" class="form-label">Suburb</label>
+                                @if (!IsEditable)
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressSuburb" readonly placeholder="@salesOrder.DeliveryAddressSuburb">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressSuburb" value="@salesOrder.DeliveryAddressSuburb" @onchange="async (e) =>
+                                            {
+                                                await SalesOrderChanged(e, (dtoSalesOrder) => { dtoSalesOrder.DeliveryAddressSuburb = e.Value.ToString(); });
+                                            }">
+                                }
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-3">
+                                <label for="DeliveryAddressPostcode" class="form-label">Postcode</label>
+                                @if (!IsEditable)
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressPostcode" readonly placeholder="@salesOrder.DeliveryAddressPostcode">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressPostcode" value="@salesOrder.DeliveryAddressPostcode" @onchange="async (e) =>
+                                        {
+                                            await SalesOrderChanged(e, (dtoSalesOrder) => { dtoSalesOrder.DeliveryAddressPostcode = e.Value.ToString(); });
+                                        }">
+                                }
+                            </div>
+                            <div class="col-3">
+                                <label for="DeliveryAddressCountry" class="form-label">Country</label>
+                                @if (!IsEditable)
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressCountry" readonly placeholder="@salesOrder.DeliveryAddressCountry">
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="DeliveryAddressCountry" value="@salesOrder.DeliveryAddressCountry" @onchange="async (e) =>
+                                        {
+                                            await SalesOrderChanged(e, (dtoSalesOrder) => { dtoSalesOrder.DeliveryAddressCountry = e.Value.ToString(); });
+                                        }">
+                                }
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-3">
+                                <label for="DeliveryAddressCourierDetails" class="form-label">Delivery Instructions</label>
+                                @if (!IsEditable)
+                                {
+                                    <textarea rows="3" class="form-control" id="DeliveryAddressCourierDetails" readonly placeholder="@salesOrder.DeliveryAddressCourierDetails"></textarea>
+                                }
+                                else
+                                {
+                                    <textarea rows="3" class="form-control" id="DeliveryAddressCourierDetails" value="@salesOrder.DeliveryAddressCourierDetails" @onchange="async (e) =>
+                                        {
+                                            await SalesOrderChanged(e, (dtoSalesOrder) => { dtoSalesOrder.DeliveryAddressCourierDetails = e.Value.ToString(); });
+                                        }">
+                                    </textarea>
+                                }
+                            </div>
+                            <div class="col-3">
+                                <label for="DeliveryAddressNotes" class="form-label">Notes</label>
+                            @if (!IsEditable)
+                                {
+                                    <textarea rows="3" class="form-control" id="DeliveryAddressNotes" readonly placeholder="@salesOrder.DeliveryAddressNotes"></textarea>
+                                }
+                                else
+                                {
+                                    <textarea rows="3" class="form-control" id="DeliveryAddressNotes" value="@salesOrder.DeliveryAddressNotes" @onchange="async (e) =>
+                                        {
+                                            await SalesOrderChanged(e, (dtoSalesOrder) => { dtoSalesOrder.DeliveryAddressNotes = e.Value.ToString(); });
+                                        }">
+                                    </textarea>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>                
+            </div>
+        </div>        
+
+        <div class=@String.Format("tab-pane{0}", SelectedTabId == "CustomFields-tab" ? " active" : null) id="CustomFields" role="tabpanel" aria-labelledby="CustomFields-tab">
+            <ul class="nav nav-tabs" id="CustomFieldsTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                <a @onclick='(() => OnSelectCustomFieldsTab("OrderCustomFields-tab"))' class=@String.Format("nav-link{0}", CustomFieldsSelectedTabId == "OrderCustomFields-tab" ? " active" : null) id="OrderCustomFields-tab" data-bs-toggle="tab" data-bs-target="#OrderCustomFields" type="button" role="tab" aria-controls="OrderCustomFields" aria-selected=@String.Format("nav-link{0}", CustomFieldsSelectedTabId == "OrderCustomFields-tab" ? "true" : "false")>Order</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                <a @onclick='(() => OnSelectCustomFieldsTab("HistoryCustomFields-tab"))' class=@String.Format("nav-link{0}", CustomFieldsSelectedTabId == "HistoryCustomFields-tab" ? " active" : null) id="HistoryCustomFields-tab" data-bs-toggle="tab" data-bs-target="#HistoryCustomFields" type="button" role="tab" aria-controls="HistoryCustomFields" aria-selected=@String.Format("nav-link{0}", CustomFieldsSelectedTabId == "HistoryCustomFields-tab" ? "true" : "false")>History</a>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <div class=@String.Format("tab-pane{0}", CustomFieldsSelectedTabId == "OrderCustomFields-tab" ? " active" : null) id="OrderCustomFields" role="tabpanel" aria-labelledby="OrderCustomFields-tab">                                        
+                    <CustomFieldGrid @ref="@SalesOrderCustomFieldsGrid" Name="SalesOrderCustomFieldsGrid" PageHost="@this" CustomFields="@((WebPortalUserSessionStateContainer.WebPortalUserSession?.AuthProvider == "credentials") ? Config.StaffLogin_SalesOrderCustomFields : Config.CustomerLogin_SalesOrderCustomFields)" CustomFieldValuesHost="@salesOrder" IsEditable="@IsEditable" CustomFieldChanged="@SalesOrderCustomFieldsGrid_CustomFieldChanged"></CustomFieldGrid>                    
+                </div>
+                <div class=@String.Format("tab-pane{0}", CustomFieldsSelectedTabId == "HistoryCustomFields-tab" ? " active" : null) id="HistoryCustomFields" role="tabpanel" aria-labelledby="HistoryCustomFields-tab">                                            
+            <CustomFieldGrid @ref="@SalesOrderHistoryCustomFieldsGrid" Name="SalesOrderHistoryCustomFieldsGrid" PageHost="@this" CustomFields="@((WebPortalUserSessionStateContainer.WebPortalUserSession?.AuthProvider == "credentials") ? Config.StaffLogin_SalesOrderHistoryCustomFields : Config.CustomerLogin_SalesOrderHistoryCustomFields)" CustomFieldValuesHost="@SelectedHistory" IsEditable="@IsEditable" CustomFieldChanged="@SalesOrderHistoryCustomFieldsGrid_CustomFieldChanged"></CustomFieldGrid>
+                </div>            
+            </div>
+        </div>
+    </div>    
+}
+@code {
+    
+}

@@ -1,0 +1,495 @@
+@page "/Products"
+@attribute [type: RenderModeInteractiveServer]
+@using System.Linq
+@using System.Globalization
+@using System.Text
+@using System.Text.Json
+@using JiwaCustomerPortal.Components.AutoQueryGrid
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using ServiceStack
+@inject ProtectedLocalStorage ProtectedLocalStore
+@inject NavigationManager NavigationManager
+@inject WebPortalUserSessionStateContainer WebPortalUserSessionStateContainer
+@inject IColourModeServices colourService
+
+<PageTitle>Products</PageTitle>
+
+@if (APIRequestInProgress)
+{
+    <Throbber></Throbber>
+}
+
+<StatusMessage Message="@statusMessage" />
+
+<div class="card mb-3">
+    <div class="card-body">
+        <label for="SearchText" class="form-label">Search</label>
+        <input type="text" class="form-control" id="SearchText" @bind="@SearchText" @oninput="@(async x => { await SearchTextChanged((string)x.Value); })" />        
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-7">
+        <JiwaAPIAutoQueryGrid @ref="InventoryItemsListGrid" 
+            Model="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR"
+            QueryType="JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery"
+            AutoQuery="@v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery"
+            UseFilters="false"
+            CaptionMaps=@(new Dictionary<string, string>
+            {
+                ["PartNo"] = "Part No.",
+                ["ClassificationDescription"] = "Classification",                                              
+                ["AvailableStock"] = "Available Stock",
+                ["SellPrice"] = "List Price"                                              
+            } )
+            HiddenColumns=@(new List<string>() { "InventoryID", "RRPPrice", "Category1Description", "Category2Description", "Category3Description" })
+            NoAuthenticationTokenCallbackMethod="@NoAuthenticationToken"
+            AuthType="AuthTypes.JiwaAPISessionId"
+            APIExceptionCallbackMethod="@APIException"
+            DataCellRenderFragmentCallbackMethod="@InventoryItemsListGridDataCellRenderFragment"
+            ItemSelectedCallbackMethod="@ItemSelected">
+            </JiwaAPIAutoQueryGrid>        
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card mb-3">
+            <div class="card-header">Product Details</div>
+            <div class="card-body">
+                @if (SelectedProduct == null)
+                {
+                    <div class="text-muted">Select a product to view full details.</div>
+                }
+                else
+                {
+                    @if (SelectedProduct.GalleryImages == null)
+                    {
+                        <div class="mb-3 d-flex align-items-center justify-content-center border rounded @((colourService.ColourMode == "dark") ? "bg-dark" : "bg-light")" style="height: 320px;">Loading image(s)...</div>
+                    }
+                    else
+                    {
+                        @if (SelectedProduct.GalleryImages.Count > 0)
+                        {
+                            <div class="mb-2 d-flex align-items-center justify-content-center border rounded @((colourService.ColourMode == "dark") ? "bg-dark" : "bg-light")" style="height: 320px;">
+                                @{
+                                    ProductGalleryImage? productImage = SelectedProduct.GalleryImages.FirstOrDefault(img => img.Index == SelectedProductImageIndex);
+                                }
+                                <img src="@productImage?.Source" alt="@productImage?.Title" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain;" />
+                            </div>
+
+                            @if (SelectedProduct.GalleryImages.Count > 1)
+                            {
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    @foreach (ProductGalleryImage galleryImage in SelectedProduct.GalleryImages)
+                                    {
+                                        bool isActive = galleryImage.Index == SelectedProductImageIndex;
+                                        <button class="btn btn-sm @(isActive ? "btn-primary" : "btn-outline-secondary")" @onclick="(() => SelectedProductImageIndex = galleryImage.Index)" title="@galleryImage.Title">@galleryImage.Title</button>
+                                    }
+                                </div>
+                            }
+                        }
+                    }
+
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Part No.</dt>
+                        <dd class="col-sm-8">@SelectedProduct.Product.PartNo</dd>
+
+                        <dt class="col-sm-4">Description</dt>
+                        <dd class="col-sm-8">@SelectedProduct.Product.Description</dd>
+
+                        <dt class="col-sm-4">Classification</dt>
+                        <dd class="col-sm-8">@SelectedProduct.Product.ClassificationDescription</dd>
+
+                        <dt class="col-sm-4">Category Path</dt>
+                        <dd class="col-sm-8">@ProductCategoryPath(SelectedProduct.Product)</dd>
+
+                        @if (WebPortalUserSessionStateContainer.WebPortalUserSession?.AuthProvider == "credentials")
+                        {
+                            <dt class="col-sm-4">Stock on Hand</dt>
+                            <dd class="col-sm-8">@FormatStockOnHand(SelectedProduct.Product)</dd>
+                        }
+
+                        <dt class="col-sm-4">Available Stock</dt>
+                        <dd class="col-sm-8">@Config.FormattedDecimals(SelectedProduct.Product.AvailableStock, SelectedProduct.Product.QuantityDecimalPlaces, true)</dd>
+
+                        <dt class="col-sm-4">List Price</dt>
+                        <dd class="col-sm-8">@Config.FormattedCurrency(SelectedProduct.Product.SellPrice, Config.LocalCurrency.RecID) @Config.LocalCurrency.ShortName</dd>
+
+                        @if (WebPortalUserSessionStateContainer.WebPortalUserSession?.AuthProvider != "credentials")
+                        {
+                            <dt class="col-sm-4">Your Price</dt>
+                            if(SelectedProduct.CustomerSpecificPrice == null)
+                            {
+                                <dd class="col-sm-8">Loading...</dd>
+                            }
+                            else
+                            {
+                                <dd class="col-sm-8">@Config.FormattedCurrency(SelectedProduct.CustomerSpecificPrice, Config.LocalCurrency.RecID) @Config.LocalCurrency.ShortName</dd>
+                            }                            
+                        }
+
+                        <dt class="col-sm-4">RRP</dt>
+                        <dd class="col-sm-8">@Config.FormattedCurrency(SelectedProduct.Product.RRPPrice, Config.LocalCurrency.RecID) @Config.LocalCurrency.ShortName</dd>
+                    </dl>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private const int PageSize = 25;
+
+    // APIRequestInProgress cannot be simply set to true and restored to original state, due to race conditions arising from asynchronous
+    // calls - so we use a counter instead, and increment or decrement that - and we look at the APIRequestInProgressCount to determine if a request is currently in progress or not.
+    private int _APIRequestInProgressCount = 0;
+    public int APIRequestInProgressCount
+    {
+        get
+        {
+            return _APIRequestInProgressCount;
+        }
+        set
+        {
+            int previousValue = _APIRequestInProgressCount;
+            _APIRequestInProgressCount = value;
+
+            if ((previousValue > 0 && value == 0) || (previousValue == 0 && value > 0))
+            {
+                // only trigger a render if we're changing from 0 to >0 or >0 to 0 - otherwise we don't need to trigger a render to show the APIRequestInProgress indicator
+                InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+    public bool APIRequestInProgress => APIRequestInProgressCount > 0;
+    private string? SearchText;
+
+    private string? statusMessage;
+
+    private Dictionary<string, ProductData> ProductDataCache { get; set; } = new();
+
+    private int SelectedProductImageIndex = 0;
+
+    private CancellationTokenSource? CancellationTokenSource { get; set; } = new CancellationTokenSource();
+    private JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery { get; set; }
+    private JiwaCustomerPortal.Components.AutoQueryGrid.JiwaAPIAutoQueryGrid<JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR, JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery>? InventoryItemsListGrid { get; set; }
+
+    private ProductData? SelectedProduct { get; set; }    
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if (WebPortalUserSessionStateContainer.ProtectedLocalStore == null)
+        {
+            try
+            {
+                await WebPortalUserSessionStateContainer.SetProtectedLocalStore(ProtectedLocalStore);
+            }
+            catch (Exception ex)
+            {
+                statusMessage = ex.Message;
+                return;
+            }
+        }
+
+        if (WebPortalUserSessionStateContainer.WebPortalUserSession == null)
+        {
+            NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            return;
+        }
+
+        // AutoQueries need to be a property instantiated in the parent and not new'd in the razor defining component because we want to persist the AutoQuery properties between renders.
+        // If we don't do this, what happens is the component does not render propertly - so, for example
+        // Where the debtor transactions autoquery component returns multiple pages, selecting page 3 and then clicking on a
+        // different tab and then back to the debtor transactions tab it will still show the transactions last displayed, but the page number will be back to page 1
+        // So we instantiate the auto queries here, and in the component razor instantiation we set the AutoQuery parameter of the component to be our local declared instance here.
+        v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery = new JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery()
+        {
+            OrderBy = "PartNo",
+            Fields = "InventoryID,PartNo,Description,ClassificationDescription,AvailableStock,SellPrice,RRPPrice,Category1Description,Category2Description,Category3Description",
+            Take = 12,
+            Immutable_IN_LogicalID = Config.IN_LogicalID            
+        };
+
+        if (WebPortalUserSessionStateContainer.WebPortalUserSession?.AuthProvider != "credentials")
+        {
+            // customers can only see products that are web enabled, so we need to set the query to only return those products.
+            v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery.Immutable_WebEnabled = true;
+        }
+    }
+
+    private async Task SearchTextChanged(string NewValue)
+    {
+        try
+        {
+            CancellationTokenSource?.Cancel();
+            CancellationTokenSource?.Dispose();
+        }
+        catch (ObjectDisposedException)
+        {
+            // swallow if already disposed - we don't care
+        }
+
+        CancellationTokenSource = new CancellationTokenSource();
+
+        SearchText = NewValue;
+        v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery.PartNoContains = SearchText;
+        v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery.DescriptionContains = SearchText;
+        v_Jiwa_Inventory_Item_List_OR_ImmutableWarehouseQuery.ClassificationDescriptionContains = SearchText;
+
+        await InventoryItemsListGrid.ExecuteAutoQuery(CancellationTokenSource.Token);
+    }      
+
+    private async Task ItemSelected(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR item)
+    {
+        if (item == null)
+        {
+            return;
+        }
+
+        if (!ProductDataCache.ContainsKey(item.InventoryID))
+        {
+            var productData = new ProductData() { Product = item };
+            ProductDataCache[item.InventoryID] = productData;
+            SelectedProduct = ProductDataCache[item.InventoryID];
+
+            productData.GalleryImages = await GetImages(item);
+
+            if (WebPortalUserSessionStateContainer.WebPortalUserSession?.AuthProvider != "credentials")
+            {
+                productData.CustomerSpecificPrice = await LoadCustomerSpecificPrice(item);
+            }
+        }
+        else
+        {
+            SelectedProduct = ProductDataCache[item.InventoryID];
+        }        
+    }
+
+    private async Task<List<ProductGalleryImage>> GetImages(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR product)
+    {
+        List<ProductGalleryImage> galleryImages = new List<ProductGalleryImage>();
+        int imageIndex = 0;
+
+        // read primary picture
+        byte[]? primaryPicture = await LoadInventoryPicture(product.InventoryID);
+
+        if (primaryPicture != null && primaryPicture.Length > 0)
+        {
+            string base64 = Convert.ToBase64String(primaryPicture);
+            string source = $"data:image/png;base64,{base64}";
+            galleryImages.Add(new ProductGalleryImage() { Index = imageIndex++, Source = source, Title = string.IsNullOrWhiteSpace(product.PartNo) ? "Primary" : product.PartNo });
+        }
+
+        // read webstore images
+        JiwaFinancials.Jiwa.JiwaServiceModel.InventoryImageGETManyRequest request = new JiwaFinancials.Jiwa.JiwaServiceModel.InventoryImageGETManyRequest() { InventoryID = product.InventoryID };
+        List<JiwaFinancials.Jiwa.JiwaServiceModel.Inventory.InventoryImage> images = await SendToAPI<List<JiwaFinancials.Jiwa.JiwaServiceModel.Inventory.InventoryImage>>(request, false, false);
+
+        if (images != null)
+        {
+            foreach (JiwaFinancials.Jiwa.JiwaServiceModel.Inventory.InventoryImage image in images)
+            {
+                if (image.FileBinary != null && image.FileBinary.Length > 0)
+                {
+                    string mime = GetMimeTypeFromFileName(image.PhysicalFileName);
+                    string base64 = Convert.ToBase64String(image.FileBinary);
+                    string source = $"data:{mime};base64,{base64}";
+                    galleryImages.Add(new ProductGalleryImage() { Index = imageIndex++, Source = source, Title = image.Title ?? $"Image {galleryImages.Count + 1}" });
+                }
+            }
+        }
+
+        return galleryImages;
+    }
+
+
+    private async Task<byte[]?> LoadInventoryPicture(string inventoryId)
+    {
+        // We cannot use our SendToAPI method here because it is a generic method and we need to specify the return type as byte[] which is not a class, so we have to do this manually.
+        JiwaFinancials.Jiwa.JiwaServiceModel.InventoryPictureGETRequest pictureRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.InventoryPictureGETRequest() { InventoryID = inventoryId };
+
+        try
+        {
+            return await JiwaAPI.GetAsync<byte[]>(pictureRequest, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+        }
+        catch (ServiceStack.WebServiceException webServiceException)
+        {
+            if (webServiceException.StatusCode == 401)
+            {
+                // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            }
+            else
+            {
+                // only display the error message if it's not a 404 - because a 404 just means there is no image for this product, which is not an error condition.
+                if (webServiceException.StatusCode != 404)
+                {
+                    statusMessage = webServiceException.ErrorMessage;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+
+        return null;
+    }
+
+    private static string GetMimeTypeFromFileName(string? fileName)
+    {
+        string extension = Path.GetExtension(fileName ?? string.Empty).ToLowerInvariant();
+        return extension switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".gif" => "image/gif",
+            ".webp" => "image/webp",
+            _ => "image/png"
+        };
+    }
+
+    private async Task<decimal?> LoadCustomerSpecificPrice(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR product)
+    {
+        if (product == null || string.IsNullOrWhiteSpace(product.InventoryID))
+        {
+            return null;
+        }
+
+        JiwaFinancials.Jiwa.JiwaServiceModel.InventoryPriceGETRequest priceRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.InventoryPriceGETRequest()
+        {
+            InventoryID = product.InventoryID,
+            DebtorID = WebPortalUserSessionStateContainer.WebPortalUserSession?.DebtorID,
+            IN_LogicalID = Config.IN_LogicalID,
+            Date = DateTime.Today.Date
+        };
+
+        JiwaFinancials.Jiwa.JiwaServiceModel.Inventory.InventoryPriceGETResponse? pricing = await SendToAPI<JiwaFinancials.Jiwa.JiwaServiceModel.Inventory.InventoryPriceGETResponse>(priceRequest, false, false);
+
+        return pricing.Price;
+    } 
+
+    private string ProductCategoryPath(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR product)
+    {
+        List<string> categories = new()
+        {
+            product.Category1Description,
+            product.Category2Description,
+            product.Category3Description,
+            product.Category4Description,
+            product.Category5Description
+        };
+
+        return string.Join(" > ", categories.Where(x => !string.IsNullOrWhiteSpace(x)));
+    }
+
+    private string FormatStockOnHand(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR product)
+    {
+        decimal? stockOnHand = product.InStock ?? product.AvailableStock;
+        return Config.FormattedDecimals(stockOnHand, product.QuantityDecimalPlaces, true);
+    }
+
+    private class ProductData
+    {
+        public JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR Product { get; set; }
+        public List<ProductGalleryImage> GalleryImages { get; set; }
+        public decimal? CustomerSpecificPrice { get; set; }
+        public string CustomerPriceStatus { get; set; }
+    }
+
+    private sealed class ProductGalleryImage
+    {
+        public int Index { get; set; }
+        public string Source { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+    }       
+
+    public RenderFragment InventoryItemsListGridDataCellRenderFragment(JiwaFinancials.Jiwa.JiwaServiceModel.Tables.Or.v_Jiwa_Inventory_Item_ListOR item, string columnId)
+    {
+        // Returns a render cell fragment for the cell contents of data cells of the product search grid where we don't want the default styling to be used.
+
+        RenderFragment content = null;
+        switch (columnId)
+        {
+            case "AvailableStock":
+                content = @<td class="text-end">@Config.FormattedDecimals(item.AvailableStock, item.QuantityDecimalPlaces, true)</td>;
+                break;
+            case "SellPrice":
+                content = @<td class="text-end">@Config.FormattedCurrency(item.SellPrice, Config.LocalCurrency.RecID)</td>;
+                break;
+        }
+
+        return content;
+    }
+
+    public void NoAuthenticationToken()
+    {
+        // user had no auth token to provide - redirect to logon
+        NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+    }
+
+    public async void APIException(Exception ex)
+    {
+        // first we need to work out what type of exception this was.  If it as a 401 (Not Authenticated), then we just redirect to to the login page
+        // Anything else, we set the errorMessage property so the component displays the error to the user.
+        if (ex is ServiceStack.WebServiceException)
+        {
+            ServiceStack.WebServiceException webServiceException = (ServiceStack.WebServiceException)ex;
+            if (webServiceException.StatusCode == 401)
+            {
+                // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            }
+            else
+            {
+                statusMessage = webServiceException.ErrorMessage;
+            }
+        }
+        else
+        {
+            statusMessage = ex.Message;
+        }
+    }       
+
+    public async Task<TResponse> SendToAPI<TResponse>(IReturn<TResponse> requestDTO, bool modalThrobber = true, bool ignore404 = false)
+    {
+        if (modalThrobber)
+        {
+            APIRequestInProgressCount++;
+        }         
+        try
+        {
+            return await JiwaAPI.SendAsync(requestDTO, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+        }
+        catch (ServiceStack.WebServiceException webServiceException)
+        {
+            if (webServiceException.StatusCode == 401)
+            {
+                // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            }
+            else
+            {
+                if (ignore404 || webServiceException.GetStatus() != System.Net.HttpStatusCode.NotFound)
+                {
+                    statusMessage = webServiceException.ErrorMessage;
+                }                
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+        finally
+        {
+            if (modalThrobber)
+            {
+                APIRequestInProgressCount--;
+            }
+        }
+
+        return default(TResponse);
+    }
+}

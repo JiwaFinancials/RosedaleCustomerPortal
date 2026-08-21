@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.AspNetCore.Components;
 using ServiceStack;
 using System.IO;
@@ -10,7 +10,7 @@ using ServiceStack.DataAnnotations;
 using System.Reflection;
 using System.Threading;
 
-namespace JiwaCustomerPortal.Components
+namespace JiwaCustomerPortal.Components.AutoQueryGrid
 {
     public partial class JiwaAPIAutoQueryGrid<Model, QueryType> where QueryType : ServiceStack.IQuery
     {
@@ -32,7 +32,7 @@ namespace JiwaCustomerPortal.Components
         [Parameter]
         public List<string> HiddenColumns { get; set; } = new List<string>();
         [Parameter]
-        public Dictionary<string, string> CaptionMaps { get; set; } = new Dictionary<string, string>();  
+        public Dictionary<string, string> CaptionMaps { get; set; } = new Dictionary<string, string>();
         [Parameter]
         public bool AddSelectButtonColumn { get; set; } = false;
         [Parameter]
@@ -49,14 +49,14 @@ namespace JiwaCustomerPortal.Components
         public Func<Model, string, RenderFragment> DataCellRenderFragmentCallbackMethod { get; set; }
 
         public List<JiwaAutoQueryColumn<Model>> Columns { get; set; } = new List<JiwaAutoQueryColumn<Model>>();
-        private ServiceStack.QueryResponse<Model> Response { get; set; }        
+        private ServiceStack.QueryResponse<Model> Response { get; set; }
         public Model? SelectedItem { get; set; }
         private int APIRequestInProgressCount = 0;
 
         // APIRequestInProgress cannot be simply set to true and restored to original state, due to race conditions arising from asynchronous
         // calls - so we use a counter instead, and increment or decrement that - and we look at the APIRequestInProgressCount to determine if a request is currently in progress or not.
         public bool APIRequestInProgress => APIRequestInProgressCount > 0;
-        
+
         [Inject] public IJSRuntime JS { get; set; }
         ElementReference? refResults;
 
@@ -71,7 +71,7 @@ namespace JiwaCustomerPortal.Components
         protected override async Task OnInitializedAsync()
         {
             await base.OnInitializedAsync();
-            
+
             if (AutoQuery == null)
             {
                 return;
@@ -146,7 +146,7 @@ namespace JiwaCustomerPortal.Components
                         column.DisplayOrder = Columns.Count + 1;
                         Columns.Add(column);
                     }
-                }                
+                }
             }
 
             // Autoquery query models have property names which start with the model property name,
@@ -160,7 +160,7 @@ namespace JiwaCustomerPortal.Components
             //  public virtual string[] OrderNoIn { get; set; }
             //
             // Each of the filters for each column can be one of these properties.
-            
+
             foreach (JiwaAutoQueryColumn<Model> column in Columns)
             {
                 foreach (System.Reflection.PropertyInfo queryPropertyInfo in QueryModelProperties)
@@ -196,7 +196,7 @@ namespace JiwaCustomerPortal.Components
             if (AutoQuery.Take == null)
             {
                 AutoQuery.Take = 100;
-            }            
+            }
 
             await ExecuteAutoQuery();
 
@@ -214,7 +214,7 @@ namespace JiwaCustomerPortal.Components
         }
 
         public async Task ExecuteAutoQuery(CancellationToken cancellationToken = default)
-        {            
+        {
             if (cancellationToken == default)
             {
                 // create our own cancellation token
@@ -362,8 +362,8 @@ namespace JiwaCustomerPortal.Components
                 {
                     Response = await JiwaAPI.GetAsync<QueryResponse<Model>>(AutoQuery, jiwaAPISessionId: WebPortalUserSessionStateContainer?.WebPortalUserSession?.Id, cancellationToken: cancellationToken);
                 }
-            }            
-            catch(OperationCanceledException)
+            }
+            catch (OperationCanceledException)
             {
                 //swallow
             }
@@ -532,9 +532,11 @@ namespace JiwaCustomerPortal.Components
         }
         #endregion
 
-        public async Task OnColumnHeaderClick(JiwaAutoQueryColumn<Model> column)
+        public Task OnColumnHeaderClick(JiwaAutoQueryColumn<Model> column)
         {
             ShowFilterDialogColumn = column;
+
+            return Task.CompletedTask;
         }
 
         public async void FilterClosed(bool resultOK)
@@ -561,7 +563,7 @@ namespace JiwaCustomerPortal.Components
                 return "";
             }
         }
-       
+
         public async void OnSelectItem(Model item)
         {
             SelectedItem = item;
@@ -571,7 +573,7 @@ namespace JiwaCustomerPortal.Components
             }
         }
 
-        public async void OnRowClick(Model item)
+        public void OnRowClick(Model item)
         {
             if (AddSelectButtonColumn)
             {
