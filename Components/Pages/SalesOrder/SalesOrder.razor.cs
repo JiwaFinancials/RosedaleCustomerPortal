@@ -223,7 +223,10 @@ namespace JiwaCustomerPortal.Components.Pages.SalesOrder
                     // set a cell span
                     SalesOrderLinesGridCells["PartNo", row].ColSpan = 10 + ((IsEditable) ? 1 : 0);
 
-                    SalesOrderLinesGridCells["Bin", row].IsEditable = IsEditable;
+                    if (SalesOrderLinesGridCells.Columns["Bin"] != null)
+                    {
+                        SalesOrderLinesGridCells["Bin", row].IsEditable = IsEditable;
+                    }
                 }
                 else
                 {
