@@ -165,6 +165,56 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel
 }
 #endregion
 
+#region "Events"
+[Route("/CustomerWebPortal/Events/Eligible", "GET")]
+[ApiResponse(Description = "OK", StatusCode = 200)]
+[ApiResponse(Description = "Not authenticated", StatusCode = 401)]
+[ApiResponse(Description = "Not authorised", StatusCode = 403)]
+public class CustomerWebPortalEligibleEventsGETRequest : IReturn<List<EligibleEvent>>
+{
+}
+
+[Route("/CustomerWebPortal/Events/{EventID}/Sessions/{SessionID}/Register", "POST")]
+[ApiResponse(Description = "Registered OK", StatusCode = 200)]
+[ApiResponse(Description = "Not authenticated", StatusCode = 401)]
+[ApiResponse(Description = "Not authorised", StatusCode = 403)]
+[ApiResponse(Description = "Event or Session ID provided not found", StatusCode = 404)]
+[ApiResponse(Description = "Debtor contact already registered or session is full", StatusCode = 409)]
+public class CustomerWebPortalRegisterSessionPOSTRequest : IReturnVoid
+{
+}
+
+[Route("/CustomerWebPortal/Events/{EventID}/Sessions/{SessionID}/Deregister", "POST")]
+[ApiResponse(Description = "Registered OK", StatusCode = 200)]
+[ApiResponse(Description = "Not authenticated", StatusCode = 401)]
+[ApiResponse(Description = "Not authorised", StatusCode = 403)]
+[ApiResponse(Description = "Event or Session ID provided not found", StatusCode = 404)]
+[ApiResponse(Description = "Debtor contact is not registered for session, and so cannot Deregister", StatusCode = 409)]
+public class CustomerWebPortalDeregisterSessionPOSTRequest : IReturnVoid
+{
+}
+
+public class EligibleEvent
+{
+    public Guid EventID { get; set; }
+    public string EventNo { get; set; }
+    public string Title { get; set; }
+    public string Summary { get; set; }
+    public int? MaxAttendees { get; set; }
+    public int SessionDurationInMinutes { get; set; }
+    public List<EventSession> EventSessions { get; set; } = new List<EventSession>();
+    public bool isExpanded { get; set; } // indicates if the session details are expanded in the UI
+}
+
+public class EventSession
+{
+    public Guid SessionID { get; set; }
+    public DateTimeOffset SessionStartDateTime { get; set; }
+    public int NumberRegisteredAttendees { get; set; }
+    public bool IsRegistered { get; set; }
+}
+#endregion
+
 // Everything below was obtained by visiting http://{API Hostname}/types/csharp, which generates all the DTO classes for the API, and copy pasting into here only the DTOs needed
 
 #region "Web Portal DTOs - added to the API by the Customer Web Portal Plugin"
