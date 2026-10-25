@@ -182,16 +182,20 @@ public class CustomerWebPortalEligibleEventsGETRequest : IReturn<List<EligibleEv
 [ApiResponse(Description = "Debtor contact already registered or session is full", StatusCode = 409)]
 public class CustomerWebPortalRegisterSessionPOSTRequest : IReturnVoid
 {
+    public string EventID { get; set; }
+    public string SessionID { get; set; }
 }
 
-[Route("/CustomerWebPortal/Events/{EventID}/Sessions/{SessionID}/Deregister", "POST")]
-[ApiResponse(Description = "Registered OK", StatusCode = 200)]
+[Route("/CustomerWebPortal/Events/{EventID}/Sessions/{SessionID}/Deregister", "DELETE")]
+[ApiResponse(Description = "Deregistered OK", StatusCode = 204)]
 [ApiResponse(Description = "Not authenticated", StatusCode = 401)]
 [ApiResponse(Description = "Not authorised", StatusCode = 403)]
 [ApiResponse(Description = "Event or Session ID provided not found", StatusCode = 404)]
 [ApiResponse(Description = "Debtor contact is not registered for session, and so cannot Deregister", StatusCode = 409)]
-public class CustomerWebPortalDeregisterSessionPOSTRequest : IReturnVoid
+public class CustomerWebPortalDeregisterSessionDELETERequest : IReturnVoid
 {
+    public string EventID { get; set; }
+    public string SessionID { get; set; }
 }
 
 public class EligibleEvent

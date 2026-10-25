@@ -1,4 +1,5 @@
 ﻿using ServiceStack;
+using ServiceStack.Text.Pools;
 
 namespace JiwaCustomerPortal.Components.Pages
 {
@@ -27,8 +28,10 @@ namespace JiwaCustomerPortal.Components.Pages
         }
         public bool APIRequestInProgress => APIRequestInProgressCount > 0;
         private string? statusMessage;
+        private bool DisplayDeregisterConfirmationModalDialog { get; set; } = false;
+        private bool DisplayRegisterConfirmationModalDialog { get; set; } = false;
 
-        List<EligibleEvent> EligibleEvents { get; set; } = new List<EligibleEvent>();
+        List <EligibleEvent> EligibleEvents { get; set; } = new List<EligibleEvent>();
 
         protected override async Task OnInitializedAsync()
         {
@@ -90,15 +93,120 @@ namespace JiwaCustomerPortal.Components.Pages
             return default(TResponse);
         }
 
+        private async Task SendToAPI(IReturnVoid requestDTO)
+        {
+            APIRequestInProgressCount++;
+            try
+            {
+                await JiwaAPI.PostAsync<ServiceStack.IReturnVoid>(requestDTO, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+            }
+            catch (ServiceStack.WebServiceException webServiceException)
+            {
+                if (webServiceException.StatusCode == 401)
+                {
+                    // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                    WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                    NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+                }
+                else
+                {
+                    statusMessage = webServiceException.ErrorMessage;
+                }
+            }
+            catch (Exception ex)
+            {
+                statusMessage = ex.Message;
+            }
+            finally
+            {
+                APIRequestInProgressCount--;
+            }
+        }
+
+        private async Task DeleteFromAPI(IReturnVoid requestDTO)
+        {
+            APIRequestInProgressCount++;
+            try
+            {
+                await JiwaAPI.DeleteAsync<ServiceStack.IReturnVoid>(requestDTO, WebPortalUserSessionStateContainer.WebPortalUserSession.Id, null);
+            }
+            catch (ServiceStack.WebServiceException webServiceException)
+            {
+                if (webServiceException.StatusCode == 401)
+                {
+                    // We are either not authenticated, or our token we have expired, go log on - but first clear any session info as it's no good no more.
+                    WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                    NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+                }
+                else
+                {
+                    statusMessage = webServiceException.ErrorMessage;
+                }
+            }
+            catch (Exception ex)
+            {
+                statusMessage = ex.Message;
+            }
+            finally
+            {
+                APIRequestInProgressCount--;
+            }
+        }
+
         private async Task ToggleViewSessions(EligibleEvent eligibleEvent)
         {
             eligibleEvent.isExpanded = !eligibleEvent.isExpanded;
             //StateHasChanged();
         }
 
-        private async Task RegisterAttendance(EventSession eventSession)
-        {            
+        private async Task RegisterAttendance(EligibleEvent eligibleEvent, EventSession eventSession)
+        {
+            CustomerWebPortalRegisterSessionPOSTRequest customerWebPortalRegisterSessionPOSTRequest = new CustomerWebPortalRegisterSessionPOSTRequest() 
+            { 
+                EventID = eligibleEvent.EventID.ToString(),
+                SessionID = eventSession.SessionID.ToString()
+            };
+            await SendToAPI(customerWebPortalRegisterSessionPOSTRequest);
+
+            // store the expanded states of the events, so when we re-read we can re-displaythem with the same states
+
+            DisplayRegisterConfirmationModalDialog = true;
             //StateHasChanged();
+        }
+
+        private async Task DeregisterAttendance(EligibleEvent eligibleEvent, EventSession eventSession)
+        {
+            CustomerWebPortalDeregisterSessionDELETERequest customerWebPortalDeregisterSessionDELETERequest = new CustomerWebPortalDeregisterSessionDELETERequest()
+            {
+                EventID = eligibleEvent.EventID.ToString(),
+                SessionID = eventSession.SessionID.ToString()
+            };
+            await DeleteFromAPI(customerWebPortalDeregisterSessionDELETERequest);
+            DisplayDeregisterConfirmationModalDialog = true;
+            RereadEventsAndPreserveExpandedState();
+            //StateHasChanged();
+        }
+
+        public async void AttendanceConfirmationDialogClosed()
+        {
+            DisplayDeregisterConfirmationModalDialog = false;
+            DisplayRegisterConfirmationModalDialog = false;
+            RereadEventsAndPreserveExpandedState();
+            //StateHasChanged();
+        }
+
+        public async void RereadEventsAndPreserveExpandedState()
+        {
+            List<Guid> ExpandedEventIDs = EligibleEvents.Where(x => x.isExpanded).Select(x => x.EventID).ToList();
+
+            CustomerWebPortalEligibleEventsGETRequest customerWebPortalEligibleEventsGETRequest = new CustomerWebPortalEligibleEventsGETRequest();
+            EligibleEvents = await SendToAPI<List<EligibleEvent>>(customerWebPortalEligibleEventsGETRequest);
+
+            foreach(EligibleEvent eligibleEvent in EligibleEvents)
+            {
+                eligibleEvent.isExpanded = ExpandedEventIDs.Contains(eligibleEvent.EventID);
+            }
+            StateHasChanged();
         }
     }
 }
