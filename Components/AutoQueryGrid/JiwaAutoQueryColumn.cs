@@ -1,6 +1,4 @@
-﻿using JiwaCustomerPortal.Components;
-
-namespace JiwaCustomerPortal
+﻿namespace JiwaCustomerPortal.Components.AutoQueryGrid
 {
     public enum AuthTypes
     {
@@ -30,7 +28,7 @@ namespace JiwaCustomerPortal
         {
             this.Id = Id;
             IsHidden = true;
-        }        
+        }
 
         public int DisplayOrder
         {

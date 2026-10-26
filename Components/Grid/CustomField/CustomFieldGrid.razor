@@ -1,0 +1,198 @@
+﻿@attribute [type: RenderModeInteractiveServer]
+@using JiwaCustomerPortal.Components.Grid.CellType
+
+<Grid @ref="@CustomFieldsGrid" Name="@Name" Cells="@CustomFieldsGridCells" CellButtonClicked="@Grid_CellButtonClicked" CellChanged="@Grid_CellChanged" DisplayMethod="@DisplayCustomFields" />
+
+@code {
+    [Parameter]
+    public string Name { get; set; }
+
+    [Parameter]
+    public List<JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields.CustomField> CustomFields { get; set; }
+
+    [Parameter]
+    public ICustomFieldValuesHost CustomFieldValuesHost { get; set; }
+
+    [Parameter]
+    public bool IsEditable { get; set; } = false;
+
+    [Parameter]
+    public EventCallback<(JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields.CustomField, Cell, ChangeEventArgs)> CustomFieldChanged { get; set; }
+
+    [Parameter]
+    public ICustomFieldPageHost PageHost { get; set; }
+
+    private Grid CustomFieldsGrid { get; set; }
+    private Components.Grid.CellArray CustomFieldsGridCells { get; set; }
+
+    private bool CustomFieldsGridInitialised { get; set; } = false;    
+
+    protected override async Task OnInitializedAsync()
+    {        
+        await base.OnInitializedAsync();
+
+        await InitialiseCustomFieldsGrid();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {        
+        await DisplayCustomFields();
+        await base.OnParametersSetAsync();
+    }
+
+    public async Task InitialiseCustomFieldsGrid()
+    {
+        CustomFieldsGridCells = new Components.Grid.CellArray();        
+        CustomFieldsGridCells.Columns.Add(new Column("CustomSettingID", new Components.Grid.CellType.TextCellType(), "CustomSettingID") { IsVisible = false, Width = 100 });
+        CustomFieldsGridCells.Columns.Add(new Column("ItemNo", new Components.Grid.CellType.IntegerCellType() { MinValue = 1 }, "Item No.") { Width = 10 });
+        CustomFieldsGridCells.Columns.Add(new Column("PluginName", new Components.Grid.CellType.TextCellType(), "Plugin Name") { Width = 50 });
+        CustomFieldsGridCells.Columns.Add(new Column("SettingName", new Components.Grid.CellType.TextCellType(), "Setting Name") { Width = 100 });
+        CustomFieldsGridCells.Columns.Add(new Column("Contents", new Components.Grid.CellType.TextCellType(), "Contents") { Width = 50 });
+
+        if (IsEditable)
+        {
+            CustomFieldsGridCells.Columns.Add(new Column("Lookup", new Components.Grid.CellType.ButtonCellType() { ButtonType = Components.Grid.CellType.ButtonCellType.ButtonTypes.Lookup }, "") { Width = 10 });
+        }        
+    }
+
+    public async Task DisplayCustomFields()
+    {
+        CustomFieldsGridCells.RowCount = 0;
+        foreach (JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields.CustomField customField in CustomFields)
+        {
+            CustomFieldsGridCells.RowCount++;
+            await DisplayCustomField(customField, CustomFieldsGridCells.RowCount - 1);
+        }
+    }
+
+    public async Task DisplayCustomField(JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields.CustomField customField, int row = -1)
+    {
+        if (row == -1)
+        {
+            // find the row for this salesOrderLine
+            row = CustomFieldsGridCells.RowFromCellKeyValue("CustomSettingID", customField.SettingID);
+        }
+
+        if (row != -1)
+        {
+            CustomFieldsGridCells["CustomSettingID", row].Value = customField.SettingID;
+            CustomFieldsGridCells["ItemNo", row].Value = row + 1;
+
+            CustomFieldsGridCells["PluginName", row].Value = customField.PluginName;
+            CustomFieldsGridCells["SettingName", row].Value = customField.SettingName;
+
+            switch(customField.CellType)
+            {
+                case JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields.CellTypes.Checkbox:
+                    CheckboxCellType checkboxCellType = new CheckboxCellType();
+                    CustomFieldsGridCells["Contents", row].CellType = checkboxCellType;
+                    break;
+
+                case JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields.CellTypes.Combo:
+                    ComboCellType comboCellType = new ComboCellType();
+                    comboCellType.ComboKeyValuePairs = customField.ComboKeyValuePairs;                    
+                    CustomFieldsGridCells["Contents", row].CellType = comboCellType;                    
+                    break;
+
+                case JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields.CellTypes.Date:
+                    DateCellType dateCellType = new DateCellType();
+                    CustomFieldsGridCells["Contents", row].CellType = dateCellType;
+                    break;
+
+                case JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields.CellTypes.Float:
+                    DecimalCellType decimalCellType = new DecimalCellType();
+                    decimalCellType.MinDecimalPlaces = customField.DecimalPlaces ?? 2;
+                    decimalCellType.MaxDecimalPlaces = customField.DecimalPlaces ?? 2;
+                    decimalCellType.MinValue = customField.DecimalMinValue ?? decimal.MinValue;
+                    decimalCellType.MaxValue = customField.DecimalMaxValue ?? decimal.MaxValue;
+                    CustomFieldsGridCells["Contents", row].CellType = decimalCellType;
+                    break;
+
+                case JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields.CellTypes.Integer:
+                    IntegerCellType integerCellType = new IntegerCellType();
+                    integerCellType.MinValue = customField.IntegerMinValue ?? int.MinValue;
+                    integerCellType.MaxValue = customField.IntegerMaxValue ?? int.MaxValue;
+                    CustomFieldsGridCells["Contents", row].CellType = integerCellType;
+                    break;
+
+                case JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields.CellTypes.Text:
+                    TextCellType textCellType = new TextCellType();
+                    textCellType.MaxLength = customField.TextMaxLength ?? 255;
+                    CustomFieldsGridCells["Contents", row].CellType = textCellType;
+                    break;
+
+                case JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields.CellTypes.Lookup:
+                    CustomFieldsGridCells["Contents", row].CellType = new Components.Grid.CellType.TextCellType();
+                    break;                
+            }
+
+            string? displayValue = null;
+
+            JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields.CustomFieldValue customFieldValue = CustomFieldValuesHost.CustomFieldValues?.FirstOrDefault(x => x.SettingID == customField.SettingID);
+
+            if (customFieldValue != null)
+            {
+                if (customField.CellType == JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields.CellTypes.Lookup)
+                {
+                    if (customFieldValue.DisplayValue == null)
+                    {
+                        displayValue = await CustomFieldLookupDisplayResolver.ResolveCustomFieldDisplayValue(PageHost, customField, customFieldValue);
+                    }
+                    else
+                    {
+                        displayValue = customFieldValue.DisplayValue;
+                    }
+
+                    customFieldValue.DisplayValue = displayValue;
+                }
+                else
+                {
+                    displayValue = customFieldValue.Contents;
+                }
+            }
+
+            CustomFieldsGridCells["Contents", row].Value = displayValue;
+
+            if (customField.CellType == JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields.CellTypes.Lookup)
+            {
+                CustomFieldsGridCells["Contents", row].IsEditable = false;
+                if (CustomFieldsGridCells.Columns["Lookup"] != null)
+                {
+                    CustomFieldsGridCells["Lookup", row].IsEditable = true;
+                }                
+            }
+            else
+            {
+                CustomFieldsGridCells["Contents", row].IsEditable = IsEditable;
+
+                if (CustomFieldsGridCells.Columns["Lookup"] != null)
+                {
+                    CustomFieldsGridCells["Lookup", row].IsEditable = false;                
+                }
+            }            
+        }
+    }
+
+    public async Task Grid_CellButtonClicked(Cell cell)
+    {        
+        JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields.CustomField customField = CustomFields.Where(x => x.SettingID == CustomFieldsGridCells["CustomSettingID", cell.Row].Value).FirstOrDefault();
+
+        if (customField != null)
+        {
+            CustomFieldLookupRenderFragmentGlobals customFieldLookupRenderFragmentGlobals = new CustomFieldLookupRenderFragmentGlobals() { CustomFieldLookupRenderFragment = PageHost.CustomFieldLookupRenderFragment, Host = PageHost, CustomField = customField, CustomFieldValuesHost = CustomFieldValuesHost };
+            await CustomFieldLookupButtonClickHandler.CustomFieldLookupButtonClick(PageHost, customField, customFieldLookupRenderFragmentGlobals);
+            await InvokeAsync(StateHasChanged);            
+        }        
+    }
+
+    public async Task Grid_CellChanged((Cell cell, ChangeEventArgs e) args)
+    {
+        // find the custom field for this cell
+        JiwaFinancials.Jiwa.JiwaServiceModel.CustomFields.CustomField customField = CustomFields.Where(x => x.SettingID == CustomFieldsGridCells["CustomSettingID", args.cell.Row].Value).FirstOrDefault();
+        if (customField != null)
+        {            
+            var eventData = (customField, args.cell, args.e);
+            await CustomFieldChanged.InvokeAsync(eventData);
+        }
+    }
+}

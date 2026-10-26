@@ -1,4 +1,5 @@
 using JiwaCustomerPortal.Components;
+using ServiceStack;
 using JiwaCustomerPortal.Options;
 using Microsoft.AspNetCore.Components;
 using System.Net;
@@ -11,10 +12,18 @@ namespace JiwaCustomerPortal
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Host.UseWindowsService();
+
             ConfigurationManager configuration = builder.Configuration;
             Config.ShowDiagnostics = configuration.GetValue<bool>("ShowDiagnostics");
-            Config.JiwaAPIURL = configuration.GetSection("JiwaAPIURL").Value;
-            Config.JiwaAPIKey = configuration.GetSection("JiwaAPIKey").Value;
+            Config.JiwaAPIURL = configuration.GetValue<string>("JiwaAPIURL");
+            Config.JiwaAPIKey = configuration.GetValue<string>("JiwaAPIKey");
+            Config.AllowCustomerLogin = configuration.GetValue<bool>("AllowCustomerLogin");
+            Config.AllowStaffLogin = configuration.GetValue<bool>("AllowStaffLogin");
+            Config.CustomFieldsToDisplay = configuration.GetSection("CustomFieldsToDisplay").Get<JiwaCustomerPortal.CustomFieldsToDisplay>();
+
+            // HttpClient Factory Registration
+            //builder.Services.AddJsonApiClient(Config.JiwaAPIURL); TODO: Find a way for our static JiwaAPI class to use DI to get the JsonApiClient instead of creating it's own instances. The recommended way of using any HttpClient is by using a factory
 
             builder.Services.Configure<UploadPortalOptions>(configuration.GetSection(UploadPortalOptions.SectionName));
             builder.Services.AddScoped(sp => new HttpClient
@@ -29,15 +38,15 @@ namespace JiwaCustomerPortal
             try
             {
                 Task readConfigTask = Task.Run(async () =>
-                    {
-                        await Config.ReadSettingsFromAPI();
-                    });
+                {
+                    await Config.ReadSettingsFromAPI();
+                });
                 readConfigTask.Wait();
-            }            
+            }
             catch (Exception ex)
             {
                 // wrap the exception with something more obvious to the operator what the problem is.
-                throw new Exception("Could not read the Config settings from the API - ensure the Jiwa API is running and you have configured in appsettings.json the correct value for JiwaAPIURL and JiwaAPIKey.", ex);
+                throw new Exception($"Could not read the Config settings from the API - ensure the Jiwa API is running and you have configured in appsettings.json the correct value for JiwaAPIURL and JiwaAPIKey. Also ensure route permissions are set appropriately. {ex.GetInnerMostException().Message}", ex);
             }
 
             // Add services to the container.

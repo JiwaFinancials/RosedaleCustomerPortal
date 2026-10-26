@@ -66,6 +66,7 @@ else
             return;
         }
 
+        // Request filter in the API will ensure that the below GET will 404 if the sales order does not belong to us, and we are authenticated as a debtor contact
         JiwaFinancials.Jiwa.JiwaServiceModel.InvoiceSnapshotReportGETRequest invoiceSnapshotReportGETRequest = new JiwaFinancials.Jiwa.JiwaServiceModel.InvoiceSnapshotReportGETRequest() { InvoiceHistoryID = InvoiceHistoryId, ReportID = Config.SalesOrderReport, AsAttachment = true };
         try
         {

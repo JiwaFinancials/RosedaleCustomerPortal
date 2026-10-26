@@ -1,0 +1,179 @@
+﻿@page "/Events"
+@attribute [type: RenderModeInteractiveServer]
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using ServiceStack;
+@inject ProtectedLocalStorage ProtectedLocalStore
+@inject NavigationManager NavigationManager
+@inject WebPortalUserSessionStateContainer WebPortalUserSessionStateContainer
+@inject BrowserService BrowserService
+
+<PageTitle>Events</PageTitle>
+
+@if (APIRequestInProgressCount > 0)
+{
+    <Throbber></Throbber>
+}
+
+<StatusMessage Message="@statusMessage" />
+
+@if (DisplayDeregisterConfirmationModalDialog)
+{
+    <ModalDialogOKOnly Title="Attendance Deregistered" Text="@($"Your registration of attendance of this session has been removed. You can add attendance to any session with places remaining.")" OnClose="@AttendanceConfirmationDialogClosed" />
+}
+
+@if (DisplayRegisterConfirmationModalDialog)
+{
+    <ModalDialogOKOnly Title="Attendance Registered" Text="@($"Your registration of attendance of this session has been accepted. An email confirmation has been sent, with details of the event session.")" OnClose="@AttendanceConfirmationDialogClosed" />
+}
+
+<div class="container-fluid">
+    <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Upcoming Events</h5>
+
+            @if (EligibleEvents?.Count == 0)
+            {
+                <h4>No upcoming events - check back later.</h4>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th class="text-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-expand" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13A.5.5 0 0 1 1 8M7.646.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 1.707V5.5a.5.5 0 0 1-1 0V1.707L6.354 2.854a.5.5 0 1 1-.708-.708zM8 10a.5.5 0 0 1 .5.5v3.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 14.293V10.5A.5.5 0 0 1 8 10" />
+                                    </svg>
+                                </th>
+                                <th>Title</th>
+                                <th>Summary</th>
+                                <th class="text-end">Number Sessions</th>
+                                <th class="text-end">Duration (minutes)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (EligibleEvent eligibleEvent in EligibleEvents)
+                            {
+                                <tr>
+                                    <td class="text-center">
+                                        <button @onclick="(() => ToggleViewSessions(eligibleEvent))" type="button" class="btn btn-success">
+                                            @if (eligibleEvent.isExpanded)
+                                            {
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-collapse" viewBox="0 0 16 16">
+                                                    <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13A.5.5 0 0 1 1 8m7-8a.5.5 0 0 1 .5.5v3.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 1 1 .708-.708L7.5 4.293V.5A.5.5 0 0 1 8 0m-.5 11.707-1.146 1.147a.5.5 0 0 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 11.707V15.5a.5.5 0 0 1-1 0z" />
+                                                </svg>
+                                            }
+                                            else
+                                            {
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-expand" viewBox="0 0 16 16">
+                                                    <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13A.5.5 0 0 1 1 8M7.646.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 1.707V5.5a.5.5 0 0 1-1 0V1.707L6.354 2.854a.5.5 0 1 1-.708-.708zM8 10a.5.5 0 0 1 .5.5v3.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 14.293V10.5A.5.5 0 0 1 8 10" />
+                                                </svg>
+                                            }
+                                        </button>
+                                    </td>
+
+                                    <td class="align-middle" @onclick=" (()=> ToggleViewSessions(eligibleEvent))"><h6>@eligibleEvent.Title</h6></td>
+                                    <td class="text-start align-left">@((MarkupString)eligibleEvent.Summary)</td>
+                                    <td class="text-end align-middle">@eligibleEvent.EventSessions?.Count</td>
+                                    <td class="text-end align-middle">@eligibleEvent.SessionDurationInMinutes</td>
+                                </tr>
+
+                                if (eligibleEvent.isExpanded && eligibleEvent.EventSessions != null)
+                                {
+                                    <tr>
+                                        <td></td>
+                                        <td colspan="4">
+                                            <h5>Sessions</h5>
+                                            <div class="table-responsive">
+                                                <table class="table table-bordered table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Date</th>
+                                                            <th>Time</th>
+                                                            <th class="text-end">Number Registered Attendees</th>                                                        
+                                                            <th class="text-center">Register</th>
+                                                        </tr>
+                                                    </thead>
+
+                                                    <tbody>
+                                                        @foreach (EventSession eventSession in eligibleEvent.EventSessions)
+                                                        {
+                                                            <tr>
+                                                                <td class="align-middle">@eventSession.SessionStartDateTime.ToString("dddd, dd MMMM yyyy")</td>
+                                                                <td class="align-middle">@eventSession.SessionStartDateTime.ToLocalTime().ToString("h:mm tt") - @eventSession.SessionStartDateTime.ToLocalTime().AddMinutes(eligibleEvent.SessionDurationInMinutes).ToString("h:mm tt")</td>
+                                                                @if(eventSession.IsRegistered)
+                                                                {
+                                                                    <td class="text-end align-middle">
+                                                                        <span class='badge rounded-pill bg-success'>You are registered</span>
+                                                                        @eventSession.NumberRegisteredAttendees of @eligibleEvent.MaxAttendees
+                                                                    </td>
+
+                                                                    @if (eventSession.SessionStartDateTime < DateTime.Now)
+                                                                    {
+                                                                        // session is the past, cannot deregister
+                                                                        <td class="text-center">                                                                            
+                                                                        </td>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <td class="text-center">
+                                                                            <button @onclick="(() => DeregisterAttendance(eligibleEvent, eventSession))" type="button" class="btn btn-outline-danger">
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="-6 -6 48 48">
+                                                                                    <circle cx="16" cy="16" r="14" style="stroke: white;stroke-width:2" fill="transparent" />
+                                                                                    <line x1="6" y1="16" x2="26" y2="16" style="stroke: white;stroke-width:2" />
+                                                                                </svg>
+                                                                                Deregister attendance
+                                                                            </button>
+                                                                        </td>
+                                                                    }                                                                    
+                                                                }
+                                                                else
+                                                                {
+                                                                    <td class="text-end align-middle">@eventSession.NumberRegisteredAttendees of @eligibleEvent.MaxAttendees</td>
+
+                                                                    @if (eventSession.SessionStartDateTime < DateTime.Now)
+                                                                    {
+                                                                        // session is the past, cannot register
+                                                                        <td class="text-center">
+                                                                        </td>
+                                                                    }                                                                    
+                                                                    else
+                                                                    {
+                                                                        @if (eligibleEvent.EventSessions.Count(x => x.IsRegistered) == 0)
+                                                                        {
+                                                                            <td class="text-center">
+                                                                                <button @onclick="(() => RegisterAttendance(eligibleEvent, eventSession))" type="button" class="btn btn-success">
+                                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="-6 -6 48 48">
+                                                                                        <circle cx="16" cy="16" r="14" style="stroke: white;stroke-width:2" fill="transparent" />
+                                                                                        <line x1="16" y1="6" x2="16" y2="26" style="stroke: white;stroke-width:2" />
+                                                                                        <line x1="6" y1="16" x2="26" y2="16" style="stroke: white;stroke-width:2" />
+                                                                                    </svg>
+                                                                                    Register for this session
+                                                                                </button>
+                                                                            </td>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <td class="text-center">
+                                                                            </td>
+                                                                        }
+                                                                    }
+                                                                }                                                                
+                                                                
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            </div>            
+    </div>
+</div>

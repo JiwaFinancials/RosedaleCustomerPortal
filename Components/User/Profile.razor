@@ -15,26 +15,40 @@
     <div class="col-md-6">
         @if (@WebPortalUserSessionStateContainer.WebPortalUserSession != null)
         {
-            <div class="col-md-9">
-                <label for="Organisation" class="form-label">Organisation</label>
-                <input type="text" class="form-control" id="Organisation" readonly placeholder="@WebPortalUserSessionStateContainer.WebPortalUserSession.DebtorName">
-            </div>            
-            <div class="col-md-1">
-                <label for="Title" class="form-label">Title</label>
-                <input type="text" class="form-control" id="Title" readonly placeholder="@WebPortalUserSessionStateContainer.WebPortalUserSession.DebtorContactNameTitle">
-            </div>
-            <div class="col-md-6">
-                <label for="FirstName" class="form-label">First Name</label>
-                <input type="text" class="form-control" id="FirstName" readonly placeholder="@WebPortalUserSessionStateContainer.WebPortalUserSession.DebtorContactNameFirstName">
-            </div>
-            <div class="col-md-6">
-                <label for="Surname" class="form-label">Surname</label>
-                <input type="text" class="form-control" id="Surname" readonly placeholder="@WebPortalUserSessionStateContainer.WebPortalUserSession.DebtorContactNameSurname">
-            </div>
-            <div class="col-md-6">
-                <label for="Email" class="form-label">Email</label>
-                <input type="text" class="form-control" id="Email" readonly placeholder="@WebPortalUserSessionStateContainer.WebPortalUserSession.DebtorContactNameEmailAddress">
-            </div>
+            if (@WebPortalUserSessionStateContainer.WebPortalUserSession.AuthProvider != "credentials")
+            {
+                <div class="col-md-9">
+                    <label for="Organisation" class="form-label">Organisation</label>
+                    <input type="text" class="form-control" id="Organisation" readonly placeholder="@WebPortalUserSessionStateContainer.WebPortalUserSession.DebtorName">
+                </div>            
+                <div class="col-md-1">
+                    <label for="Title" class="form-label">Title</label>
+                    <input type="text" class="form-control" id="Title" readonly placeholder="@WebPortalUserSessionStateContainer.WebPortalUserSession.DebtorContactNameTitle">
+                </div>
+                <div class="col-md-6">
+                    <label for="FirstName" class="form-label">First Name</label>
+                    <input type="text" class="form-control" id="FirstName" readonly placeholder="@WebPortalUserSessionStateContainer.WebPortalUserSession.DebtorContactNameFirstName">
+                </div>
+                <div class="col-md-6">
+                    <label for="Surname" class="form-label">Surname</label>
+                    <input type="text" class="form-control" id="Surname" readonly placeholder="@WebPortalUserSessionStateContainer.WebPortalUserSession.DebtorContactNameSurname">
+                </div>
+                <div class="col-md-6">
+                    <label for="Email" class="form-label">Email</label>
+                    <input type="text" class="form-control" id="Email" readonly placeholder="@WebPortalUserSessionStateContainer.WebPortalUserSession.DebtorContactNameEmailAddress">
+                </div>
+            }
+            else
+            {
+                <div class="col-md-6">
+                    <label for="Surname" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="Surname" readonly placeholder="@WebPortalUserSessionStateContainer.WebPortalUserSession.JiwaStaffUsername">
+                </div>
+                <div class="col-md-6">
+                    <label for="Email" class="form-label">Email</label>
+                    <input type="text" class="form-control" id="Email" readonly placeholder="@WebPortalUserSessionStateContainer.WebPortalUserSession.JiwaStaffEmailAddress">
+                </div>
+            }
 
             <p></p>
 

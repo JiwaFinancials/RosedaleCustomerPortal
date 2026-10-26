@@ -124,7 +124,7 @@
 
         // Set the colour mode
         string currentColourMode = ColourModeService.ColourMode;
-        string newColourMode = null;
+        string newColourMode = null;        
 
         try
         {
@@ -149,7 +149,7 @@
             }
 
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
             if (ex.Message.StartsWith("The payload was invalid"))
             {
@@ -160,7 +160,7 @@
                 statusMessage = ex.Message;
                 throw;
             }
-        }
+        }   
 
         Config.BootStrapVersion = await BrowserService.BootstrapVersion();
 
