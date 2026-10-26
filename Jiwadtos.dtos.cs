@@ -21,7 +21,7 @@ using JiwaCustomerPortal.Components.Pages;
 
 #region "DTOs purpose made for this app"
 
-#region "Rosedale Licence DTOs"
+#region "SoftwareForce Specific DTOs"
 public class CustomerName
 {
     public string DebtorID { get; set; }
@@ -111,6 +111,14 @@ public class WebDownloadLink
 public class WebDownloadLinksGETRequest : IReturn<List<WebDownloadLink>>
 {
 }
+
+[Route("/DebtorCategory1Description", "GET")]
+[ApiResponse(Description = "OK", StatusCode = 200)]
+[ApiResponse(Description = "Not authenticated", StatusCode = 401)]
+[ApiResponse(Description = "Not authorised", StatusCode = 403)]
+public class DebtorCategory1DescriptionGETRequest : IReturn<string>
+{
+}
 #endregion
 
 namespace JiwaFinancials.Jiwa.JiwaServiceModel
@@ -128,6 +136,7 @@ namespace JiwaFinancials.Jiwa.JiwaServiceModel
         public virtual string DebtorID { get; set; }
         public virtual string DebtorName { get; set; }
         public virtual bool IsAdminRole { get; set; }
+        public virtual string DebtorCategory1Description { get; set; }
     }    
 }
 #endregion

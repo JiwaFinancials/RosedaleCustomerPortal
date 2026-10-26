@@ -1,4 +1,6 @@
 using JiwaCustomerPortal.Components;
+using JiwaCustomerPortal.Options;
+using Microsoft.AspNetCore.Components;
 using System.Net;
 
 namespace JiwaCustomerPortal
@@ -13,6 +15,13 @@ namespace JiwaCustomerPortal
             Config.ShowDiagnostics = configuration.GetValue<bool>("ShowDiagnostics");
             Config.JiwaAPIURL = configuration.GetSection("JiwaAPIURL").Value;
             Config.JiwaAPIKey = configuration.GetSection("JiwaAPIKey").Value;
+
+            builder.Services.Configure<UploadPortalOptions>(configuration.GetSection(UploadPortalOptions.SectionName));
+            builder.Services.AddScoped(sp => new HttpClient
+            {
+                BaseAddress = new Uri(sp.GetRequiredService<NavigationManager>().BaseUri)
+            });
+            builder.Services.AddScoped<JiwaCustomerPortal.Services.UploadPortalService>();
 
             // We want to read some config settings and we should wait until thats' finished before proceediing
             // if it fails, it will throw an exception and we'll not be able to start - which is what we want because
@@ -32,8 +41,12 @@ namespace JiwaCustomerPortal
             }
 
             // Add services to the container.
+            // Large browser uploads can take several minutes; the default JS interop timeout is too short for direct Azure uploads.
             builder.Services.AddRazorComponents()
-                .AddInteractiveServerComponents();
+                .AddInteractiveServerComponents(options =>
+                {
+                    options.JSInteropDefaultCallTimeout = TimeSpan.FromMinutes(90);
+                });
 
             // only used for the /downloadlicences route
             builder.Services.AddControllers();

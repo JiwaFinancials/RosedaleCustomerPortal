@@ -68,6 +68,10 @@ namespace JiwaCustomerPortal
 
                     webPortalUserSession = jiwaAuthUserSession.ConvertTo<JiwaFinancials.Jiwa.JiwaServiceModel.WebPortalUserSession>();
                     webPortalUserSession.IsAdminRole = debtorContactNameCustomerWebPortalRoleGETResponse.Roles.Contains("Admin");
+
+                    //Get debtor category 1 for this contact
+                    webPortalUserSession.DebtorCategory1Description =  await JiwaAPI.GetAsync(new DebtorCategory1DescriptionGETRequest(), jiwaAPISessionId: jiwaAuthUserSession.Id);
+
                     await ProtectedLocalStore.SetAsync("JiwaCustomerWebPortalAuthUserSession", webPortalUserSession);
                     SetWebPortalUserSession(webPortalUserSession);
                 }

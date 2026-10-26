@@ -1,0 +1,423 @@
+@page "/Uploads"
+@attribute [type: RenderModeInteractiveServer]
+@using System.ComponentModel.DataAnnotations
+@using JiwaCustomerPortal.Models
+@inject JiwaCustomerPortal.Services.UploadPortalService UploadPortalService
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+@inject WebPortalUserSessionStateContainer WebPortalUserSessionStateContainer
+@inject ILogger<Uploads> Logger
+
+<PageTitle>Uploads</PageTitle>
+
+<div class="row">
+    <div class="col-md-8">
+        @if (_showSuccess && _success is not null)
+        {
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">Upload Complete</h2>
+                    <dl class="row">
+                        <dt class="col-sm-4">File Name</dt>
+                        <dd class="col-sm-8">@_success.FileName</dd>
+
+                        <dt class="col-sm-4">File Size</dt>
+                        <dd class="col-sm-8">@FormatFileSize(_success.FileSizeBytes)</dd>
+
+                        <dt class="col-sm-4">Upload Date/Time</dt>
+                        <dd class="col-sm-8">@_success.UploadDateUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</dd>
+
+                        <dt class="col-sm-4">Unique Upload ID</dt>
+                        <dd class="col-sm-8">@_success.UploadId</dd>
+                    </dl>
+
+                    <button type="button" class="btn btn-primary" @onclick="ResetForm">Upload Another File</button>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">Uploads</h2>
+
+                    @if (WebPortalUserSessionStateContainer.WebPortalUserSession?.DebtorCategory1Description == "Jiwa Solution Provider")
+                    {
+                        <div class="mb-3">
+                            <label class="form-label" for="customer">Customer</label>
+                            <select id="customer" class="form-select" @bind="_model.CompanyName" required>
+                                <option value="">Select customer</option>
+                                @foreach (var customer in _customerNames)
+                                {
+                                    <option value="@customer.Name">@customer.Name</option>
+                                }
+                            </select>
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label" for="supportTicket">Support Ticket Number</label>
+                        <input id="supportTicket" class="form-control" @bind="_model.SupportTicket" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="upload-file-input">File Selection</label>
+                        <input id="upload-file-input" type="file" class="form-control" accept=".bak,.bacpac,.zip,.rar,.7z,.tar,.gz,.tgz,.bz2,.xz,.cab" multiple @ref="_fileInput" @onchange="OnFileSelectionChanged" />
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(_statusMessage))
+                    {
+                        <div class="alert alert-info" role="alert">@_statusMessage</div>
+                    }
+
+                    @if (_isUploading)
+                    {
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between small text-muted mb-1">
+                                <span id="upload-progress-text">0%</span>
+                                <span id="upload-speed-text">0 MB/s</span>
+                                <span id="upload-eta-text">ETA: --</span>
+                            </div>
+                            <div class="progress" role="progressbar" aria-label="Upload progress" aria-valuemin="0" aria-valuemax="100">
+                                <div id="upload-progress-bar" class="progress-bar" style="width: 0%"></div>
+                            </div>
+                            <div id="upload-status-text" class="small text-muted mt-2">Preparing upload…</div>
+                        </div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-primary" @onclick="StartUploadAsync" disabled="@_isUploading">
+                            Upload
+                        </button>
+                        @if (_isUploading)
+                        {
+                            <button type="button" class="btn btn-outline-secondary" @onclick="CancelUploadAsync">Cancel</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private PrepareUploadRequest _model = new();
+    private List<CustomerName> _customerNames = new();
+    private ElementReference _fileInput;
+    private string? _statusMessage;
+    private bool _isUploading;
+    private bool _showSuccess;
+    private List<SelectedFileInfo> _selectedFiles = new();
+    private SelectedFileInfo? _selectedFile;
+    private PrepareUploadResponse? _uploadSession;
+    private CompleteUploadResponse? _success;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (WebPortalUserSessionStateContainer.WebPortalUserSession == null)
+        {
+            NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+            return;
+        }
+
+        var session = WebPortalUserSessionStateContainer.WebPortalUserSession;
+        var isSolutionProvider = string.Equals(session.DebtorCategory1Description, "Jiwa Solution Provider", StringComparison.Ordinal);
+
+        _model.CompanyName = isSolutionProvider ? string.Empty : session.DebtorName ?? string.Empty;
+        _model.EmailAddress = session.DebtorContactNameEmailAddress ?? string.Empty;
+
+        if (isSolutionProvider)
+        {
+            await LoadCustomerNamesAsync();
+        }
+
+        var firstName = session.DebtorContactNameFirstName ?? string.Empty;
+        var surname = session.DebtorContactNameSurname ?? string.Empty;
+        var title = session.DebtorContactNameTitle ?? string.Empty;
+        var contactNameParts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(title)) contactNameParts.Add(title);
+        if (!string.IsNullOrWhiteSpace(firstName)) contactNameParts.Add(firstName);
+        if (!string.IsNullOrWhiteSpace(surname)) contactNameParts.Add(surname);
+        _model.ContactName = string.Join(" ", contactNameParts);
+
+        await base.OnInitializedAsync();
+    }
+
+    private async Task OnFileSelectionChanged()
+    {
+        try
+        {
+            var selectedFiles = await JS.InvokeAsync<List<SelectedFileInfo>?>("uploadPortal.getSelectedFilesInfo", _fileInput);
+            _selectedFiles = selectedFiles ?? new List<SelectedFileInfo>();
+        }
+        catch (JSException ex) when (ex.Message.Contains("getSelectedFilesInfo", StringComparison.Ordinal) && ex.Message.Contains("is not a function", StringComparison.Ordinal))
+        {
+            var fileInfo = await JS.InvokeAsync<SelectedFileInfo?>("uploadPortal.getSelectedFileInfo", _fileInput);
+            _selectedFiles = fileInfo is null ? new List<SelectedFileInfo>() : new List<SelectedFileInfo> { fileInfo };
+        }
+
+        _selectedFile = _selectedFiles.FirstOrDefault();
+        if (_selectedFiles.Count == 0)
+        {
+            _statusMessage = "Please select one or more files before uploading.";
+            return;
+        }
+
+        if (_selectedFiles.Count == 1)
+        {
+            _statusMessage = $"Selected: {_selectedFiles[0].Name} ({FormatFileSize(_selectedFiles[0].SizeBytes)})";
+            return;
+        }
+
+        var fileList = string.Join(", ", _selectedFiles.Take(3).Select(file => file.Name));
+        var suffix = _selectedFiles.Count > 3 ? ", ..." : string.Empty;
+        _statusMessage = $"Selected {_selectedFiles.Count} files: {fileList}{suffix}";
+    }
+
+    private async Task StartUploadAsync()
+    {
+        var validationMessage = ValidateInput();
+        if (!string.IsNullOrWhiteSpace(validationMessage))
+        {
+            _statusMessage = validationMessage;
+            return;
+        }
+
+        if (_selectedFiles.Count == 0)
+        {
+            _statusMessage = "Please select a file to upload.";
+            return;
+        }
+
+        _isUploading = true;
+        _showSuccess = false;
+        _statusMessage = "Preparing uploads…";
+        await RefreshUploadStatusAsync("Preparing uploads…", 0, 0, "ETA: --");
+
+        try
+        {
+            var uploadedFiles = new List<CompleteUploadResponse>();
+
+            for (var fileIndex = 0; fileIndex < _selectedFiles.Count; fileIndex++)
+            {
+                var selectedFile = _selectedFiles[fileIndex];
+                var request = new PrepareUploadRequest
+                {
+                    CompanyName = _model.CompanyName,
+                    RootCompanyName = WebPortalUserSessionStateContainer.WebPortalUserSession?.DebtorCategory1Description == "Jiwa Solution Provider"
+                        ? WebPortalUserSessionStateContainer.WebPortalUserSession?.DebtorName
+                        : null,
+                    ContactName = _model.ContactName,
+                    EmailAddress = _model.EmailAddress,
+                    SupportTicket = _model.SupportTicket,
+                    FileName = selectedFile.Name,
+                    FileSizeBytes = selectedFile.SizeBytes
+                };
+
+                PrepareUploadResponse prepareUploadResponse;
+                try
+                {
+                    prepareUploadResponse = await UploadPortalService.PrepareUploadAsync(request);
+                }
+                catch (ValidationException ex)
+                {
+                    throw new InvalidOperationException(ex.Message);
+                }
+                catch
+                {
+                    throw new InvalidOperationException("Unable to prepare the upload request. Please try again.");
+                }
+
+                _uploadSession = prepareUploadResponse;
+                if (_uploadSession is null)
+                {
+                    throw new InvalidOperationException("The server did not return a valid upload session.");
+                }
+
+                await JS.InvokeVoidAsync("uploadPortal.uploadFile", new
+                {
+                    inputId = "upload-file-input",
+                    sasUrl = _uploadSession.BlobUri,
+                    uploadId = _uploadSession.UploadId,
+                    fileIndex,
+                    metadata = new
+                    {
+                        companyName = _model.CompanyName,
+                        contactName = _model.ContactName,
+                        emailAddress = _model.EmailAddress,
+                        supportTicket = _model.SupportTicket ?? string.Empty,
+                        originalFileName = selectedFile.Name,
+                        uploadDateUtc = _uploadSession.UploadDateUtc
+                    }
+                });
+
+                var finalRequest = new CompleteUploadRequest
+                {
+                    UploadId = _uploadSession.UploadId,
+                    BlobPath = _uploadSession.BlobPath,
+                    FileName = selectedFile.Name,
+                    FileSizeBytes = selectedFile.SizeBytes,
+                    CompanyName = _model.CompanyName,
+                    RootCompanyName = WebPortalUserSessionStateContainer.WebPortalUserSession?.DebtorCategory1Description == "Jiwa Solution Provider"
+                        ? WebPortalUserSessionStateContainer.WebPortalUserSession?.DebtorName
+                        : null,
+                    ContactName = _model.ContactName,
+                    EmailAddress = _model.EmailAddress,
+                    SupportTicket = _model.SupportTicket
+                };
+
+                CompleteUploadResponse completedUpload;
+                try
+                {
+                    completedUpload = await UploadPortalService.CompleteUploadAsync(finalRequest);
+                }
+                catch (ValidationException ex)
+                {
+                    throw new InvalidOperationException(ex.Message, ex);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException("The upload finished but could not be recorded. Please contact support.", ex);
+                }
+
+                uploadedFiles.Add(completedUpload);
+            }
+
+            _success = uploadedFiles.LastOrDefault();
+            _showSuccess = true;
+            _statusMessage = uploadedFiles.Count == 1
+                ? "Upload completed successfully."
+                : $"Uploaded {uploadedFiles.Count} files successfully.";
+            await RefreshUploadStatusAsync(_statusMessage, 100, 0, "ETA: 0s");
+            ResetFormInputs();
+        }
+        catch (JSException ex)
+        {
+            Logger.LogError(ex, "Direct upload failed in the browser.");
+            _statusMessage = ex.Message.Contains("cancel") ? "Upload cancelled."
+                : ex.Message.Contains("Azure Blob SDK", StringComparison.Ordinal) ? "The upload component could not be loaded. Please refresh the page and try again."
+                : "The upload failed. Please check your connection and try again.";
+            await RefreshUploadStatusAsync(_statusMessage, 0, 0, "ETA: --");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Upload workflow failed.");
+            _statusMessage = ex.Message;
+            await RefreshUploadStatusAsync(ex.Message, 0, 0, "ETA: --");
+        }
+        finally
+        {
+            _isUploading = false;
+        }
+    }
+
+    private async Task CancelUploadAsync()
+    {
+        _isUploading = false;
+        await JS.InvokeVoidAsync("uploadPortal.cancelCurrentUpload");
+        _statusMessage = "Upload cancelled.";
+        await RefreshUploadStatusAsync("Upload cancelled.", 0, 0, "ETA: --");
+    }
+
+    private async Task LoadCustomerNamesAsync()
+    {
+        try
+        {
+            var request = new LicensedCustomerNamesGETRequest();
+            _customerNames = await JiwaAPI.GetAsync(request, WebPortalUserSessionStateContainer.WebPortalUserSession?.Id, null) ?? new List<CustomerName>();
+        }
+        catch (ServiceStack.WebServiceException webServiceException)
+        {
+            if (webServiceException.StatusCode == 401)
+            {
+                WebPortalUserSessionStateContainer.SetWebPortalUserSession(null);
+                NavigationManager.NavigateTo($"User/SignIn?returnUrl={NavigationManager.Uri}");
+                return;
+            }
+
+            _statusMessage = webServiceException.ErrorMessage;
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+    }
+
+    private string ValidateInput()
+    {
+        var isSolutionProvider = WebPortalUserSessionStateContainer.WebPortalUserSession?.DebtorCategory1Description == "Jiwa Solution Provider";
+
+        if (string.IsNullOrWhiteSpace(_model.CompanyName))
+        {
+            return isSolutionProvider ? "Please select a customer." : "Company Name is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(_model.SupportTicket))
+        {
+            return "Support Ticket Number is required.";
+        }
+
+        if (_selectedFiles.Count == 0)
+        {
+            return "Please select a file to upload.";
+        }
+
+        return string.Empty;
+    }
+
+    private async Task RefreshUploadStatusAsync(string text, double percentage, double speedBytesPerSecond, string etaText)
+    {
+        await JS.InvokeVoidAsync("uploadPortal.updateStatus", new
+        {
+            text,
+            percentage,
+            speedBytesPerSecond,
+            etaText
+        });
+    }
+
+    private void ResetForm()
+    {
+        _model = new PrepareUploadRequest();
+        _selectedFiles = new List<SelectedFileInfo>();
+        _selectedFile = null;
+        _showSuccess = false;
+        _statusMessage = string.Empty;
+        _success = null;
+        _uploadSession = null;
+        ResetFormInputs();
+    }
+
+    private void ResetFormInputs()
+    {
+        _ = JS.InvokeVoidAsync("uploadPortal.clearFileInput", "upload-file-input");
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024)
+        {
+            return $"{bytes} B";
+        }
+
+        if (bytes < 1024 * 1024)
+        {
+            return $"{bytes / 1024.0:F1} KB";
+        }
+
+        if (bytes < 1024 * 1024 * 1024)
+        {
+            return $"{bytes / (1024.0 * 1024.0):F2} MB";
+        }
+
+        return $"{bytes / (1024.0 * 1024.0 * 1024.0):F2} GB";
+    }
+
+    private sealed class SelectedFileInfo
+    {
+        public string Name { get; set; } = string.Empty;
+        public long SizeBytes { get; set; }
+    }
+}
+
+

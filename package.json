@@ -1,0 +1,13 @@
+{
+  "name": "rosedale-customer-portal",
+  "private": true,
+  "scripts": {
+    "build:upload-sdk": "esbuild Scripts\\azureStorageBlob.js --bundle --platform=browser --format=esm --target=es2022 --minify --legal-comments=eof --outfile=wwwroot\\js\\vendor\\azureStorageBlob.js"
+  },
+  "dependencies": {
+    "@azure/storage-blob": "12.28.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}
