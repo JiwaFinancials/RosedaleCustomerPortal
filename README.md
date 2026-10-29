@@ -10,7 +10,7 @@
 # About
 A simple web portal which uses the Jiwa 8 REST API to provide basic account functions.
 
-Requires Jiwa 8.0.61 or later - the introduction of Staff Logins required some changes to the API and data structure which are used by the portal, so it will not work with versions of Jiwa prior to 8.0.61.
+Requires Jiwa 8.0.65 or later - the introduction of Quote Approve/Decline required some changes to the API and data structure which are used by the portal, so it will not work with versions of Jiwa prior to 8.0.65.
 
 The portal is built using ASP.NET 10 Server Side Blazor, ServiceStack Client 8.10 and Bootstrap 5.3.3
 
