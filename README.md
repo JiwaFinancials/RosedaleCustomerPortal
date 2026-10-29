@@ -35,12 +35,6 @@ Any enabled Jiwa staff member can login, or any debtor contacts with a debtor co
 If authenticated as a debtor contact, only those debtor contacts with the debtor contact name tag "Customer Web Portal - Admin" are able edit or delete contact records.
 
 For Jiwa staff members, API route permissions will control what functions they are able to perform.
-<img width="1038" height="725" alt="image" src="https://github.com/user-attachments/assets/26c84550-510c-447f-8289-5907d49d7089" />
-<img width="1038" height="725" alt="image" src="https://github.com/user-attachments/assets/a7cadaea-24ab-45a2-8086-5ffb267a0889" />
-<img width="1225" height="739" alt="image" src="https://github.com/user-attachments/assets/9a5472d2-6289-4363-9095-60f1d8f72f79" />
-
-<img width="1225" height="739" alt="image" src="https://github.com/user-attachments/assets/260624e5-de09-4707-b48f-b0876642db19" />
-<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/0a9615bd-506e-41b6-be46-b75efdb952b5" />
 
 ![image](https://github.com/user-attachments/assets/b9d36636-3e14-48a7-8b6b-0b6b35e5f8a8)
 
