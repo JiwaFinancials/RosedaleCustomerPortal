@@ -86,35 +86,71 @@ Import the user group https://github.com/JiwaFinancials/JiwaCustomerPortal/blob/
 
 ### Route permissions
 Grant the following REST API permissions to the Customer Web Portal User Group:
-1. GET /CustomerWebPortal/Role
-2. GET /CustomerWebPortal/Settings
-3. POST /Debtors/ContactNames/{ContactNameID}/PasswordReset
-4. POST /Debtors/ContactNames/{Token}/TokenisedPasswordChange
-5. GET /Sessions/Current
-6. GET /auth/logout
-7. GET /SalesOrders/{InvoiceHistoryID}/InvoiceSnapshotReport/{ReportID}
-8. GET /SalesQuotes/{QuoteHistoryID}/QuoteSnapshotReport/{ReportID}
-9. GET /Debtors/{DebtorID}/StatementReport/{ReportID}/At/{AsAtDate}
-10. GET /Debtors
-11. GET /Debtors/{DebtorID}/ContactNames
-12. POST /Debtors/{DebtorID}/ContactNames
-13. PATCH /Debtors/{DebtorID}/ContactNames/{ContactNameID}
-14. DELETE /Debtors/{DebtorID}/ContactNames/{ContactNameID}
-15. GET /Debtors/ContactNamesTag
-16. PUT /Debtors/{DebtorID}/ContactNames/{ContactNameID}/TagMembership
-17. GET /Queries/SalesOrderList
-18. GET /Queries/SalesQuoteList
-19. GET /Queries/ContactNameMultiples
-20. GET /Queries/DebtorTransactionList
-21. GET /Debtors/{DebtorID}/Backorders
-22. GET /Queries/FX_Currency
-23. GET /SystemInfo
-24. GET /Queries/StartupLog
-25. GET /Queries/PluginExceptions
-26. GET /SalesOrders/{InvoiceID}
-27. GET /SalesQuotes/{QuoteID}
 
-![image](https://github.com/user-attachments/assets/fc2ec691-f12f-429f-90c4-b9cf9395c956)
+| # | Route | Verb |
+|---|-------|------|
+| 1 | /auth/logout | GET |
+| 2 | /CustomerWebPortal/Role | GET |
+| 3 | /CustomerWebPortal/Settings | GET |
+| 4 | /Debtors | GET |
+| 5 | /Debtors/{DebtorID}/Backorders | GET |
+| 6 | /Debtors/{DebtorID}/ContactNames | POST |
+| 7 | /Debtors/{DebtorID}/ContactNames | GET |
+| 8 | /Debtors/{DebtorID}/ContactNames/{ContactNameID} | DELETE |
+| 9 | /Debtors/{DebtorID}/ContactNames/{ContactNameID} | PATCH |
+| 10 | /Debtors/{DebtorID}/ContactNames/{ContactNameID}/TagMembership | PUT |
+| 11 | /Debtors/{DebtorID}/StatementReport/{ReportID}/At/{AsAtDate} | GET |
+| 12 | /Debtors/ContactNames/{ContactNameID}/PasswordChange | POST |
+| 13 | /Debtors/ContactNames/{ContactNameID}/PasswordReset | POST |
+| 14 | /Debtors/ContactNames/{Token}/TokenisedPasswordChange | POST |
+| 15 | /Debtors/ContactNamesTag | GET |
+| 16 | /Inventory/{InventoryID}/Pricing/{DebtorID}/{IN_LogicalID}/{Date}/{Quantity} | GET |
+| 17 | /Inventory/{InventoryID}/Images | GET |
+| 18 | /Inventory/Picture | GET |
+| 19 | /Queries/ContactNameMultiples | GET |
+| 20 | /Queries/DebtorTransactionList | GET |
+| 21 | /Queries/FX_Currency | GET |
+| 22 | /Queries/OR/InventoryItemListImmutableWarehouse | GET |
+| 23 | /Queries/PluginExceptions | GET |
+| 24 | /Queries/SalesOrderList | GET |
+| 25 | /Queries/SalesQuoteList | GET |
+| 26 | /Queries/StartupLog | GET |
+| 27 | /SalesOrders/{InvoiceHistoryID}/InvoiceSnapshotReport/{ReportID} | GET |
+| 28 | /SalesOrders/{InvoiceID} | GET |
+| 29 | /SalesOrders/CustomFields | GET |
+| 30 | /SalesOrders/Historys/CustomFields | GET |
+| 31 | /SalesOrders/Lines/CustomFields | GET |
+| 32 | /SalesQuotes/{QuoteHistoryID}/QuoteSnapshotReport/{ReportID} | GET |
+| 33 | /SalesQuotes/{QuoteID} | GET |
+| 34 | /SalesQuotes/CustomFields | GET |
+| 35 | /SalesQuotes/Lines/CustomFields | GET |
+| 36 | /Sessions/Current | GET |
+| 37 | /SystemInfo | GET |
+| 38 | /DebtorCategory1Description | GET |
+| 39 | /SalesQuotes/{QuoteHistoryID}/Accept | POST |
+| 40 | /SalesQuotes/{QuoteHistoryID}/Decline | POST |
+
+If you are allowing staff members to login to the portal, the following permissions are also required for the Customer Web Portal User Group:
+| # | Route | Verb |
+|---|-------|------|
+| 1 | /Staff/{Username}/PasswordReset | POST |
+| 2 | /Staff/{Token}/TokenisedPasswordChange | POST |
+
+
+Also if you are allowing staff members to login to the portal, they will need to be a member of the Customer Web Portal group, and another group with these additional permissions:
+| # | Route | Verb |
+|---|-------|------|
+| 1 | /Staff/{StaffID}/PasswordChange | POST |
+| 2 | /Queries/OR/DebtorList | GET |
+| 3 | /SalesOrders | POST |
+| 4 | /SalesOrders/{InvoiceID} | PATCH |
+| 5 | /SalesOrders/{InvoiceID}/Historys/{InvoiceHistoryID}/Lines/{InvoiceLineID} | DELETE |
+| 6 | /SalesQuotes | POST |
+| 7 | /SalesQuotes/{QuoteID} | PATCH |
+| 8 | /SalesQuotes/{QuoteID}/Historys/{QuoteHistoryID}/Lines/{QuoteLineID} | DELETE |
+| 9 | /Debtors/{DebtorID} | GET |
+
+<img width="1287" height="1021" alt="image" src="https://github.com/user-attachments/assets/656862e7-5a41-4b05-b5f3-b0a055cdf32a" />
 
 ## Create user Customer Web Portal
 Create a new Staff Member in the Staff Maintenance form with the name Customer Web Portal.  Add this Staff member to the Customer Web Portal User Group.
